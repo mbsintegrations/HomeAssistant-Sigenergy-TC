@@ -1,0 +1,72 @@
+{
+  "tool": "built-in image_gen",
+  "created_on": "2026-10-27",
+  "third_party_reference_images_used": false,
+  "night_is_lighting_edit_of_day": true,
+  "images": [
+    {
+      "file": "overview-house-day-v1.png",
+      "width": 2172,
+      "height": 724,
+      "bytes": 3075429,
+      "sha256": "5818d7d68cf7262fcb923272ef10b15e96cb8d8ff4c02e562bc73ad64a36cacc"
+    },
+    {
+      "file": "overview-house-night-v1.png",
+      "width": 2172,
+      "height": 724,
+      "bytes": 2657076,
+      "sha256": "196514b82f51bba4adee778e45b0281ee3300fa75cc4a327f698a1a95bb0abc1"
+    }
+  ],
+  "anchor_coordinates_photo_1676x557": {
+    "solar_panels_lower_middle": [
+      838,
+      183
+    ],
+    "battery_cabinet_top_middle": [
+      832,
+      333
+    ],
+    "battery_cabinet_bottom_middle": [
+      832,
+      435
+    ],
+    "gateway_center": [
+      878,
+      382
+    ],
+    "ac_charger_center": [
+      588,
+      373
+    ],
+    "home_right_glazing_connection": [
+      1186,
+      281
+    ]
+  },
+  "anchor_note": "Approximate visual anchors in the photograph only. The host scene adds PHOTO.top (currently56) to all Y values. Review SVG routes on rendered scene.",
+  "delivery_images": [
+    {
+      "file": "overview-house-day-v1.webp",
+      "source": "overview-house-day-v1.png",
+      "width": 2172,
+      "height": 724,
+      "format": "WebP",
+      "quality": 92,
+      "bytes": 515220,
+      "sha256": "4fb5e608e53f88bdf8cd33ee86b11d906ff277fd3993be2300a6618d91ff2512"
+    },
+    {
+      "file": "overview-house-night-v1.webp",
+      "source": "overview-house-night-v1.png",
+      "width": 2172,
+      "height": 724,
+      "format": "WebP",
+      "quality": 92,
+      "bytes": 398614,
+      "sha256": "0df501a63e198cc32862a920a8bc0df1ef2ccf91e73730dc73df6a7757336654"
+    }
+  ],
+  "delivery_encoding_note": "WebP quality92, method6. Same pixel dimensions and framing as original PNG. No resizing, cropping or artistic edits. Original PNG sources retained."
+}

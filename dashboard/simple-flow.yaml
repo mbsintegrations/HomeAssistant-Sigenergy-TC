@@ -1,0 +1,4 @@
+type: custom:sigen-hybrid-card
+title: Energy flow
+view: flow
+# Choose your Sigenergy TC config entry in the visual editor.

@@ -1,0 +1,6 @@
+{
+  "name": "sigen-hybrid-dashboard-development",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test tests/frontend.test.mjs tests/details.test.mjs tests/settings.test.mjs tests/charts.test.mjs tests/navigation.test.mjs tests/widgets.test.mjs tests/energy.test.mjs tests/photo.test.mjs tests/main-display.test.mjs tests/overview.test.mjs tests/sankey.test.mjs tests/house.test.mjs tests/devices.test.mjs" }
+}

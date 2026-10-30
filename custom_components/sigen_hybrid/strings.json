@@ -1,0 +1,217 @@
+{
+  "title": "Sigenergy TC",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sigenergy TC",
+        "description": "Choose the connections you want to use. You can add or disable each connection later.",
+        "menu_options": {
+          "connections": "Set up connections",
+          "demo": "Explore the demo"
+        }
+      },
+      "local": {
+        "title": "Local plant",
+        "description": "Enter the local Modbus address. Use a dedicated connection, or explicitly select an additional read-only connection alongside an existing client. Additional read-only connections poll no faster than once per minute.",
+        "data": {
+          "host": "Host",
+          "port": "TCP port",
+          "sole_modbus_client": "I have stopped competing Modbus clients for this plant",
+          "shared_read_only": "Additional read-only connection alongside an existing client",
+          "poll_seconds": "Polling interval (seconds)"
+        }
+      },
+      "features": {
+        "title": "Choose optional features",
+        "description": "Local monitoring works without cloud or forecasts. Demo never connects to a cloud account. Optimizer monitoring is a planned feature requiring a separate supported source; selecting it records your preference only.\n\n{instructions}",
+        "data": {
+          "forecast_provider": "Solar forecast provider",
+          "optimizer_monitoring": "Plan to use panel optimizer monitoring",
+          "cloud_reads": "Configure optional mySigen app-cloud reads"
+        }
+      },
+      "wizard_forecast": {
+        "title": "Choose {provider_name} data",
+        "description": "Choose the provider configuration or aggregate detailed forecast sensors covering today and tomorrow.",
+        "data": {
+          "entry_id": "Forecast.Solar configuration",
+          "entities": "Forecast sensors"
+        }
+      },
+      "wizard_cloud": {
+        "title": "Optional cloud account",
+        "description": "Sign in with your mySigen account. Your plant is detected automatically. Credentials stay in Home Assistant storage. This optional app interface is unofficial; plant control is enabled separately.",
+        "data": {
+          "enable": "Enable optional app-cloud reads",
+          "region": "Region",
+          "username": "mySigen username / email",
+          "password": "mySigen password",
+          "unofficial_opt_in": "I accept optional use of the unofficial app interface"
+        }
+      },
+      "dashboard": {
+        "title": "Choose your dashboard",
+        "description": "One complete card or separate cards, with layouts that adapt to phone, tablet and computer. Save these defaults now; add the dashboard resource and card afterwards using the card guide. This wizard does not change existing dashboards.",
+        "data": {
+          "preset": "Card layout",
+          "main_display": "Main display",
+          "appearance": "Day/night appearance",
+          "charts": "Charts to show"
+        }
+      },
+      "review": {
+        "title": "Review your setup",
+        "description": "Connection: {connection}\nCloud: {cloud}\nForecast: {forecast}\nDashboard: {dashboard}\n\nDevice writes remain locked. Export permission stays off. Submit creates this configuration; it does not alter your existing dashboard. You can change optional features later. It is not yet a hardware-accepted release."
+      },
+      "connections": {
+        "title": "Connections",
+        "description": "Choose Local Modbus, mySigen Cloud, or both. Cloud works without Modbus. Modbus must first be enabled on the system by your installer.",
+        "data": {
+          "modbus": "Local Modbus",
+          "cloud": "mySigen Cloud"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reconnect mySigen Cloud",
+        "description": "Enter the password for your existing account. Your selected plant, entities and other settings are preserved.",
+        "data": {
+          "password": "Password"
+        }
+      },
+      "wizard_control": {
+        "title": "Owner control and limits",
+        "description": "Choose your control limits. Existing device and installer restrictions remain in effect. Export approval here does not raise or enable the plant's export limit.",
+        "data": {
+          "enable_control": "Enable plant control",
+          "export_permitted": "My site is approved for grid export",
+          "reserve_soc": "Minimum reserve (%)",
+          "charge_ceiling_soc": "Charge ceiling (%)",
+          "max_charge_kw": "Maximum requested charge power (kW)",
+          "max_discharge_kw": "Maximum requested discharge power (kW)"
+        }
+      }
+    },
+    "error": {
+      "invalid_host": "Enter a hostname or IP address without a URL path.",
+      "competing_client": "Confirm a dedicated connection or choose an additional read-only connection.",
+      "forecast_provider_missing": "Install and configure this provider first, or choose no forecast.",
+      "invalid_forecast_source": "Choose available data from the selected provider.",
+      "cloud_opt_in_required": "Explicit opt-in is required for the unofficial app interface.",
+      "cloud_fields_required": "Enter your mySigen username and password, or disable cloud reads.",
+      "invalid_auth": "Sigenergy rejected the cloud sign-in. Verify the mySigen account and selected region.",
+      "cannot_connect": "Sigenergy Cloud is unavailable or rate-limiting requests. Try again later.",
+      "no_cloud_plant": "The account plant could not be discovered. Sign-in may have succeeded; this can be an app-interface or account-access issue.",
+      "cloud_login_failed": "The integration could not complete cloud login. This is not confirmation of incorrect credentials. Check the integration log for the safe error category.",
+      "connection_required": "Choose at least one connection.",
+      "modbus_setup_required": "Configure Modbus first.",
+      "cloud_setup_required": "Configure Cloud first.",
+      "wrong_account": "This account returned a different plant. Your existing plant has not been changed.",
+      "invalid_safety_limits": "Reserve must be below the ceiling; power values must be finite and positive."
+    },
+    "abort": {
+      "already_configured": "This plant or demo is already configured.",
+      "cloud_not_configured": "This entry no longer has a configured cloud account."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Sigenergy TC options",
+        "menu_options": {
+          "safety": "Safety limits",
+          "forecast": "Choose forecast provider",
+          "cloud": "Configure Cloud",
+          "remove_cloud": "Remove optional cloud credentials",
+          "dashboard": "Dashboard layout and charts",
+          "connections": "Enable or disable connections",
+          "modbus": "Configure Modbus"
+        }
+      },
+      "safety": {
+        "title": "Safety limits",
+        "description": "Choose your control limits. Existing device and installer restrictions remain in effect. Export approval here does not raise or enable the plant's export limit.",
+        "data": {
+          "enable_control": "Enable plant control",
+          "export_permitted": "My site is approved for grid export",
+          "reserve_soc": "Minimum reserve (%)",
+          "charge_ceiling_soc": "Charge ceiling (%)",
+          "max_charge_kw": "Maximum requested charge power (kW)",
+          "max_discharge_kw": "Maximum requested discharge power (kW)"
+        }
+      },
+      "forecast": {
+        "title": "Choose an installed forecast provider",
+        "description": "No duplicate provider API calls are made. Install and configure your chosen provider first. No forecast is also valid.",
+        "data": {
+          "provider": "Forecast provider"
+        }
+      },
+      "forecast_source": {
+        "title": "Choose {provider_name} data",
+        "description": "Select the configured Forecast.Solar entry, or total daily forecast sensors covering today and tomorrow. Detailed forecast attributes must be available; incomplete data remains unknown.",
+        "data": {
+          "entry_id": "Forecast.Solar configuration",
+          "entities": "Provider forecast sensors (today and tomorrow)"
+        }
+      },
+      "cloud": {
+        "title": "mySigen Cloud account",
+        "description": "Sign in with your mySigen account. Your plant is detected automatically. Credentials stay in Home Assistant storage. This optional app interface is unofficial; plant control is enabled separately.",
+        "data": {
+          "region": "Region",
+          "username": "mySigen username / email",
+          "password": "mySigen password",
+          "unofficial_opt_in": "I accept using the unofficial app interface for optional reads"
+        }
+      },
+      "dashboard": {
+        "title": "Choose your dashboard",
+        "description": "One complete card or separate cards, with layouts that adapt to phone, tablet and computer. Save these defaults now; add the dashboard resource and card afterwards using the card guide. This wizard does not change existing dashboards.",
+        "data": {
+          "preset": "Card layout",
+          "main_display": "Main display",
+          "appearance": "Day/night appearance",
+          "charts": "Charts to show"
+        }
+      },
+      "connections": {
+        "title": "Connections",
+        "description": "Choose Local Modbus, mySigen Cloud, or both. Cloud works without Modbus. Modbus must first be enabled on the system by your installer.",
+        "data": {
+          "modbus": "Local Modbus",
+          "cloud": "mySigen Cloud"
+        }
+      },
+      "modbus": {
+        "title": "Local plant",
+        "description": "Enter the local Modbus address. Use a dedicated connection, or explicitly select an additional read-only connection alongside an existing client. Additional read-only connections poll no faster than once per minute.",
+        "data": {
+          "host": "Host",
+          "port": "TCP port",
+          "sole_modbus_client": "I have stopped competing Modbus clients for this plant",
+          "shared_read_only": "Additional read-only connection alongside an existing client",
+          "poll_seconds": "Polling interval (seconds)"
+        }
+      }
+    },
+    "error": {
+      "invalid_safety_limits": "Reserve must be below the ceiling; power values must be finite and positive.",
+      "invalid_forecast_source": "Choose available sensors belonging to the selected forecast provider, or its loaded configuration.",
+      "cloud_fields_required": "Enter your mySigen username and password, or disable cloud reads.",
+      "invalid_auth": "Sigenergy rejected the cloud sign-in. Verify the mySigen account and selected region.",
+      "cannot_connect": "Sigenergy Cloud is unavailable or rate-limiting requests. Try again later.",
+      "cloud_opt_in_required": "Explicit opt-in is required for the unofficial app interface.",
+      "no_cloud_plant": "The account plant could not be discovered. Sign-in may have succeeded; this can be an app-interface or account-access issue.",
+      "cloud_login_failed": "The integration could not complete cloud login. This is not confirmation of incorrect credentials. Check the integration log for the safe error category.",
+      "connection_required": "Choose at least one connection.",
+      "modbus_setup_required": "Configure Modbus first.",
+      "cloud_setup_required": "Configure Cloud first."
+    },
+    "abort": {
+      "forecast_provider_missing": "{provider_name} is not configured and loaded. {instructions}\n\n[Installation guide]({install_url})\n\nAfter setup, reopen Sigenergy TC options and select the provider again.",
+      "cloud_opt_in_required": "Cloud access was not enabled. Local monitoring remains available.",
+      "demo_isolated": "Demo is isolated and never connects to cloud accounts. Use a validated local configuration for optional cloud reads.",
+      "control_recovery_required": "The active command could not be safely released. Stop it and restore its settings in mySigen, then retry this connection change."
+    }
+  }
+}

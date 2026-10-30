@@ -1,0 +1,6 @@
+type: custom:sigen-hybrid-card
+title: My energy
+view: overview
+appearance: auto
+# Choose your Sigenergy TC config entry in the visual editor.
+# Add original local day/night artwork using the card guide.

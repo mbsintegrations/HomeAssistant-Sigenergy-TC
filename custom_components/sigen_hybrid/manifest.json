@@ -1,0 +1,22 @@
+{
+  "domain": "sigen_hybrid",
+  "name": "Sigenergy TC",
+  "codeowners": [
+    "@mbsintegrations"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "frontend",
+    "http",
+    "lovelace"
+  ],
+  "documentation": "https://github.com/mbsintegrations/Sigenergy-TC",
+  "integration_type": "hub",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/mbsintegrations/Sigenergy-TC/issues",
+  "requirements": [
+    "pymodbus==3.13.1",
+    "sigenergy-cloud==0.1.7"
+  ],
+  "version": "0.1.0"
+}

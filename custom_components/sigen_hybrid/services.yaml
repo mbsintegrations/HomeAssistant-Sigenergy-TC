@@ -1,0 +1,134 @@
+manual_control:
+  name: Manual battery control
+  description: Preview or submit a bounded manual command. Execution requires owner-enabled control. Results are tracked on the control status sensor; a queued response is not physical confirmation.
+  fields:
+    config_entry:
+      name: Integration
+      required: true
+      selector:
+        config_entry:
+          integration: sigen_hybrid
+    mode:
+      name: Mode
+      required: true
+      selector:
+        select:
+          options:
+            - charge
+            - discharge
+            - hold
+            - self_consumption
+    duration_minutes:
+      name: Duration
+      default: 30
+      selector:
+        number:
+          min: 1
+          max: 1440
+          step: 1
+          unit_of_measurement: min
+          mode: box
+    power_kw:
+      name: Power limit
+      description: Required for charging or discharging; omitted for hold and self-consumption.
+      selector:
+        number:
+          min: 0.001
+          max: 100
+          step: 0.001
+          unit_of_measurement: kW
+          mode: box
+    export_requested:
+      name: Export requested
+      default: false
+      selector:
+        boolean:
+    dry_run:
+      name: Preview only
+      default: true
+      selector:
+        boolean:
+    request_id:
+      name: Request ID
+      description: Reuse this identifier only when retrying exactly the same command. It prevents duplicate execution.
+      selector:
+        text:
+cancel_manual_control:
+  name: Release manual battery control
+  description: Cancel this integration's active manual command and restore settings it still owns. Does not cancel an unrelated command from the Sigen app.
+  fields:
+    config_entry:
+      name: Integration
+      required: true
+      selector:
+        config_entry:
+          integration: sigen_hybrid
+owner_setting:
+  name: Change owner setting
+  description: Preview or submit one advertised operating mode, grid connection, charger state or battery SOC setting. Owner control must be enabled. A queued response is not physical confirmation.
+  fields:
+    config_entry:
+      name: Integration
+      required: true
+      selector:
+        config_entry:
+          integration: sigen_hybrid
+    setting:
+      name: Setting
+      required: true
+      selector:
+        select:
+          options:
+            - native_mode
+            - grid_connection
+            - ac_charging
+            - dc_charging
+            - battery_levels
+    value:
+      name: Requested value
+      description: Boolean for grid/charging; mode and profile_id object for a mode; four SOC thresholds for battery_levels. Only exact advertised devices and modes are accepted.
+      required: true
+      selector:
+        object:
+    serial:
+      name: Charger serial
+      description: Required when more than one charger of this type is installed; must match a discovered device.
+      selector:
+        text:
+    request_id:
+      name: Request ID
+      description: Reuse only when retrying exactly the same request; prevents duplicate execution across restarts.
+      required: true
+      selector:
+        text:
+    dry_run:
+      name: Preview only
+      default: true
+      selector:
+        boolean:
+preview_plan:
+  name: Preview charging plan
+  description: Return an advisory low-cost plan using the selected installed forecast provider. Never dispatches commands or enables export.
+  fields:
+    config_entry:
+      name: Integration
+      required: true
+      selector:
+        config_entry:
+          integration: sigen_hybrid
+    tariff_json:
+      name: Tariff definition
+      description: Development interface; prices must explicitly use major_currency_per_kwh. A guided tariff editor is planned.
+      required: true
+      selector:
+        text:
+          multiline: true
+    demand_24h_kwh:
+      name: Expected household demand over the next 24 hours
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 1000
+          unit_of_measurement: kWh
+          mode: box

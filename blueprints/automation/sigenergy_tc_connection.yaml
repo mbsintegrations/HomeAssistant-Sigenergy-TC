@@ -1,0 +1,54 @@
+blueprint:
+  name: Sigenergy TC connection notification
+  description: Create a local persistent notification when a selected TC connection stays unavailable; dismiss it when connected again. Does not operate the plant.
+  domain: automation
+  author: MBS Integrations
+  source_url: https://github.com/mbsintegrations/Sigenergy-TC/blob/main/blueprints/automation/sigenergy_tc_connection.yaml
+  homeassistant:
+    min_version: '2026.10.1'
+  input:
+    connection_sensor:
+      name: Modbus or Cloud status sensor
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+              integration: sigen_hybrid
+    wait_minutes:
+      name: Minutes unavailable before notification
+      default: 2
+      selector:
+        number:
+          min: 1
+          max: 120
+          step: 1
+          unit_of_measurement: min
+mode: single
+max_exceeded: silent
+triggers:
+  - trigger: state
+    entity_id: !input connection_sensor
+    to: unavailable
+    for:
+      minutes: !input wait_minutes
+    id: unavailable
+  - trigger: state
+    entity_id: !input connection_sensor
+    from: unavailable
+    to: connected
+    id: recovered
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: unavailable
+        sequence:
+          - action: persistent_notification.create
+            data:
+              notification_id: "sigenergy_tc_{{ trigger.entity_id | replace('.', '_') }}"
+              title: Sigenergy TC connection
+              message: "{{ trigger.to_state.name }} is unavailable. Check the connection status and integration diagnostics."
+    default:
+      - action: persistent_notification.dismiss
+        data:
+          notification_id: "sigenergy_tc_{{ trigger.entity_id | replace('.', '_') }}"
