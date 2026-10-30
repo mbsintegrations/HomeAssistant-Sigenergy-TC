@@ -1,14 +1,14 @@
 ![Sigenergy TC — Total Control](docs/images/header.png)
 
-# Sigenergy TC (Total Control)
+# Sigenergy TC — Total Control for Home Assistant
 
 > **INVITATION-ONLY ALPHA — DO NOT INSTALL unless you have been invited by MBS Integrations.**
 >
 > Version **0.1.0** is an experimental, owner-supervised control release. It is not a stable release or a Sigenergy product. Real commands can change battery operation, charging and grid connection. Read the [control and recovery guide](docs/controls-and-recovery.md) before enabling control.
 
-[![Validation](https://github.com/mbsintegrations/Sigenergy-TC/actions/workflows/validate.yml/badge.svg)](https://github.com/mbsintegrations/Sigenergy-TC/actions/workflows/validate.yml)
+[![Validation](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/actions/workflows/validate.yml/badge.svg)](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/actions/workflows/validate.yml)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://www.hacs.xyz/docs/faq/custom_repositories/)
-[![Release](https://img.shields.io/github/v/release/mbsintegrations/Sigenergy-TC)](https://github.com/mbsintegrations/Sigenergy-TC/releases)
+[![Release](https://img.shields.io/github/v/release/mbsintegrations/HomeAssistant-Sigenergy-TC)](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/releases)
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![MBS Integrations](https://img.shields.io/badge/Website-mbsintegrations.ie-0078D4?style=flat)](https://mbsintegrations.ie)
 [![PayPal](https://img.shields.io/badge/PayPal-00457C?style=flat&logo=paypal&logoColor=white)](https://paypal.me/mwahl1973)
@@ -32,7 +32,7 @@ A local-first Home Assistant integration and responsive energy dashboard for Sig
 ## Invited testers: install with HACS
 
 1. Back up Home Assistant and record the plant's existing mySigen settings. Keep the existing integration and automations intact until conflicts have been reviewed.
-2. In **HACS → menu → Custom repositories**, add `https://github.com/mbsintegrations/Sigenergy-TC` with category **Integration**.
+2. In **HACS → menu → Custom repositories**, add `https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC` with category **Integration**.
 3. Download **Sigenergy TC**, restart Home Assistant, then use **Settings → Devices & services → Add integration → Sigenergy TC**.
 4. Choose Modbus, Cloud, or both. Cloud login discovers the plant; no station ID is entered. Configure safety limits and deliberately choose whether to enable control.
 5. Add **Sigenergy TC** in a dashboard's card picker. The bundled module registers automatically in storage-mode dashboards; select the integration entry in the visual editor if more than one is installed.

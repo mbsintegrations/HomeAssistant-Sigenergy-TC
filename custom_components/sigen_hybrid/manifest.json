@@ -10,10 +10,10 @@
     "http",
     "lovelace"
   ],
-  "documentation": "https://github.com/mbsintegrations/Sigenergy-TC",
+  "documentation": "https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC",
   "integration_type": "hub",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/mbsintegrations/Sigenergy-TC/issues",
+  "issue_tracker": "https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/issues",
   "requirements": [
     "pymodbus>=3.13.1",
     "sigenergy-cloud==0.1.7"
