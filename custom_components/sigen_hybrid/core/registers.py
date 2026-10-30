@@ -33,6 +33,7 @@ class Register:
 
 
 READ_REGISTERS = {
+    "grid_sensor_connected": Register(30004),
     "native_mode": Register(30003),
     "grid_kw": Register(30005, 2, 1000, True),
     "grid_state": Register(30009),
@@ -53,6 +54,9 @@ WRITE_REGISTERS = {
     "remote_mode": Register(40031, holding=True),
     "charge_limit_kw": Register(40032, 2, 1000, holding=True),
     "discharge_limit_kw": Register(40034, 2, 1000, holding=True),
+    "pv_limit_kw": Register(40036, 2, 1000, holding=True),
+    "grid_export_limit_kw": Register(40038, 2, 1000, holding=True),
+    "grid_import_limit_kw": Register(40040, 2, 1000, holding=True),
     "backup_soc": Register(40046, 1, 10, holding=True),
     "charge_cutoff_soc": Register(40047, 1, 10, holding=True),
     "discharge_cutoff_soc": Register(40048, 1, 10, holding=True),
@@ -72,7 +76,7 @@ ENERGY_REGISTERS = {
     "grid_export_lifetime": Register(30220, 4, 100),
     "ac_plant_lifetime": Register(30232, 4, 100),
 }
-# No plant power, grid-code, exposure, export-limit or installer-setting writes.
+# Grid-code, protection and installer credentials are never writable here.
 REMOTE_MODES = {"hold": 1, "self_consumption": 2, "charge": 4, "discharge": 5}
 
 

@@ -23,12 +23,14 @@ from .core.connections import enabled_connections
 from .core.errors import SigenError
 from .core.modbus import ModbusTransport
 from .core.models import Intent, Mode, Source, utcnow, validate_duration_minutes, validate_manual_power
+from .core.owner_settings import SETTINGS
 from .core.planner import Forecast, charging_plan
 from .core.tariffs import TariffPlan
 from .forecast import async_forecast, async_forecast_overview
 from .forecast_ws import async_register_forecast
 from .frontend import async_register_frontend
 from .history_ws import async_register_history, async_remove_entry_history
+from .owner_configuration import async_register_owner_configuration
 
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -38,6 +40,7 @@ async def async_setup(hass, config):
     await async_register_frontend(hass)
     async_register_history(hass)
     async_register_forecast(hass)
+    async_register_owner_configuration(hass)
 
     async def coordinator(call, *, refresh=True):
         entry = hass.config_entries.async_get_entry(call.data["config_entry"])
@@ -107,6 +110,7 @@ async def async_setup(hass, config):
                 call.data["setting"], call.data["value"], request_id=call.data["request_id"],
                 source=Source.MANUAL if call.context.user_id is not None else Source.AUTOMATION,
                 dry_run=call.data["dry_run"], serial=call.data.get("serial"),
+                **({"expected_revision": call.data["expected_revision"]} if "expected_revision" in call.data else {}),
             )
         except SigenError as err:
             raise HomeAssistantError(str(err)) from None
@@ -161,11 +165,12 @@ async def async_setup(hass, config):
         owner_setting,
         schema=vol.Schema({
             vol.Required("config_entry"): str,
-            vol.Required("setting"): vol.In(("native_mode", "grid_connection", "ac_charging", "dc_charging", "battery_levels")),
+            vol.Required("setting"): vol.In(SETTINGS),
             vol.Required("value"): vol.Any(dict, bool),
             vol.Required("request_id"): vol.All(str, vol.Length(min=1, max=128)),
             vol.Optional("dry_run", default=True): bool,
             vol.Optional("serial"): vol.All(str, vol.Length(min=1, max=80)),
+            vol.Optional("expected_revision"): vol.All(str, vol.Match(r"^[0-9a-f]{64}$")),
         }),
         supports_response=SupportsResponse.OPTIONAL,
     )
@@ -207,7 +212,7 @@ async def async_setup_entry(hass, entry):
     enabled = enabled_connections(entry.data, entry.options)
     startup_errors = {}
     competing = any(e.state is ConfigEntryState.LOADED for e in hass.config_entries.async_entries("sigen"))
-    if enabled["modbus"] and (not competing or entry.data.get("shared_read_only")) and entry.data.get("host"):
+    if enabled["modbus"] and (not competing or entry.data.get("shared_read_only") or entry.data.get("allow_shared_writes")) and entry.data.get("host"):
         client = AsyncModbusTcpClient(entry.data["host"], port=entry.data["port"], timeout=5, retries=0)
         local = ModbusTransport(client, read_only=entry.data.get("shared_read_only", False))
         try:

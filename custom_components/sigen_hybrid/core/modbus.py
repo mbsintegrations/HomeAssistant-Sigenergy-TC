@@ -32,8 +32,11 @@ class ModbusTransport:
         if inspect.isawaitable(result):
             await result
 
-    async def _call(self, method, **kwargs):
+    async def _call(self, method, *, _device_id=None, **kwargs):
         writing = method.__name__.startswith("write")
+        device_id = self.plant_id if _device_id is None else _device_id
+        if device_id != self.plant_id and (writing or type(device_id) is not int or not 1 <= device_id <= 246):
+            raise SafetyError("Only device identity reads may target the selected inverter")
         if writing and self.read_only:
             raise SafetyError("This additional Modbus connection is read-only")
         async with self._lock:
@@ -44,7 +47,7 @@ class ModbusTransport:
             self.trace["last_request_at"] = datetime.now(timezone.utc).isoformat()
             # Pin a pymodbus version and use its documented device_id argument.
             try:
-                result = await method(device_id=self.plant_id, **kwargs)
+                result = await method(device_id=device_id, **kwargs)
                 if result.isError():
                     raise TransportError("Device rejected the Modbus request")
                 self.trace["last_success_at"] = datetime.now(timezone.utc).isoformat()
@@ -56,6 +59,22 @@ class ModbusTransport:
                 self.trace["errors"] += 1
                 # Never include response bodies, hosts or client repr in diagnostics.
                 raise TransportError("Modbus request failed; inspect current state before retrying") from None
+
+    async def device_identity(self, unit_id: int) -> str:
+        """V2.9 inverter serial, 30515/10; no scanning or guessed device IDs."""
+        if type(unit_id) is not int or not 1 <= unit_id <= 246:
+            raise SafetyError("Configure the primary inverter unit ID before local control")
+        response = await self._call(self.client.read_input_registers, _device_id=unit_id, address=30515, count=10)
+        try:
+            words = response.registers
+            if len(words) != 10:
+                raise ValueError
+            serial = b"".join(int(word).to_bytes(2, "big") for word in words).decode("ascii").strip("\x00 ")
+            if not 1 <= len(serial) <= 20 or not all(char.isalnum() or char in "_-" for char in serial):
+                raise ValueError
+            return serial
+        except (ValueError, TypeError, AttributeError, OverflowError):
+            raise SafetyError("The selected inverter did not return a valid serial number") from None
 
     async def read(self, key: str) -> float:
         reg = READ_REGISTERS.get(key) or WRITE_REGISTERS[key]

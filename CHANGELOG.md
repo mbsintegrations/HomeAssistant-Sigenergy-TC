@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0 — Invitation-only Alpha — 2026-10-30
+
+**Do not install without an invitation from MBS Integrations.** Expanded functional control release; existing installations retain their previous enablement.
+
+- Added opt-in local battery control with primary-inverter serial checks, native SOC/power bounds, connected-grid checks and durable HA-managed expiry/recovery.
+- Added one command authority across local/cloud actors, explicit owner handover, duplicate protection and no blind fallback of an uncertain operation. Local work does not wait on a cloud polling lock.
+- Added battery/PV power, backup reserve, grid power/current, priority, peak-shaving, charger mode and DC charging-limit handlers with closed native payloads and verified readback.
+- Added live owner-setting forms, exact charger targeting, stale-edit revision checks and native setting documentation. Preserved the accepted dashboard layout and colors.
+- Installer restrictions, site export approval, owner bounds and shared read-only connections remain enforced. A local home-only discharge caps all grid export at zero; cloud discharge can preserve separate PV export.
+
+Modbus has no documented independent command expiry: keep HA running for local timed tests. Missing native firmware metadata prevents the affected control. Native charger schedules, V2X dispatch, firmware/installer operations and external AI execution are not implemented as working controls.
+
 ## 0.1.0 — Invitation-only Alpha — 2026-10-30
 
 **Do not install without an invitation from MBS Integrations.** First public repository/HACS custom-repository testing release; no default-catalogue submission or community announcement.

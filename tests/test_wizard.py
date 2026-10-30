@@ -227,23 +227,24 @@ async def test_cloud_form_requires_no_station_id_and_stores_discovered_identity(
 async def test_new_cloud_setup_explicitly_confirms_control_and_keeps_export_approval_off():
     flow = wizard()
     flow._pending_options = {"cloud": {"station_id": "synthetic"}}
+    flow._pending_data = {"cloud_only": True}
     form = await flow.async_step_wizard_control()
     chosen = form["data_schema"]({})
     assert chosen["enable_control"] is True and chosen["export_permitted"] is False
     result = await flow.async_step_wizard_control(chosen)
     assert result["step_id"] == "dashboard"
-    assert flow._pending_options["control"] == {"enabled": True}
+    assert flow._pending_options["control"] == {"enabled": True, "local_enabled": False}
     assert "enable_control" not in flow._pending_options["safety"]
 
 
 async def test_changing_legacy_safety_limits_does_not_silently_enable_control():
     flow = wizard(options=True)
-    flow.config_entry = SimpleNamespace(options={"safety": {"export_permitted": False}, "cloud": {"saved": True}})
+    flow.config_entry = SimpleNamespace(data={}, options={"safety": {"export_permitted": False}, "cloud": {"saved": True}})
     form = await flow.async_step_safety()
     chosen = form["data_schema"]({})
     assert chosen["enable_control"] is False
     result = await flow.async_step_safety(chosen)
-    assert result["data"]["control"] == {"enabled": False}
+    assert result["data"]["control"] == {"enabled": False, "local_enabled": False}
     assert result["data"]["cloud"] == {"saved": True}
 
 

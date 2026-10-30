@@ -51,6 +51,7 @@ class SigenCoordinator(DataUpdateCoordinator):
         self.energy_store = None
         self.controls = None
         self.strategies = None
+        self.source_binding_verified = False
         self.controller = Controller(
             SafetyLimits(**entry.options.get("safety", {})), demo=entry.data.get("demo", False)
         )
@@ -63,10 +64,15 @@ class SigenCoordinator(DataUpdateCoordinator):
         self.energy_store = Store(self.hass, 1, f"{DOMAIN}_energy_{self.entry.entry_id}")
         self.energy_counters.restore(await self.energy_store.async_load())
         from .controls import OwnerControls
+        from .local_controls import HybridOwnerControls, LocalOwnerControls
 
         cloud = self.entry.options.get("cloud", {})
         plant_key = sha256(f"{cloud.get('region')}:{cloud.get('station_id')}".encode()).hexdigest()
-        self.controls = OwnerControls(self, Store(self.hass, 1, f"{DOMAIN}_control_{plant_key}"))
+        cloud_controls = OwnerControls(self, Store(self.hass, 1, f"{DOMAIN}_control_{plant_key}"))
+        local_key = sha256(f"{self.entry.data.get('host')}:{self.entry.data.get('port',502)}".encode()).hexdigest()
+        local_controls = LocalOwnerControls(self, Store(self.hass, 1, f"{DOMAIN}_local_control_{local_key}"), clock=utcnow)
+        self.controls = HybridOwnerControls(cloud_controls, local_controls,
+            Store(self.hass, 1, f"{DOMAIN}_source_binding_{self.entry.entry_id}"))
         if self.controls.enabled:
             self.controller.executor = self.controls
         from .strategies import StrategyRunner
@@ -141,15 +147,18 @@ class SigenCoordinator(DataUpdateCoordinator):
     def capabilities(self):
         result = capabilities(self.connections)
         if self.controls is not None and self.controls.enabled:
-            online = self.connections["cloud"]["status"] == "connected" and self.controls.manual_supported is not False
+            local_enabled = getattr(getattr(self.controls, "local", None), "enabled", False)
+            cloud_enabled = getattr(getattr(self.controls, "cloud", self.controls), "enabled", False)
+            local_online = local_enabled and self.connections["modbus"]["status"] == "connected"
+            cloud_online = cloud_enabled and self.connections["cloud"]["status"] == "connected"
+            online = local_online or cloud_online and self.controls.manual_supported is not False
             result["manual_control"] = {
                 "supported": True,
                 "online": online,
                 "available": online,
-                "routes": ["cloud"],
+                "routes": (["modbus"] if local_enabled else []) + (["cloud"] if cloud_enabled else []),
                 "reason": None if online else "temporarily_unavailable",
             }
-            cloud_online = self.connections["cloud"]["status"] == "connected"
             owner = self.cloud_data.get("owner_controls", {})
             available = {
                 "native_mode": bool(self.cloud_data.get("modes", {}).get("defaultWorkingModes")),
@@ -158,11 +167,19 @@ class SigenCoordinator(DataUpdateCoordinator):
                 "dc_charging": owner.get("hasEv") is True and bool(owner.get("dcSnList")),
                 "battery_levels": True,
             }
+            from .core.native_settings import EXTENDED_SETTINGS, charger_key
+            for key in EXTENDED_SETTINGS | {"grid_export_limit", "grid_import_limit", "battery_export_block"}:
+                device = charger_key(key)
+                available[key] = available.get(device, True) if device else True
+            from .core.local_control import LOCAL_SETTINGS
             for feature, supported in available.items():
+                routes = (["modbus"] if local_enabled and feature in LOCAL_SETTINGS else []) + (["cloud"] if cloud_enabled and supported else [])
+                supported = bool(routes)
+                setting_online = bool(local_online and feature in LOCAL_SETTINGS or cloud_online and "cloud" in routes)
                 result[feature] = {
-                    "supported": supported, "online": cloud_online, "available": supported and cloud_online,
-                    "routes": ["cloud"] if supported else [],
-                    "reason": None if supported and cloud_online else "temporarily_unavailable" if supported else "unsupported",
+                    "supported": supported, "online": setting_online, "available": supported and setting_online,
+                    "routes": routes,
+                    "reason": None if supported and setting_online else "temporarily_unavailable" if supported else "unsupported",
                 }
         return result
 

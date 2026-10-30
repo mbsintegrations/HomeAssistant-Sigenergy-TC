@@ -25,8 +25,8 @@ def test_signed_power_decode_encode_and_unset_limit():
         reg.decode([1])
 
 
-def test_write_allowlist_excludes_export_and_infrastructure_commands():
-    assert {r.address for r in WRITE_REGISTERS.values()} == {40029, 40031, 40032, 40034, 40046, 40047, 40048}
+def test_write_allowlist_contains_documented_owner_limits_and_excludes_infrastructure_commands():
+    assert {r.address for r in WRITE_REGISTERS.values()} == {40029, 40031, 40032, 40034, 40036, 40038, 40040, 40046, 40047, 40048}
     assert READ_REGISTERS["home_kw"].address == 30282
 
 
@@ -150,11 +150,11 @@ async def test_snapshot_groups_only_adjacent_allowlisted_registers_and_records_r
     transport = ModbusTransport(client, read_only=True)
     snapshot = await transport.snapshot()
     assert snapshot.soc == 50 and snapshot.capacity_kwh == 36
-    assert len(client.calls) == 15
+    assert len(client.calls) == 14
     assert snapshot.energy == {key: 123.45 for key in ENERGY_REGISTERS}
     requested = {
         (holding, call["address"] + offset) for holding, call in client.calls for offset in range(call["count"])
     }
     assert requested == allowed
-    assert transport.trace["read_requests"] == 15 and transport.trace["snapshots"] == 1
+    assert transport.trace["read_requests"] == 14 and transport.trace["snapshots"] == 1
     assert transport.trace["errors"] == 0 and transport.trace["write_requests"] == 0

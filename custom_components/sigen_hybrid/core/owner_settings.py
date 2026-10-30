@@ -1,8 +1,12 @@
 """Closed owner settings, using freshly advertised plant modes and devices."""
 
 from .errors import CapabilityError, SafetyError
+from .native_settings import EXTENDED_SETTINGS, charger_key
 
-SETTINGS = frozenset({"native_mode", "grid_connection", "ac_charging", "dc_charging", "battery_levels"})
+SETTINGS = EXTENDED_SETTINGS | frozenset({
+    "native_mode", "grid_connection", "ac_charging", "dc_charging", "battery_levels",
+    "battery_export_block", "grid_export_limit", "grid_import_limit",
+})
 
 
 def mode_catalogue(data):
@@ -58,8 +62,9 @@ async def prepare_setting(provider, key, value, *, owner_limits, station, serial
             raise SafetyError("Export approval is required for fully feed-in mode")
     elif key == "grid_connection":
         provider.gateway = station.get("hasGateway") is True
-    elif key in ("ac_charging", "dc_charging"):
-        kind = "ac" if key == "ac_charging" else "dc"
+    elif key in ("ac_charging", "dc_charging") or charger_key(key):
+        device_key = charger_key(key) or key
+        kind = "ac" if device_key == "ac_charging" else "dc"
         if station.get("hasAcCharger" if kind == "ac" else "hasEv") is not True:
             raise CapabilityError("The plant is not advertising this installed charger")
         serials = station.get(f"{kind}SnList")
@@ -75,7 +80,7 @@ async def prepare_setting(provider, key, value, *, owner_limits, station, serial
             provider.station_id,
             **{"ac_serial" if kind == "ac" else "dc_serial": serial},
         )
-        provider.devices[key] = bound.devices[key]
+        provider.devices[device_key] = bound.devices[device_key]
     elif key == "battery_levels":
         provider.validate(key, value)
         if value["discharge_soc"] < owner_limits.reserve_soc or value["charge_soc"] > owner_limits.charge_ceiling_soc:
@@ -85,6 +90,21 @@ async def prepare_setting(provider, key, value, *, owner_limits, station, serial
             value = {**value, "ja12_soc": current["ja12_soc"]}
         provider._preserve_extra_soc(value, current)
     provider.validate(key, value)
+    if key == "backup_reserve" and not owner_limits.reserve_soc <= value["soc"] <= owner_limits.charge_ceiling_soc:
+        raise SafetyError("Backup reserve exceeds the configured owner SOC bounds")
+    if key == "battery_export_block" and value is False and owner_limits.export_permitted is not True:
+        raise SafetyError("Export approval is required to allow battery export")
+    if key == "grid_export_limit" and (not value["enabled"] or value["limit_kw"] > 0) and owner_limits.export_permitted is not True:
+        raise SafetyError("Export approval is required to increase the site export limit")
+    if key == "battery_power_limits":
+        value = dict(value)
+        for field, maximum in (("charge_kw", owner_limits.max_charge_kw), ("discharge_kw", owner_limits.max_discharge_kw)):
+            if value[field] is None:
+                value[field] = maximum
+            if value[field] > maximum:
+                raise SafetyError("Battery power exceeds the configured owner limit")
+    if key == "peak_shaving" and value["soc"] < owner_limits.reserve_soc:
+        raise SafetyError("Peak-shaving SOC must preserve the owner reserve")
     return value
 
 

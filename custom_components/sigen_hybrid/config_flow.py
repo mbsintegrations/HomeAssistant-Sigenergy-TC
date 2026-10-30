@@ -43,10 +43,11 @@ def cloud_credentials(user_input, station_id):
     }
 
 
-def owner_limits_schema(current, enabled):
+def owner_limits_schema(current, enabled, *, local_enabled=None):
     return vol.Schema(
         {
             vol.Required("enable_control", default=enabled): bool,
+            **({vol.Required("enable_local_control", default=local_enabled): bool} if local_enabled is not None else {}),
             vol.Required("export_permitted", default=current.get("export_permitted", False)): bool,
             vol.Required("reserve_soc", default=current.get("reserve_soc", 20)): vol.All(
                 vol.Coerce(float), vol.Range(min=0, max=99)
@@ -156,7 +157,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             host = user_input["host"].strip().lower()
             if not host or "/" in host or "://" in host:
                 errors["host"] = "invalid_host"
-            elif not (user_input["sole_modbus_client"] or user_input.get("shared_read_only")):
+            elif not (user_input["sole_modbus_client"] or user_input.get("shared_read_only") or user_input.get("allow_shared_writes")):
                 errors["base"] = "competing_client"
             else:
                 await self.async_set_unique_id(f"{host}:{user_input['port']}:247")
@@ -175,6 +176,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required("host"): str,
                     vol.Required("port", default=502): vol.All(vol.Coerce(int), vol.Range(min=1, max=65535)),
                     vol.Required("sole_modbus_client", default=False): bool,
+                    vol.Optional("inverter_unit_id"): vol.All(vol.Coerce(int), vol.Range(min=1, max=246)),
+                    vol.Optional("allow_shared_writes", default=False): bool,
                     vol.Optional(
                         "shared_read_only",
                         default=self.config_entry.data.get("shared_read_only", False)
@@ -265,23 +268,26 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def _after_cloud(self):
         return (
             await self.async_step_wizard_control()
-            if self._pending_options.get("cloud")
+            if self._pending_options.get("cloud") or self._pending_data.get("inverter_unit_id")
             else await self.async_step_dashboard()
         )
 
     async def async_step_wizard_control(self, user_input=None):
         errors = {}
         if user_input is not None:
-            safety = {key: value for key, value in user_input.items() if key != "enable_control"}
+            safety = {key: value for key, value in user_input.items() if key not in ("enable_control", "enable_local_control")}
             try:
                 SafetyLimits(**safety)
             except ValueError:
                 errors["base"] = "invalid_safety_limits"
             else:
                 self._pending_options["safety"] = safety
-                self._pending_options["control"] = {"enabled": user_input["enable_control"] is True}
+                self._pending_options["control"] = {"enabled": user_input["enable_control"] is True,
+                                                    "local_enabled": user_input.get("enable_local_control") is True}
                 return await self.async_step_dashboard()
-        return self.async_show_form(step_id="wizard_control", errors=errors, data_schema=owner_limits_schema({}, True))
+        local_available = bool(self._pending_data.get("inverter_unit_id") and not self._pending_data.get("shared_read_only"))
+        return self.async_show_form(step_id="wizard_control", errors=errors,
+                                    data_schema=owner_limits_schema({}, True, local_enabled=True if local_available else None))
 
     async def async_step_wizard_cloud(self, user_input=None):
         errors = {}
@@ -409,8 +415,12 @@ class OptionsFlow(config_entries.OptionsFlow):
         """Release an owned lease before intentionally disconnecting its recovery path."""
         runtime = getattr(self.config_entry, "runtime_data", None)
         controls = getattr(runtime, "controls", None)
+        before = enabled_connections(self.config_entry.data, self.config_entry.options)
+        after = enabled_connections(self.config_entry.data, data)
         if controls is not None and controls.enabled and (
-            not enabled_connections(self.config_entry.data, data)["cloud"] or data.get("control", {}).get("enabled") is not True
+            any(before[key] and not after[key] for key in before)
+            or data.get("control", {}).get("enabled") is not True
+            or self.config_entry.options.get("control", {}).get("local_enabled") is True and data.get("control", {}).get("local_enabled") is not True
         ):
             record = await controls.automation_record()
             if record.get("active") or controls._job is not None and not controls._job.done():
@@ -451,9 +461,15 @@ class OptionsFlow(config_entries.OptionsFlow):
             host = user_input.get("host", "").strip().lower()
             if not host or "/" in host or "://" in host:
                 errors["host"] = "invalid_host"
-            elif not (user_input.get("sole_modbus_client") or user_input.get("shared_read_only")):
+            elif not (user_input.get("sole_modbus_client") or user_input.get("shared_read_only") or user_input.get("allow_shared_writes")):
                 errors["base"] = "competing_client"
             else:
+                controls = getattr(getattr(self.config_entry, "runtime_data", None), "controls", None)
+                if controls is not None and (await controls.automation_record()).get("active"):
+                    await controls.cancel()
+                    await controls._job
+                    if controls.operation.get("phase") not in ("idle", "restored", "superseded"):
+                        return self.async_abort(reason="control_recovery_required")
                 current = enabled_connections(self.config_entry.data, self.config_entry.options)
                 options = {**self.config_entry.options, "connections": {**current, "modbus": True}}
                 self.hass.config_entries.async_update_entry(
@@ -472,6 +488,8 @@ class OptionsFlow(config_entries.OptionsFlow):
                         vol.Coerce(int), vol.Range(min=1, max=65535)
                     ),
                     vol.Required("sole_modbus_client", default=False): bool,
+                    vol.Optional("inverter_unit_id", **({"default": self.config_entry.data["inverter_unit_id"]} if self.config_entry.data.get("inverter_unit_id") else {})): vol.All(vol.Coerce(int), vol.Range(min=1, max=246)),
+                    vol.Optional("allow_shared_writes", default=self.config_entry.data.get("allow_shared_writes", False)): bool,
                     vol.Optional(
                         "shared_read_only",
                         default=self.config_entry.data.get("shared_read_only", False)
@@ -531,13 +549,17 @@ class OptionsFlow(config_entries.OptionsFlow):
         errors = {}
         if user_input is not None:
             try:
-                safety = {**current, **{key: value for key, value in user_input.items() if key != "enable_control"}}
+                safety = {**current, **{key: value for key, value in user_input.items() if key not in ("enable_control", "enable_local_control")}}
                 SafetyLimits(**safety)
+                if user_input.get("enable_local_control") and not self.config_entry.data.get("inverter_unit_id"):
+                    raise ValueError("Configure the primary inverter unit first")
                 return await self._save_options(
                     {
                         **self.config_entry.options,
                         "safety": safety,
                         "control": {
+                            **self.config_entry.options.get("control", {}),
+                            "local_enabled": user_input.get("enable_local_control", self.config_entry.options.get("control", {}).get("local_enabled", False)) is True,
                             "enabled": user_input.get(
                                 "enable_control", self.config_entry.options.get("control", {}).get("enabled", False)
                             )
@@ -555,6 +577,7 @@ class OptionsFlow(config_entries.OptionsFlow):
                     vol.Required(
                         "enable_control", default=self.config_entry.options.get("control", {}).get("enabled", False)
                     ): bool,
+                    vol.Required("enable_local_control", default=self.config_entry.options.get("control", {}).get("local_enabled", False)): bool,
                     vol.Required("export_permitted", default=current.get("export_permitted", False)): bool,
                     vol.Required("reserve_soc", default=current.get("reserve_soc", 20)): vol.All(
                         vol.Coerce(float), vol.Range(min=0, max=99)
