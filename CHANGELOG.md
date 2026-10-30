@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1
+
+- Fix the short-height tablet sidebar: forecast, daily energy and battery/energy rings keep their full width rather than being squeezed into half-width boxes.
+- Keep ring padding inside its width, prevent daily energy tiles escaping their card, and allow vertical scrolling on shorter landscape displays.
+- Restore the forecast unit in the documentation fixture and replace affected screenshots. Add a real-browser layout regression check covering five desktop/tablet/phone sizes.
+- Plant control behavior and permissions are unchanged.
+
 ## 0.2.0 — Invitation-only Alpha — 2026-10-30
 
 **Do not install without an invitation from MBS Integrations.** Expanded functional control release; existing installations retain their previous enablement.
