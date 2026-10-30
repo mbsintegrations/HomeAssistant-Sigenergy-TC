@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Pure device-detail views. Navigation, charts and data access belong to the host.
  */
-import { renderChargerButtons } from './sigen-hybrid-overview.js?v=0.1.0';
-import { renderDeviceGraphic } from './sigen-hybrid-devices.js?v=0.1.0';
+import { renderChargerButtons } from './sigen-hybrid-overview.js?v=0.2.0';
+import { renderDeviceGraphic } from './sigen-hybrid-devices.js?v=0.2.0';
 export const escapeDetailHTML = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 const esc = escapeDetailHTML;
 const absent = value => value === null || value === undefined || typeof value === 'string' && (!value.trim() || ['unknown', 'unavailable', 'none'].includes(value.toLowerCase()));

@@ -1,11 +1,11 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-import { renderDeviceDetail, solarStringSeries, DETAIL_STYLE } from './sigen-hybrid-details.js?v=0.1.0';
-import { renderSettingsDetail, collectSettings, SETTINGS_STYLE, SETTINGS_ROUTES, CHART_CHOICES, DEFAULT_CHART_SELECTION, DISPLAY_MODULES, DISPLAY_PRESETS, HOMEPAGE_APPEARANCES, HOMEPAGE_BACKGROUNDS, homepageBackground, displayDefaults, encodeChargerScheduleId, decodeChargerScheduleId, bindTariffEditor, bindStrategyEditor, OPERATING_MODES, observedOperatingMode, renderOverviewModeControl, strategyExportEligibility } from './sigen-hybrid-settings.js?v=0.1.0';
-import { periodRange, dateAt, shiftDate, toCSV, preserveChartScroll } from './sigen-hybrid-charts.js?v=0.1.0';
-import { renderSummaryWidget, renderSummaryDetail, WIDGET_ROUTES, WIDGET_STYLE } from './sigen-hybrid-widgets.js?v=0.1.0';
-import { ENERGY_ROUTES, renderEnergyProfile, ENERGY_STYLE } from './sigen-hybrid-energy.js?v=0.1.0';
-import { renderChargingEnergy, renderTodayEnergy, renderBatteryLevel, renderMobilePower, renderChargerControls } from './sigen-hybrid-overview.js?v=0.1.0';
-import { modeChoices, selectedMode, nativeModeChoices } from './sigen-hybrid-settings.js?v=0.1.0';
+import { renderDeviceDetail, solarStringSeries, DETAIL_STYLE } from './sigen-hybrid-details.js?v=0.2.0';
+import { renderSettingsDetail, collectSettings, SETTINGS_STYLE, SETTINGS_ROUTES, CHART_CHOICES, DEFAULT_CHART_SELECTION, DISPLAY_MODULES, DISPLAY_PRESETS, HOMEPAGE_APPEARANCES, HOMEPAGE_BACKGROUNDS, homepageBackground, displayDefaults, encodeChargerScheduleId, decodeChargerScheduleId, bindTariffEditor, bindStrategyEditor, OPERATING_MODES, observedOperatingMode, renderOverviewModeControl, strategyExportEligibility } from './sigen-hybrid-settings.js?v=0.2.0';
+import { periodRange, dateAt, shiftDate, toCSV, preserveChartScroll } from './sigen-hybrid-charts.js?v=0.2.0';
+import { renderSummaryWidget, renderSummaryDetail, WIDGET_ROUTES, WIDGET_STYLE } from './sigen-hybrid-widgets.js?v=0.2.0';
+import { ENERGY_ROUTES, renderEnergyProfile, ENERGY_STYLE, ownerSettingTarget, renderOwnerSetting, collectOwnerSetting, bindOwnerSettingForm } from './sigen-hybrid-energy.js?v=0.2.0';
+import { renderChargingEnergy, renderTodayEnergy, renderBatteryLevel, renderMobilePower, renderChargerControls } from './sigen-hybrid-overview.js?v=0.2.0';
+import { modeChoices, selectedMode, nativeModeChoices } from './sigen-hybrid-settings.js?v=0.2.0';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
 
@@ -762,8 +762,8 @@ export function installNavigation(Card) {
   Card.prototype._detailContext=function(id){
     let options={};try{options=JSON.parse(localStorage.getItem(`sigen-hybrid:interface:${this._config.config_entry??this._config.title??'default'}`)??'{}');}catch{}
     options=mergeInterfacePreferences(options,this._sharedInterfaceOptions);
-    const forecastConfiguration=this._forecastConfiguration;
-    return {id,forecastConfiguration,connections:this._connectionOverview?.(),entities:this._entities,optimizers:this._config.optimizers??[],inventory:this._deviceInventory?.()??this._config.devices??[],history:this._history,now:this._now(),timezone:this._config.timezone??this._hass?.config?.time_zone??'UTC',currency:this._hass?.config?.currency??this._config.currency,haLocale:this._hass?.locale,haUnitSystem:this._hass?.config?.unit_system,haDarkMode:this._hass?.themes?.darkMode,night:this._night(),config:this._config,interfaceOptions:options,alertFilters:this._alertFilters??{},chargerRecordFilters:this._chargerRecordFilters??{},controlPermission:this._config.cloud_paused!==true&&this._state('control_status')?.attributes?.live_writes_locked===false&&this._state('control_status')?.attributes?.control_api_version===1&&this._state('control_status')?.attributes?.config_entry_id===this._config.config_entry,capabilities:this._state('control_status')?.attributes?.capabilities??{},state:key=>this._entities[key]?typeof this._state==='function'?this._state(key):this._hass?.states[this._entities[key]]:this._hass?.states[key],rawState:key=>this._hass?.states[this._entities[key]??key],value:(key,quantity='power')=>this._entities[key]?this._value(key,quantity):null,entity:key=>this._entities[key]??key};
+    const forecastConfiguration=this._forecastConfiguration,ownerConfiguration=this._ownerConfiguration;
+    return {id,forecastConfiguration,ownerConfiguration,connections:this._connectionOverview?.(),entities:this._entities,optimizers:this._config.optimizers??[],inventory:this._deviceInventory?.()??this._config.devices??[],history:this._history,now:this._now(),timezone:this._config.timezone??this._hass?.config?.time_zone??'UTC',currency:this._hass?.config?.currency??this._config.currency,haLocale:this._hass?.locale,haUnitSystem:this._hass?.config?.unit_system,haDarkMode:this._hass?.themes?.darkMode,night:this._night(),config:this._config,interfaceOptions:options,alertFilters:this._alertFilters??{},chargerRecordFilters:this._chargerRecordFilters??{},controlPermission:this._config.cloud_paused!==true&&this._state('control_status')?.attributes?.live_writes_locked===false&&this._state('control_status')?.attributes?.control_api_version===1&&this._state('control_status')?.attributes?.config_entry_id===this._config.config_entry,capabilities:this._state('control_status')?.attributes?.capabilities??{},state:key=>this._entities[key]?typeof this._state==='function'?this._state(key):this._hass?.states[this._entities[key]]:this._hass?.states[key],rawState:key=>this._hass?.states[this._entities[key]??key],value:(key,quantity='power')=>this._entities[key]?this._value(key,quantity):null,entity:key=>this._entities[key]??key};
   };
   Card.prototype._loadForecastConfiguration=async function(){
     const entry=this._config.config_entry;if(!entry||this._forecastConfigurationLoading)return;
@@ -790,6 +790,7 @@ export function installNavigation(Card) {
       return {title:'Data download',body:`<section class="record-download-controls"><label>Readings<select name="download_kind">${choices.map(([key,label])=>`<option value="${key}"${key===kind?' selected':''}>${label}</option>`).join('')}</select></label><label>Date<input type="date" name="download_date" value="${dateAt(this._now(),ctx.timezone)}" max="${dateAt(this._now(),ctx.timezone)}"></label><label>Period<select name="download_period">${[['day','Day'],['week','Week'],['month','Month'],['year','Year'],['lifetime','Lifetime']].map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</select></label><button type="button" class="detail-link" data-download-records>Download CSV <span aria-hidden="true">↓</span></button><output data-download-status aria-live="polite"></output></section>`};
     }
     if(route==='flow_detail'){const flow=this._detailFlowInfo??{},names={solar:'Solar Production & Forecast',battery:'Battery',grid:'Grid',home:'Home',load:'Load',ac:'AC charger',dc:'DC charger'},from=Object.hasOwn(names,flow.source)?names[flow.source]:'Source',to=Object.hasOwn(names,flow.target)?names[flow.target]:'Destination';return {title:`${from} → ${to}`,subtitle:'Estimated allocation',body:`<div class="detail-total-grid"><div class="detail-total"><small>Energy</small><strong>${flow.kwh===null||!Number.isFinite(flow.kwh)?'—':escape(flow.kwh.toLocaleString(undefined,{maximumFractionDigits:2})+' kWh')}</strong></div></div>${link('statistics','Period energy totals')}${link(routeForEntity((flow.source??'')+'_power'),from+' details')}${link(routeForEntity((flow.target??'')+'_power'),to+' details')}`};}
+    const nativeOwner=renderOwnerSetting(route,ctx);if(nativeOwner)return nativeOwner;
     if(DEVICE_ROUTES.has(route))return renderDeviceDetail(route,ctx);
     if(ENERGY_ROUTES.includes(route))return renderEnergyProfile(route,ctx);
     const summary=renderSummaryDetail(route,ctx);if(summary)return summary;
@@ -823,6 +824,7 @@ export function installNavigation(Card) {
     if(route==='safety'&&control?.control_api_version===1&&control.config_entry_id===this._config.config_entry)return this._startOptionsFlow('safety');
     if(this._detailDirty){this._detailPending=()=>this._openDetail(route,id,replace);return this._confirmDiscard();}
     if(route==='forecast_settings'&&!replace)this._forecastConfiguration=null;
+    if(!replace)this._ownerConfiguration=null;
     const seasonPrefix=route==='tariff_season'&&/^(import|export):new$/.test(id??'')?id.split(':')[0]+':':'';
     if(id==='new'&&['strategy','vehicle'].includes(route)||seasonPrefix){
       const saved=this._detailContext().interfaceOptions?.[route]??{};
@@ -839,10 +841,12 @@ export function installNavigation(Card) {
     this._detailId=id;this._detailDirty=false;const model=this._detailModel(route,id);
     this._detailDialog.setAttribute('aria-labelledby','sigen-detail-heading');
     this._detailDialog.innerHTML=`<header class="detail-header"><button type="button" class="detail-icon" data-detail-back aria-label="Back">‹</button><div class="detail-heading"><h2 id="sigen-detail-heading">${escape(model.title)}</h2>${model.subtitle?`<p>${escape(model.subtitle)}</p>`:''}</div><button type="button" class="detail-icon" data-detail-close aria-label="Close details">×</button></header><div class="detail-body">${model.body??''}</div><output class="detail-save-notice" hidden aria-live="polite"></output>`;
-    this._detailDialog.querySelectorAll('form').forEach(form=>{form.addEventListener('input',()=>{this._detailDirty=true;});form.addEventListener('change',()=>{this._detailDirty=true;});form.addEventListener('submit',event=>{event.preventDefault();this._saveDetail();});});
+    this._detailDialog.querySelectorAll('form').forEach(form=>{form.addEventListener('input',()=>{this._detailDirty=true;});form.addEventListener('change',()=>{this._detailDirty=true;});form.addEventListener('submit',event=>{event.preventDefault();form.hasAttribute('data-native-owner-form')?this._saveNativeOwnerSetting(form):this._saveDetail();});});
     this._detailDialog.scrollTop=0;this._detailDialog.querySelector('[data-detail-back]').focus();this._upgradeCharts(this._detailDialog);this._bindSankeyRoutes(this._detailDialog);
     this._bindDisplayForm();this._bindDashboardInstaller();this._bindOptionsForm();
+    for(const form of this._detailDialog.querySelectorAll('[data-native-owner-form]'))bindOwnerSettingForm(form);
     this._bindForecastForm();if(route==='forecast_settings'&&!replace)this._loadForecastConfiguration();
+    if(ownerSettingTarget(route,this._detailContext(id))&&(!this._ownerConfiguration||this._ownerConfiguration.route!==route||String(this._ownerConfiguration.id??'')!==String(id??'')))this._loadOwnerConfiguration(route,id);
     for(const form of this._detailDialog.querySelectorAll('[data-settings-form="tariff_edit"],[data-settings-form="tariff_season"]'))bindTariffEditor(form,this._detailContext(),()=>{this._detailDirty=true;});
     for(const form of this._detailDialog.querySelectorAll('[data-settings-form="strategy"]'))bindStrategyEditor(form,this._detailContext());
     this._bindAlertFilters();
@@ -934,21 +938,41 @@ export function installNavigation(Card) {
       if(this._detailPending)this._runPendingDetail();
     }catch(error){output.hidden=false;output.textContent=error.message??'Check the entered settings';}
   };
-  Card.prototype._sendOwnerSetting=async function(setting,value,serial){
+  Card.prototype._loadOwnerConfiguration=async function(route,id){
+    const entry=this._config.config_entry,target=ownerSettingTarget(route,this._detailContext(id));if(!entry||!target)return;
+    const token={route,id,entry};this._ownerConfigurationToken=token;
+    try{
+      const result=await this._hass.callWS({type:'sigen_hybrid/owner_configuration',config_entry:entry,setting:target.setting,...(target.serial?{serial:target.serial}:{})});
+      if(this._ownerConfigurationToken===token)this._ownerConfiguration={...result,route,id};
+    }catch(error){if(this._ownerConfigurationToken===token)this._ownerConfiguration={route,id,error:error?.message??'Could not read the current plant setting. Reopen this page to retry.'};}
+    const current=this._detailStack?.at(-1);
+    if(this._ownerConfigurationToken===token&&current?.route===route&&String(current.id??'')===String(id??'')&&!this._detailDirty)this._openDetail(route,id,true);
+  };
+  Card.prototype._saveNativeOwnerSetting=async function(form){
+    const state=this._ownerConfiguration,output=form.querySelector('output');
+    try{
+      if(form.reportValidity?.()===false)return;
+      const value=collectOwnerSetting(form,state);
+      const sent=await this._sendOwnerSetting(state.setting,value,state.serial,state.revision);
+      if(sent)this._detailDirty=false;
+    }catch(error){if(output){output.hidden=false;output.textContent=error.message??'Check the entered settings';}}
+  };
+  Card.prototype._sendOwnerSetting=async function(setting,value,serial,expected_revision){
     const control=this._state('control_status')?.attributes??{},feature=setting==='grid_connection'?'grid_switch':setting;
     const output=this._detailDialog?.querySelector('.detail-save-notice')??this.shadowRoot.querySelector('.instant-manual-panel output');
     const show=message=>{this._result=message;if(output){output.hidden=false;output.textContent=message;}};
-    if(!this._detailContext().controlPermission||control.capabilities?.[feature]?.available!==true){show('This control is temporarily unavailable.');return;}
+    if(!this._detailContext().controlPermission||control.capabilities?.[feature]?.available!==true){show('This control is temporarily unavailable.');return false;}
     const signature=JSON.stringify({setting,value,serial}),previous=this._ownerSettingRequest;
     const reuse=previous?.signature===signature&&(previous.uncertain===true||control.operation?.request_id===previous.id&&['queued','uncertain','interrupted','recovery_pending'].includes(control.operation.phase));
     const id=reuse?previous.id:globalThis.crypto?.randomUUID?.()??`owner-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     this._ownerSettingRequest={id,signature,uncertain:true};
     show('Checking plant state');
     try{
-      const result=await this._hass.callWS({type:'call_service',domain:'sigen_hybrid',service:'owner_setting',return_response:true,service_data:{config_entry:control.config_entry_id,setting,value,request_id:id,dry_run:false,...(serial?{serial}:{})}});
+      const result=await this._hass.callWS({type:'call_service',domain:'sigen_hybrid',service:'owner_setting',return_response:true,service_data:{config_entry:control.config_entry_id,setting,value,request_id:id,dry_run:false,...(serial?{serial}:{}),...(expected_revision?{expected_revision}:{})}});
       show(result?.response?.message??'Request submitted; awaiting controller status.');
       this._syncOwnerSetting();
-    }catch{show('Request not confirmed. Check controller status before retrying.');}
+      return true;
+    }catch{show('Request not confirmed. Check controller status before retrying.');return false;}
   };
   Card.prototype._syncOwnerSetting=function(){
     const request=this._ownerSettingRequest,op=this._state('control_status')?.attributes?.operation;
@@ -957,7 +981,9 @@ export function installNavigation(Card) {
     request.uncertain=pending;
     const output=this._detailDialog?.querySelector('.detail-save-notice')??this.shadowRoot.querySelector('.instant-manual-panel output');
     if(op.message){this._result=op.message;if(output){output.hidden=false;output.textContent=op.message;}}
-    for(const button of this._detailDialog?.querySelectorAll('[data-save-settings],[data-owner-setting]')??[])button.disabled=pending;
+    const context=this._detailContext();
+    for(const button of this._detailDialog?.querySelectorAll('[data-save-settings],[data-owner-setting],[data-native-owner-form] button[type="submit"]')??[]){const form=button.closest?.('[data-native-owner-form]'),native=form?.dataset?.nativeOwnerForm;button.disabled=pending||Boolean(form?.hasAttribute?.('data-owner-unavailable'))||Boolean(native&&(!context.controlPermission||context.capabilities?.[native]?.available!==true));}
+    if(op.phase==='confirmed'&&!request.refreshed&&this._ownerConfiguration?.setting===op.setting&&!this._detailDirty){request.refreshed=true;const current=this._detailStack?.at(-1);if(current)this._loadOwnerConfiguration(current.route,current.id);}
   };
   Card.prototype._openPreview=function(mode){if(this._detailDirty){this._detailPending=()=>this._openPreview(mode);return this._confirmDiscard();}const previous=this._detailStack?.map(item=>({...item})),last=previous?.at(-1);if(this._detailDialog)this._closeDetail();originalManual.call(this,mode);if(last){const d=this.shadowRoot.querySelector('dialog');d?.addEventListener('close',()=>{this._openDetail(last.route,last.id);this._detailStack=previous;});}};
   Card.prototype._chartData=function(kind,chartId){

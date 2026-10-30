@@ -48,6 +48,8 @@ async def manual_schema(*, capture=False):
         "SupportsResponse": SimpleNamespace(OPTIONAL="optional", ONLY="only"),
         "async_register_history": lambda hass: None,
         "async_register_forecast": lambda hass: None,
+        "async_register_owner_configuration": lambda hass: None,
+        "SETTINGS": __import__("custom_components.sigen_hybrid.core.owner_settings", fromlist=["SETTINGS"]).SETTINGS,
     }
     exec(compile(ast.Module(body=[setup], type_ignores=[]), "__init__.py", "exec"), scope)
     hass = SimpleNamespace(services=SimpleNamespace(async_register=register))

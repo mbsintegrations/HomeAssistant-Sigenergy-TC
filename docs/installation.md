@@ -12,15 +12,15 @@ Add `https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC` under HACS c
 
 ## Manual installation
 
-Download `sigenergy-tc-0.1.0.zip` and `SHA256SUMS.txt` from the matching release. Verify the SHA-256 before extraction. Merge the ZIP's `custom_components/sigen_hybrid` into HA's `config/custom_components/sigen_hybrid`; avoid an extra nested folder. Restart HA and use the native setup dialog. Do not copy the whole repository into `custom_components`.
+Download `sigenergy-tc-0.2.0.zip` and `SHA256SUMS.txt` from the matching release. Verify the SHA-256 before extraction. Merge the ZIP's `custom_components/sigen_hybrid` into HA's `config/custom_components/sigen_hybrid`; avoid an extra nested folder. Restart HA and use the native setup dialog. Do not copy the whole repository into `custom_components`.
 
 ## Connections
 
-- **Modbus:** enter the actual inverter/plant host and port. The installer must enable Modbus on the plant. Declare whether this is the sole client or an additional read-only client. Shared mode enforces read-only access and slower polling. Do not guess device unit IDs or change installer settings to get a connection.
+- **Modbus:** enter the actual inverter/plant host and port. The installer must enable Modbus on the plant. Choose sole client, additional read-only monitoring, or explicitly owned writes while other clients only monitor. Shared read-only mode physically blocks TC's write calls. For local control, enter the actual primary inverter unit ID so its serial can be verified; this is separate from plant unit247. Configure owner limits and enable local control. Do not guess unit IDs or enable competing dispatch automations.
 - **Cloud:** select the correct region and enter the owner's mySigen username/password, accepting optional unofficial app-interface use. Login discovers the account plant. Ambiguous identity is rejected rather than selecting an arbitrary plant. Reauthentication uses the native HA flow.
 - **Both:** local measurements are preferred where available and fresh; cloud adds supported settings/history. A failed source does not deliberately stop the other. Controls needing Cloud become temporarily unavailable during an outage.
 
-The new-entry wizard exposes owner control enablement and limits. Existing installations are not silently enabled by an upgrade. Modbus-only mode cannot unlock cloud operating modes or timed local writes. No hardware write is required to finish setup.
+The new-entry wizard exposes owner control enablement and limits. Existing installations are not silently enabled by an upgrade. Modbus-only mode supports explicitly enabled local battery controls and owner limits, with HA-managed timing. Native operating-mode/profile switching and gateway/charger controls require Cloud. No hardware write is required to finish setup.
 
 ## Forecasts
 

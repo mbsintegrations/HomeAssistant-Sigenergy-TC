@@ -69,6 +69,110 @@ export function connectionIndicators(ctx={}) {
 
 export const CONTROL_ROUTES=Object.freeze({mode:'native_mode',grid_connection:'grid_switch',charging_mode:'charger_control',charger_schedule:'charger_control',ac_more:'charger_control',dc_more:'charger_control'});
 
+export const OWNER_SETTING_ROUTES=Object.freeze({
+  grid_export_limit:['grid_export_limit','Grid export power limit'],grid_import_limit:['grid_import_limit','Grid import power limit'],
+  grid_connection_current:['grid_connection_current','Grid connection current'],block_battery_export:['battery_export_block','Block battery export'],
+  battery_levels:['battery_levels','Battery SOC limits'],battery_power_limit:['battery_power_limits','Battery power limits'],
+  solar_power_limit:['pv_power_limit','Solar power limit'],backup_reserve:['backup_reserve','Backup reserve'],
+  priority:['discharge_priority','Battery discharge priority'],solar_source_priority:['solar_priority','Solar destination priority'],
+  surplus_pv_priority:['solar_priority','Solar destination priority'],peak_shaving:['peak_shaving','Peak shaving'],
+  dc_charging_settings:['dc_charge_settings','DC charging settings'],
+});
+export function ownerSettingTarget(route,ctx={}) {
+  if(OWNER_SETTING_ROUTES[route]){
+    const [setting,title]=OWNER_SETTING_ROUTES[route];
+    if(setting==='dc_charge_settings'&&ctx.id!=null&&ctx.id!==''){
+      const device=inventory(ctx).find(item=>[item.id,item.serial,item.serial_number,item.serialNumber].some(value=>value!=null&&String(value)===String(ctx.id)));
+      if(!device||!['dc','dccharger','evdc'].includes(String(device.type??'').toLowerCase().replace(/[^a-z]/g,'')))return null;
+      return {setting,title,serial:device.serial??device.serial_number??device.serialNumber};
+    }
+    return {setting,title};
+  }
+  if(route!=='charging_mode')return null;
+  const device=inventory(ctx).find(item=>[item.id,item.serial,item.serial_number,item.serialNumber].some(value=>value!=null&&String(value)===String(ctx.id)));
+  const type=String(device?.type??'').toLowerCase().replace(/[^a-z]/g,'');
+  const kind=['dc','dccharger','evdc'].includes(type)?'dc':['ac','accharger','evac'].includes(type)?'ac':null;
+  return kind?{setting:`${kind}_charge_mode`,title:`${kind.toUpperCase()} charging mode`,serial:device.serial??device.serial_number??device.serialNumber}:null;
+}
+const nativeInput=(name,label,value,extra='')=>`<label class="settings-field"><span>${esc(label)}</span><input name="${esc(name)}" value="${esc(value??'')}" ${extra}></label>`;
+const nativeCheck=(name,label,value)=>`<label class="settings-check"><span>${esc(label)}</span><input type="checkbox" name="${esc(name)}"${value===true?' checked':''}></label>`;
+const nativeSelect=(name,label,value,options)=>`<label class="settings-field"><span>${esc(label)}</span><select name="${esc(name)}">${options.map(([id,label])=>`<option value="${esc(id)}"${String(id)===String(value)?' selected':''}>${esc(label)}</option>`).join('')}</select></label>`;
+const nativeNumber=(name,label,value,max=4294967.295)=>nativeInput(name,label,value,`type="number" min="0" max="${max}" step="any"`);
+const peakWindow=(i,slot={weekdays:[1,2,3,4,5,6,7],start:'',end:'',power_kw:''})=>`<fieldset class="native-peak-window" data-native-peak-window="${i}"><legend>Window</legend><div class="settings-weekdays">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((day,n)=>`<label><input type="checkbox" name="slot_${i}_days" value="${n+1}"${slot.weekdays.includes(n+1)?' checked':''}><span>${day}</span></label>`).join('')}</div><div class="settings-columns">${nativeInput(`slot_${i}_start`,'From',slot.start,'type="time"')}${nativeInput(`slot_${i}_end`,'Until',slot.end,'type="time"')}${nativeNumber(`slot_${i}_power`,'Maximum imported grid power (kW)',slot.power_kw)}</div><button type="button" class="settings-secondary" data-native-remove-window>Remove window</button></fieldset>`;
+export function bindOwnerSettingForm(form){
+  if(!form||form.dataset.nativeOwnerForm!=='peak_shaving'||form._nativeBound)return;form._nativeBound=true;
+  form.addEventListener('click',event=>{
+    const remove=event.target.closest?.('[data-native-remove-window]'),add=event.target.closest?.('[data-native-add-window]');
+    if(!remove&&!add)return;event.preventDefault();event.stopPropagation();
+    if(remove)remove.closest('[data-native-peak-window]').remove();
+    else{const rows=[...form.querySelectorAll('[data-native-peak-window]')];if(rows.length>=64)return;const next=Math.max(-1,...rows.map(row=>Number(row.dataset.nativePeakWindow)))+1,template=form.ownerDocument.createElement('template');template.innerHTML=peakWindow(next);form.querySelector('[data-native-peak-list]').append(template.content);}
+    form.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+}
+export function renderOwnerSetting(route,ctx={}) {
+  const target=ownerSettingTarget(route,ctx);if(!target)return null;
+  if(!ctx.ownerConfiguration&&ctx.state?.('control_status')?.attributes?.control_api_version!==1)return null;
+  const state=ctx.ownerConfiguration;
+  if(!state||state.route!==route||String(state.id??'')!==String(ctx.id??''))return {title:target.title,body:note('Reading current plant settings…')};
+  if(state.error)return {title:target.title,body:note(state.error)};
+  if(state.value===undefined)return {title:target.title,body:note('The current plant setting could not be read.')};
+  const v=state.value,key=target.setting,metadata=state.metadata??{};
+  let content='';
+  if(['grid_export_limit','grid_import_limit','grid_connection_current'].includes(key)){
+    const amps=key==='grid_connection_current',field=amps?'limit_a':'limit_kw';
+    content=nativeCheck('enabled','Enable owner limit',v.enabled)+nativeNumber(field,amps?'Maximum current (A)':'Maximum power (kW)',v[field],amps?(metadata.installerSetLimitation??10000):(metadata.installer_limit_kw??4294967.295));
+  }else if(key==='battery_export_block')content=nativeCheck('enabled','Block battery export to grid',v);
+  else if(key==='battery_power_limits')content=nativeNumber('charge_kw','Maximum charging power (kW)',v.charge_kw)+nativeNumber('discharge_kw','Maximum discharging power (kW)',v.discharge_kw)+note('Leave blank to use your configured power limits.');
+  else if(key==='pv_power_limit')content=nativeNumber('limit_kw','Maximum solar power (kW)',v.limit_kw)+note('Leave blank to use the system maximum.');
+  else if(key==='backup_reserve')content=nativeNumber('soc','Backup reserve (%)',v.soc,100);
+  else if(key==='battery_levels')content=[['charge_soc','Charging cut-off (%)'],['discharge_soc','Discharging cut-off (%)'],['backup_soc','Backup reserve (%)'],...(v.peak_shaving_soc!==null?[['peak_shaving_soc','Peak-shaving reserve (%)']]:[])].map(([field,label])=>nativeNumber(field,label,v[field],100)).join('');
+  else if(['discharge_priority','solar_priority'].includes(key))content=v.order.map((item,index)=>nativeSelect(`priority_${index}`,`Priority ${index+1}`,item,v.order.map((key,i)=>[key,metadata.destinations?.find(row=>row.id===key)?.label??({pv:'Solar',evdc:'DC charger',grid:'Grid'})[key]??(key.startsWith('destination-')?`Destination ${i+1}`:key.replace(/[_-]/g,' '))]))).join('');
+  else if(key==='peak_shaving'){
+    content=nativeCheck('enabled','Enable peak shaving',v.enabled)+nativeNumber('soc','Minimum battery SOC (%)',v.soc,100);
+    content+=`<div data-native-peak-list>${v.slots.map((slot,i)=>peakWindow(i,slot)).join('')}</div><button type="button" class="settings-secondary" data-native-add-window>Add window</button>`;
+  }else if(key.endsWith('_charge_mode')){
+    const dc=key.startsWith('dc_');
+    content=nativeSelect('mode','Charging mode',v.mode,[[0,'Fast charging'],[1,'PV surplus'],[dc?3:2,'Sigen AI']]);
+    if(v.battery_boost!==null)content+=nativeCheck('battery_boost','Charge from home battery',v.battery_boost);
+    if(v.grid_charging!==null)content+=nativeCheck('grid_charging','Allow grid charging',v.grid_charging);
+    if(v.cutoff_soc!==null)content+=nativeNumber('cutoff_soc','Home battery cut-off SOC (%)',v.cutoff_soc,metadata.socUpperLimit??100);
+    if(v.max_grid_power_kw!==null)content+=nativeNumber('max_grid_power_kw','Maximum grid charging power (kW)',v.max_grid_power_kw);
+  }else if(key==='dc_charge_settings')content=nativeNumber('power_kw','Maximum DC charging power (kW)',v.power_kw,metadata.ratedPower??4294967.295)+nativeNumber('cutoff_soc','Vehicle charging cut-off SOC (%)',v.cutoff_soc,100);
+  const enabled=ctx.controlPermission===true&&ctx.capabilities?.[key]?.available===true&&(key!=='grid_connection_current'||metadata.installerSetLimitation!==undefined&&metadata.installerSetLimitation!==''&&metadata.installerSetLimitation!==null);
+  return {title:target.title,subtitle:'Plant settings',body:`<form data-native-owner-form="${esc(key)}"${key==='grid_connection_current'&&!enabled?' data-owner-unavailable':''}>${content}<div class="settings-actions"><button type="button" class="settings-secondary" data-detail-back>Cancel</button><button type="submit" class="settings-save"${enabled?'':' disabled'}>Apply</button></div><output class="settings-form-result" aria-live="polite"></output></form>`};
+}
+export function collectOwnerSetting(form,state) {
+  const before=state?.value,key=state?.setting;
+  if(before===undefined||!key||!state.revision)throw new Error('Reopen this setting to read the current plant value');
+  const get=name=>form.querySelector(`[name="${name}"]`),num=(name,optional=false)=>{
+    const value=get(name)?.value;if(optional&&value==='')return null;
+    if(value===undefined||value===''||!Number.isFinite(Number(value)))throw new Error('Enter a valid number');
+    return Number(value);
+  };
+  if(['grid_export_limit','grid_import_limit','grid_connection_current'].includes(key)){const field=key==='grid_connection_current'?'limit_a':'limit_kw';return {enabled:get('enabled').checked,[field]:num(field)};}
+  if(key==='battery_export_block')return get('enabled').checked;
+  if(key==='battery_power_limits')return {charge_kw:num('charge_kw',true),discharge_kw:num('discharge_kw',true)};
+  if(key==='pv_power_limit')return {limit_kw:num('limit_kw',true)};
+  if(key==='backup_reserve')return {soc:num('soc')};
+  if(key==='battery_levels')return {...before,...Object.fromEntries(['charge_soc','discharge_soc','backup_soc','peak_shaving_soc'].filter(field=>get(field)).map(field=>[field,num(field)]))};
+  if(['discharge_priority','solar_priority'].includes(key)){
+    const order=before.order.map((_,i)=>get(`priority_${i}`).value);if(new Set(order).size!==order.length)throw new Error('Use each destination once');return {order};
+  }
+  if(key==='peak_shaving'){
+    const slots=[];
+    for(const row of form.querySelectorAll('[data-native-peak-window]')){const i=Number(row.dataset.nativePeakWindow),start=get(`slot_${i}_start`).value,end=get(`slot_${i}_end`).value;slots.push({start,end,weekdays:[...row.querySelectorAll(`input[name="slot_${i}_days"]:checked`)].map(input=>Number(input.value)),power_kw:num(`slot_${i}_power`)});}
+    return {enabled:get('enabled').checked,soc:num('soc'),slots};
+  }
+  if(key.endsWith('_charge_mode')){
+    const result={...before,mode:Number(get('mode').value)};
+    for(const field of ['battery_boost','grid_charging'])if(get(field))result[field]=get(field).checked;
+    for(const field of ['cutoff_soc','max_grid_power_kw'])if(get(field))result[field]=num(field);
+    return result;
+  }
+  if(key==='dc_charge_settings')return {power_kw:num('power_kw'),cutoff_soc:num('cutoff_soc')};
+  throw new Error('Unknown native setting');
+}
+
 // An explicit unmatched ID must never borrow another plant's settings.
 function profile(ctx) {
   const root = object(ctx.config?.energy_profile), id = ctx.id === undefined || ctx.id === null || ctx.id === '' ? null : String(ctx.id);

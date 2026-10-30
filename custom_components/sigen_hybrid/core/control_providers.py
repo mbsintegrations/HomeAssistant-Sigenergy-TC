@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from math import isfinite
 
+from . import native_settings
 from .errors import CapabilityError, ConfirmationError, SafetyError, TransportError
 from .models import validate_duration_minutes
 from .recovery import canonical
@@ -50,7 +51,7 @@ class CloudControlSettings:
 
     release_on_conflict = ("manual",)
 
-    KEYS = frozenset(
+    KEYS = native_settings.EXTENDED_SETTINGS | frozenset(
         {
             "native_mode",
             "manual",
@@ -90,6 +91,7 @@ class CloudControlSettings:
         self._export_state = None
         self._battery_state = None
         self._grid_limits = {}
+        self.extended_metadata = {}
         self.gateway = gateway is True
         self.devices = {}
         self.sleep = sleep
@@ -103,6 +105,8 @@ class CloudControlSettings:
         return f"cloud:{self.region + ':' if self.region else ''}{self.client.station_id}"
 
     def validate(self, key, value):
+        if key in native_settings.EXTENDED_SETTINGS:
+            return native_settings.validate(key, value)
         if key not in self.KEYS:
             raise SafetyError("This cloud setting is not in the owner-control allowlist")
         if key in ("grid_export_limit", "grid_import_limit"):
@@ -111,6 +115,8 @@ class CloudControlSettings:
             boolean(value["enabled"])
             if not 0 <= number(value["limit_kw"]) <= 4_294_967.295:
                 raise SafetyError("Grid power limit is outside the protocol range")
+            if abs(value["limit_kw"]*1000-round(value["limit_kw"]*1000)) > 1e-6:
+                raise SafetyError("Grid power limits must use whole watts")
         elif key in ("battery_export_block", "grid_connection", "ac_charging", "dc_charging"):
             boolean(value)
             if key == "grid_connection" and not self.gateway or key.endswith("_charging") and key not in self.devices:
@@ -212,7 +218,9 @@ class CloudControlSettings:
             if self._export_state is None or self._export_state["installerSetEnable"] is True:
                 raise SafetyError("An installer battery-export restriction cannot be cleared")
         for key, value in changes:
-            if key == "battery_levels":
+            if key in native_settings.EXTENDED_SETTINGS:
+                native_settings.preflight(self, key, value, baseline[key])
+            elif key == "battery_levels":
                 self._preserve_extra_soc(value, baseline[key])
             elif key in ("grid_export_limit", "grid_import_limit"):
                 data = self._grid_limits.get(key)
@@ -252,7 +260,9 @@ class CloudControlSettings:
         for key in keys:
             if key not in self.KEYS:
                 raise SafetyError("Unknown cloud control setting")
-            if key in ("grid_export_limit", "grid_import_limit"):
+            if key in native_settings.EXTENDED_SETTINGS:
+                result[key] = await native_settings.read(self, key)
+            elif key in ("grid_export_limit", "grid_import_limit"):
                 direction = "export" if key == "grid_export_limit" else "import"
                 data = await self._request("GET", f"device/energy-profile/grid/limitation/{direction}/{self.station_id}")
                 self._grid_limits[key] = dict(data)
@@ -313,7 +323,11 @@ class CloudControlSettings:
         current = (await self.read([key]))[key]
         if canonical(current) != canonical(expected):
             raise SafetyError("The owner changed this setting before dispatch")
-        if key in ("grid_export_limit", "grid_import_limit"):
+        if context and key == context.get("key") and context.get("expected_revision"):
+            import hashlib
+            if hashlib.sha256(canonical(current).encode()).hexdigest() != context["expected_revision"]:
+                raise SafetyError("This setting changed in the Sigen app; reopen it before applying")
+        if key in ("grid_export_limit", "grid_import_limit") or key in native_settings.EXTENDED_SETTINGS:
             self.preflight([(key, value)], {key: current})
         if key == "manual" and value.get("enabled") is True and value.get("mode") == "1":
             if not isinstance(context, dict) or type(context.get("export_requested")) is not bool:
@@ -340,7 +354,7 @@ class CloudControlSettings:
         from .owner_settings import mode_catalogue
 
         key = record.get("context", {}).get("key")
-        if key not in ("native_mode", "grid_connection", "ac_charging", "dc_charging"):
+        if key not in ("native_mode", "grid_connection", "ac_charging", "dc_charging") and not native_settings.charger_key(key):
             return
         station = validate_owner_station(
             await self._request("GET", "device/owner/station/home"), self.station_id, require_normal=False,
@@ -355,19 +369,25 @@ class CloudControlSettings:
                 raise SafetyError("The original gateway is not present for recovery")
             self.gateway = True
         else:
-            kind = "ac" if key == "ac_charging" else "dc"
-            serial = record.get("provider_metadata", {}).get("devices", {}).get(key)
+            device_key = native_settings.charger_key(key) or key
+            kind = "ac" if device_key == "ac_charging" else "dc"
+            serial = record.get("provider_metadata", {}).get("devices", {}).get(device_key)
             serials = station.get(f"{kind}SnList")
             present = station.get("hasAcCharger" if kind == "ac" else "hasEv") is True
             if not present or not isinstance(serials, list) or not serial or serial not in serials:
                 raise SafetyError("The original charger is not present for recovery")
             bound = type(self)(self.client, self.station_id, **{"ac_serial" if kind == "ac" else "dc_serial": serial})
-            self.devices[key] = bound.devices[key]
+            self.devices[device_key] = bound.devices[device_key]
 
     async def write(self, key, value, *, expected_current=None):
         self.validate(key, value)
         station = int(self.station_id)  # Immutable binding, even if background reads change SDK.station_id.
-        if key in ("grid_export_limit", "grid_import_limit"):
+        if key in native_settings.EXTENDED_SETTINGS:
+            current = (await self.read([key]))[key]
+            if expected_current is not None and canonical(current) != canonical(expected_current):
+                raise SafetyError("The owner changed this setting before dispatch")
+            await native_settings.write(self, key, value, current)
+        elif key in ("grid_export_limit", "grid_import_limit"):
             direction = "export" if key == "grid_export_limit" else "import"
             await self._request("PUT", f"device/energy-profile/grid/limitation/{direction}", json={
                 "stationId": station, "enable": value["enabled"],
@@ -477,6 +497,8 @@ class CloudControlSettings:
 
     @staticmethod
     def matches_restored(key, original, observed):
+        if key in native_settings.EXTENDED_SETTINGS or key in ("grid_export_limit", "grid_import_limit"):
+            return native_settings.matches(original, observed)
         if canonical(original) == canonical(observed):
             return True
         if key == "manual":
@@ -511,6 +533,8 @@ class CloudControlSettings:
 
     @staticmethod
     def matches(key, requested, observed):
+        if key in native_settings.EXTENDED_SETTINGS or key in ("grid_export_limit", "grid_import_limit"):
+            return native_settings.matches(requested, observed)
         if key in ("grid_export_limit", "grid_import_limit"):
             return requested["enabled"] is observed.get("enabled") and abs(requested["limit_kw"]-observed["limit_kw"]) <= 0.0005
         if key != "manual" or not requested["enabled"]:

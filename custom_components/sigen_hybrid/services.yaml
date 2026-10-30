@@ -65,7 +65,7 @@ cancel_manual_control:
           integration: sigen_hybrid
 owner_setting:
   name: Change owner setting
-  description: Preview or submit one advertised operating mode, grid connection, charger state or battery SOC setting. Owner control must be enabled. A queued response is not physical confirmation.
+  description: Preview or submit a supported owner setting. Local controls use confirmed register values; cloud controls use native owner operations. A queued response is not physical confirmation.
   fields:
     config_entry:
       name: Integration
@@ -84,6 +84,19 @@ owner_setting:
             - ac_charging
             - dc_charging
             - battery_levels
+            - battery_export_block
+            - grid_export_limit
+            - grid_import_limit
+            - grid_connection_current
+            - battery_power_limits
+            - pv_power_limit
+            - backup_reserve
+            - discharge_priority
+            - solar_priority
+            - peak_shaving
+            - ac_charge_mode
+            - dc_charge_mode
+            - dc_charge_settings
     value:
       name: Requested value
       description: Boolean for grid/charging; mode and profile_id object for a mode; four SOC thresholds for battery_levels. Only exact advertised devices and modes are accepted.
@@ -106,6 +119,11 @@ owner_setting:
       default: true
       selector:
         boolean:
+    expected_revision:
+      name: Observed setting revision
+      description: Optional revision from the TC settings popup; rejects a stale edit if the native value has changed.
+      selector:
+        text:
 preview_plan:
   name: Preview charging plan
   description: Return an advisory low-cost plan using the selected installed forecast provider. Never dispatches commands or enables export.

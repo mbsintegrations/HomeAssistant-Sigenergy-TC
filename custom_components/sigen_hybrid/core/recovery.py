@@ -170,6 +170,9 @@ class RecoveryJournal:
             preflight = getattr(self.provider, "preflight", None)
             if preflight is not None:
                 preflight(changes, baseline)
+            validate_context = getattr(self.provider, "validate_context", None)
+            if validate_context is not None:
+                await validate_context(context or {}, baseline)
             record = {
                 "request_id": request_id,
                 "fingerprint": fingerprint,

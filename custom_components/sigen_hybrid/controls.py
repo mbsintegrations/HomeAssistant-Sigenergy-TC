@@ -25,6 +25,10 @@ class OwnerControls:
     route = Route.CLOUD
     safe_home_discharge = True
 
+    @property
+    def operation_lock(self):
+        return self.runtime._cloud_update_lock
+
     def __init__(self, runtime, store, *, clock=utcnow):
         self.runtime, self.store, self.clock = runtime, store, clock
         cloud = runtime.entry.options.get("cloud", {})
@@ -65,7 +69,7 @@ class OwnerControls:
 
     async def _release(self):
         try:
-            async with self.runtime._cloud_update_lock, self._lock:
+            async with self.operation_lock, self._lock:
                 saved = await self.store.async_load() if self._session is None else None
                 if self._session is None and (not saved or not saved.get("active")):
                     self.operation = {
@@ -179,7 +183,8 @@ class OwnerControls:
         if self.manual_supported is not True:
             raise CapabilityError("Native manual control is not advertised for this plant")
         local = self.runtime.data
-        if local is not None and not self.runtime.local_error and getattr(local, "source", None) == "modbus":
+        if (getattr(self.runtime, "source_binding_verified", True) and local is not None
+            and not self.runtime.local_error and getattr(local, "source", None) == "modbus"):
             try:
                 local.validate(self.clock(), self.runtime.controller.limits.telemetry_max_age)
                 return local
@@ -199,7 +204,7 @@ class OwnerControls:
             return await session.execute(plan, snapshot, now)
 
     async def preview(self, intent):
-        async with self.runtime._cloud_update_lock:
+        async with self.operation_lock:
             snapshot = await self.snapshot()
             return asdict(await self.runtime.controller.execute(intent, snapshot, self.clock(), dry_run=True))
 
@@ -223,7 +228,7 @@ class OwnerControls:
         self._notify()
         return dict(self.operation)
 
-    async def setting(self, key, value, *, request_id, source, dry_run=True, serial=None):
+    async def setting(self, key, value, *, request_id, source, dry_run=True, serial=None, expected_revision=None):
         """Preview or queue one closed owner setting; no arbitrary payload dispatch."""
         from .core.recovery import canonical
 
@@ -231,6 +236,10 @@ class OwnerControls:
             raise CapabilityError("Plant control is not enabled")
         request = {"key": key, "value": copy.deepcopy(value), "request_id": request_id, "source": source.value, "serial": serial,
                    "pause_automation": source.value == "manual" and key not in ("ac_charging", "dc_charging")}
+        if expected_revision is not None:
+            if not isinstance(expected_revision, str) or len(expected_revision) != 64:
+                raise SafetyError("Reload the native setting before saving")
+            request["expected_revision"] = expected_revision
         canonical(request)
         if not isinstance(request_id, str) or not 1 <= len(request_id) <= 128:
             raise SafetyError("A valid command request ID is required")
@@ -239,7 +248,7 @@ class OwnerControls:
                 return dict(self.operation)
             raise SafetyError("A plant command is already being processed")
         if dry_run:
-            async with self.runtime._cloud_update_lock, self._lock:
+            async with self.operation_lock, self._lock:
                 session, resolved = await self._prepare_setting(request)
                 return await setting_preview(session.journal.provider, key, resolved)
         self._intent = None
@@ -266,6 +275,14 @@ class OwnerControls:
             provider, request["key"], request["value"], owner_limits=self.runtime.controller.limits,
             station=station, serial=request["serial"],
         )
+        if request.get("expected_revision") is not None:
+            import hashlib
+
+            from .core.recovery import canonical
+            current = (await provider.read([request["key"]]))[request["key"]]
+            revision = hashlib.sha256(canonical(current).encode()).hexdigest()
+            if revision != request["expected_revision"]:
+                raise SafetyError("This setting changed in the Sigen app; reopen it before applying")
         return session, value
 
     async def _run_setting(self, request):
@@ -273,7 +290,7 @@ class OwnerControls:
         from .core.recovery import canonical
 
         try:
-            async with self.runtime._cloud_update_lock, self._lock:
+            async with self.operation_lock, self._lock:
                 session = await self._bind()
                 previous = await session.journal.receipt(request["request_id"])
                 if previous is not None:
@@ -299,9 +316,11 @@ class OwnerControls:
                 session, resolved = await self._prepare_setting(request)
                 if (await session.journal.provider.read(["manual"]))["manual"]["enabled"]:
                     raise SafetyError("Stop the native manual command before changing plant settings")
-                record = await session.journal.apply(
-                    request["request_id"], [(request["key"], resolved)], context=request,
-                )
+                changes = [(request["key"], resolved)]
+                translate = getattr(session.journal.provider, "setting_changes", None)
+                if translate is not None:
+                    changes = await translate(request["key"], resolved)
+                record = await session.journal.apply(request["request_id"], changes, context=request)
                 self.operation = {
                     "request_id": request["request_id"], "setting": request["key"],
                     "phase": "confirmed", "message": "Setting confirmed by fresh provider readback",
@@ -336,7 +355,7 @@ class OwnerControls:
         try:
             # Background cloud polling must not interleave with a command's
             # recovery snapshot. Independent Modbus monitoring stays active.
-            async with self.runtime._cloud_update_lock:
+            async with self.operation_lock:
                 session = await self._bind()
                 await session.reconcile()  # Explicit execution may first release interrupted work.
                 from .core.models import Source
@@ -373,7 +392,7 @@ class OwnerControls:
         return saved or {}
 
     async def resume_automation(self, *, requested_at=None):
-        async with self.runtime._cloud_update_lock, self._lock:
+        async with self.operation_lock, self._lock:
             session = await self._bind()
             pause = await session.journal.automation_pause(clear=True, if_not_after=requested_at)
             if pause.get("paused") is not True:
@@ -386,7 +405,7 @@ class OwnerControls:
         if job is not None and not job.done() and self._intent is not None and self._intent.source == Source.AUTOMATION and self._intent.request_id == request_id:
             job.cancel()
             await asyncio.gather(job, return_exceptions=True)
-        async with self.runtime._cloud_update_lock, self._lock:
+        async with self.operation_lock, self._lock:
             session = await self._bind()
             pending = await session.journal.pending()
             if not pending or pending["request_id"] != request_id or pending.get("context", {}).get("source") != Source.AUTOMATION.value:
@@ -422,7 +441,7 @@ class OwnerControls:
         saved = await self.store.async_load() if self._session is None else None
         if self._session is None and (not saved or not saved.get("active")):
             return
-        async with self.runtime._cloud_update_lock, self._lock:
+        async with self.operation_lock, self._lock:
             try:
                 session = await self._bind()
                 result = await session.reconcile()

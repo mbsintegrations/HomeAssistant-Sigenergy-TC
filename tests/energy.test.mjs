@@ -1,7 +1,34 @@
 import test from 'node:test';
+import { ownerSettingTarget, renderOwnerSetting, collectOwnerSetting } from '../custom_components/sigen_hybrid/frontend/sigen-hybrid-energy.js';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { ENERGY_ROUTES, renderEnergyProfile, ENERGY_STYLE, gridConnectionStatus, connectionIndicators, selectReadingState } from '../custom_components/sigen_hybrid/frontend/sigen-hybrid-energy.js';
+
+test('native owner forms require actual state and preserve read-only SOC fields',()=>{
+  const state={route:'battery_levels',setting:'battery_levels',revision:'a'.repeat(64),value:{charge_soc:90,discharge_soc:20,backup_soc:20,peak_shaving_soc:null,ja12_soc:'12.0'}};
+  const ctx={ownerConfiguration:state,controlPermission:true,capabilities:{battery_levels:{available:true}}};
+  const model=renderOwnerSetting('battery_levels',ctx);
+  assert.match(model.body,/data-native-owner-form="battery_levels"/);
+  assert.doesNotMatch(model.body,/name="ja12_soc"/);
+  const values={charge_soc:'95',discharge_soc:'25',backup_soc:'30'};
+  const form={querySelector:selector=>{const key=selector.match(/name="([^"]+)"/)[1];return Object.hasOwn(values,key)?{value:values[key]}:null;}};
+  assert.deepEqual(collectOwnerSetting(form,state),{charge_soc:95,discharge_soc:25,backup_soc:30,peak_shaving_soc:null,ja12_soc:'12.0'});
+  assert.match(renderOwnerSetting('battery_levels',{...ctx,controlPermission:false}).body,/type="submit"[^>]*disabled/);
+});
+
+test('native charger setting targets remain bound to the selected discovered device',()=>{
+  const inventory=[{id:'first',type:'dc',serial:'DC-ONE'},{id:'second',type:'dc',serial:'DC-TWO'}];
+  assert.equal(ownerSettingTarget('dc_charging_settings',{inventory,id:'second'}).serial,'DC-TWO');
+  assert.equal(ownerSettingTarget('dc_charging_settings',{inventory,id:'missing'}),null);
+  assert.equal(ownerSettingTarget('charging_mode',{inventory,id:'first'}).setting,'dc_charge_mode');
+});
+
+test('native priority labels are escaped and opaque destination IDs are not displayed as labels',()=>{
+  const ctx={ownerConfiguration:{route:'solar_source_priority',setting:'solar_priority',revision:'a'.repeat(64),value:{order:['destination-abc']},metadata:{destinations:[{id:'destination-abc',label:'<Battery>'}]}},controlPermission:true,capabilities:{solar_priority:{available:true}}};
+  const model=renderOwnerSetting('solar_source_priority',ctx);
+  assert.match(model.body,/&lt;Battery&gt;/);assert.doesNotMatch(model.body,/<Battery>/);
+  assert.doesNotMatch(model.body,/>destination-abc<\/option>/);
+});
 
 const ctx = (energy_profile = {}, extra = {}) => ({ config: { energy_profile }, inventory: [], state: () => null, ...extra });
 const render = (route, data = {}, extra = {}) => renderEnergyProfile(route, ctx(data, extra));

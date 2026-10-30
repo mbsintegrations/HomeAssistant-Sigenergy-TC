@@ -18,7 +18,13 @@
           "port": "TCP port",
           "sole_modbus_client": "I have stopped competing Modbus clients for this plant",
           "shared_read_only": "Additional read-only connection alongside an existing client",
-          "poll_seconds": "Polling interval (seconds)"
+          "poll_seconds": "Polling interval (seconds)",
+          "inverter_unit_id": "Primary inverter Modbus unit ID",
+          "allow_shared_writes": "Allow TC writes while other Modbus clients monitor"
+        },
+        "data_description": {
+          "inverter_unit_id": "Use the actual inverter unit ID, not the plant address 247. Required for serial-bound local controls.",
+          "allow_shared_writes": "TC must be the only writer. Other clients may monitor; disable their dispatch automations. Shared read-only mode must be off to write."
         }
       },
       "features": {
@@ -87,7 +93,11 @@
           "reserve_soc": "Minimum reserve (%)",
           "charge_ceiling_soc": "Charge ceiling (%)",
           "max_charge_kw": "Maximum requested charge power (kW)",
-          "max_discharge_kw": "Maximum requested discharge power (kW)"
+          "max_discharge_kw": "Maximum requested discharge power (kW)",
+          "enable_local_control": "Enable local Modbus control"
+        },
+        "data_description": {
+          "enable_local_control": "Uses HA-managed timing and native SOC bounds. Configure the primary inverter unit and local write ownership first. HA must remain running to restore commands on time."
         }
       }
     },
@@ -136,7 +146,11 @@
           "reserve_soc": "Minimum reserve (%)",
           "charge_ceiling_soc": "Charge ceiling (%)",
           "max_charge_kw": "Maximum requested charge power (kW)",
-          "max_discharge_kw": "Maximum requested discharge power (kW)"
+          "max_discharge_kw": "Maximum requested discharge power (kW)",
+          "enable_local_control": "Enable local Modbus control"
+        },
+        "data_description": {
+          "enable_local_control": "Uses HA-managed timing and native SOC bounds. Configure the primary inverter unit and local write ownership first. HA must remain running to restore commands on time."
         }
       },
       "forecast": {
@@ -190,7 +204,13 @@
           "port": "TCP port",
           "sole_modbus_client": "I have stopped competing Modbus clients for this plant",
           "shared_read_only": "Additional read-only connection alongside an existing client",
-          "poll_seconds": "Polling interval (seconds)"
+          "poll_seconds": "Polling interval (seconds)",
+          "inverter_unit_id": "Primary inverter Modbus unit ID",
+          "allow_shared_writes": "Allow TC writes while other Modbus clients monitor"
+        },
+        "data_description": {
+          "inverter_unit_id": "Use the actual inverter unit ID, not the plant address 247. Required for serial-bound local controls.",
+          "allow_shared_writes": "TC must be the only writer. Other clients may monitor; disable their dispatch automations. Shared read-only mode must be off to write."
         }
       }
     },
