@@ -8,7 +8,7 @@ Create a restorable HA backup. Record current mySigen mode, SOC charge/discharge
 
 ## HACS
 
-Add `https://github.com/mbsintegrations/Sigenergy-TC` under HACS custom repositories, category Integration. Download the release, restart HA and add **Sigenergy TC** in Devices & services. A GitHub account/HACS login is separate from the plant's mySigen login. There is no NBI application step.
+Add `https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC` under HACS custom repositories, category Integration. Download the release, restart HA and add **Sigenergy TC** in Devices & services. A GitHub account/HACS login is separate from the plant's mySigen login. There is no NBI application step.
 
 ## Manual installation
 

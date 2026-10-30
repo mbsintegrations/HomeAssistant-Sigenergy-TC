@@ -3,7 +3,7 @@ blueprint:
   description: Create a local persistent notification when a selected TC connection stays unavailable; dismiss it when connected again. Does not operate the plant.
   domain: automation
   author: MBS Integrations
-  source_url: https://github.com/mbsintegrations/Sigenergy-TC/blob/main/blueprints/automation/sigenergy_tc_connection.yaml
+  source_url: https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/blob/main/blueprints/automation/sigenergy_tc_connection.yaml
   homeassistant:
     min_version: '2026.10.1'
   input:
