@@ -20,6 +20,6 @@ charger overlays have been removed. The day/night photographs in
 `frontend/assets` were generated for this project; their delivery assets are in that directory. Their cable paths and framing were remapped for
 the new scene. No Sigenergy endorsement is claimed.
 
-`pymodbus==3.13.1` is an external dependency distributed under its own BSD-3-Clause license. Home Assistant and forecast integrations are separately installed software; their code is not bundled here. Review dependency licenses and the complete distribution before a public release.
+`pymodbus` (tested with 3.13.1) is an external dependency distributed under its own BSD-3-Clause license. Home Assistant and forecast integrations are separately installed software; their code is not bundled here. Review dependency licenses and the complete distribution before a public release.
 
 Vendor documentation and names identify interoperability targets. This project is not an official Sigenergy or Tigo product.

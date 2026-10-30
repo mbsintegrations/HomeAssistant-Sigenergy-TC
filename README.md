@@ -37,7 +37,7 @@ A local-first Home Assistant integration and responsive energy dashboard for Sig
 4. Choose Modbus, Cloud, or both. Cloud login discovers the plant; no station ID is entered. Configure safety limits and deliberately choose whether to enable control.
 5. Add **Sigenergy TC** in a dashboard's card picker. The bundled module registers automatically in storage-mode dashboards; select the integration entry in the visual editor if more than one is installed.
 
-Requires **Home Assistant 2026.10.1 or later**. This repository is public for HACS testing, but is **not submitted to the HACS default catalogue**. The invitation notice is a participation policy, not technical access control.
+Requires **Home Assistant 2026.10.1 or later**. This repository is public for HACS testing, but is **not submitted to the HACS default catalogue**. The invitation notice describes supported alpha participation; it does not add license restrictions or technical access control.
 
 [Installation and upgrades](docs/installation.md) · [Controls and recovery](docs/controls-and-recovery.md) · [Strategies and tariffs](docs/strategies.md) · [Cards](docs/cards.md) · [Embedding](docs/dashboard-embedding.md) · [Charts](docs/chart-catalogue.md) · [Troubleshooting](docs/troubleshooting.md) · [Screenshots](docs/screenshots.md) · [Changes](CHANGELOG.md)
 
