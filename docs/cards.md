@@ -20,7 +20,7 @@ These preferences are saved with the configuration and can be changed later. The
 YAML resource users can add the following JavaScript module resource. Storage-mode registration is automatic when no TC resource already exists:
 
 ```text
-/sigen_hybrid/sigen-hybrid-card.js?v=0.2.0
+/sigen_hybrid/sigen-hybrid-card.js?v=0.2.1
 ```
 
 Then add **Sigenergy TC** from the dashboard card picker. Choose the integration configuration in its visual editor. Discovery maps enabled entities belonging to that exact `sigen_hybrid` entry, using entity registry identity rather than guessing entity names. Explicit mappings override discovery, and `null` disables a discovered item.

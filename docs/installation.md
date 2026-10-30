@@ -12,7 +12,7 @@ Add `https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC` under HACS c
 
 ## Manual installation
 
-Download `sigenergy-tc-0.2.0.zip` and `SHA256SUMS.txt` from the matching release. Verify the SHA-256 before extraction. Merge the ZIP's `custom_components/sigen_hybrid` into HA's `config/custom_components/sigen_hybrid`; avoid an extra nested folder. Restart HA and use the native setup dialog. Do not copy the whole repository into `custom_components`.
+Download `sigenergy-tc-0.2.1.zip` and `SHA256SUMS.txt` from the matching release. Verify the SHA-256 before extraction. Merge the ZIP's `custom_components/sigen_hybrid` into HA's `config/custom_components/sigen_hybrid`; avoid an extra nested folder. Restart HA and use the native setup dialog. Do not copy the whole repository into `custom_components`.
 
 ## Connections
 
