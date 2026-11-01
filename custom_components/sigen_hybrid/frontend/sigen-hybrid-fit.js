@@ -62,6 +62,7 @@ ha-card.embedded-shell>main{min-width:0;min-height:0}
 :host([data-sigen-fit]) .compact-overview .overview-summary-stack{min-height:min-content;grid-template-rows:auto minmax(min-content,1fr) auto}
 .compact-overview .main-display-stage>.sigen-photo-scene{container-type:size;display:grid;place-items:center;isolation:isolate}
 .compact-overview .main-display-stage .sigen-photo-frame{container-type:size;flex:none;width:min(100cqw,calc(100cqh * 1490 / 673));height:min(100cqh,calc(100cqw * 673 / 1490));aspect-ratio:1490/673}
+.compact-overview .sigen-photo-plane>svg{overflow:hidden}
 .compact-overview .sigen-photo-scene::before{content:'';position:absolute;inset:-20px;z-index:-1;background-image:var(--sigen-photo-image);background-size:cover;background-position:center;filter:blur(16px);opacity:.45}
 /* The artwork, cables and labels keep one shared aspect ratio. */
 @container sigen-card (min-width:651px) and (max-width:949px){
