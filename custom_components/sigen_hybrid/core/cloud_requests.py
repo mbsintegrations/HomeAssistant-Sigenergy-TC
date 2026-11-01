@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import logging
 import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -10,12 +11,16 @@ from math import isfinite
 
 from .errors import TransportError
 
+LOGGER = logging.getLogger(__name__)
+
 
 class CloudRequestGate:
     """A conservative client budget, not a claim about Sigenergy's quota."""
 
-    def __init__(self, *, clock=time.monotonic, sleep=asyncio.sleep, spacing=6):
+    def __init__(self, *, clock=time.monotonic, sleep=asyncio.sleep, spacing=6, wall_clock=time.time):
         self.clock, self.sleep, self.spacing = clock, sleep, spacing
+        self.wall_clock = wall_clock
+        self.persist = None
         self._lock = asyncio.Lock()
         self._last = float("-inf")
         self._until = float("-inf")
@@ -23,6 +28,47 @@ class CloudRequestGate:
         self.reason = None
         self.requests = 0
         self.auth_blocked = False
+        self.last_failure = None
+
+    def dump(self):
+        """Store only account cooldown metadata; no response bodies or credentials."""
+        return {
+            "until": self.wall_clock() + max(0, self._until - self.clock()),
+            "reason": self.reason,
+            "failures": self._failures,
+            "auth_blocked": self.auth_blocked,
+            "last_failure": self.last_failure,
+        }
+
+    def restore(self, saved):
+        if not isinstance(saved, dict):
+            return
+        reason = saved.get("reason")
+        until = saved.get("until")
+        failures = saved.get("failures")
+        if (reason not in ("rate_limited", "session_conflict", "authentication_required", "unavailable")
+                or type(until) not in (int, float) or not isfinite(until)
+                or type(failures) is not int or not 0 <= failures <= 8):
+            return
+        self._until = self.clock() + max(0, until - self.wall_clock())
+        self._failures, self.reason = failures, reason
+        self.auth_blocked = saved.get("auth_blocked") is True and reason == "authentication_required"
+        diagnostic = saved.get("last_failure")
+        if isinstance(diagnostic, dict) and diagnostic.get("reason") == reason:
+            status, code = diagnostic.get("http_status"), diagnostic.get("application_code")
+            self.last_failure = {
+                "reason": reason,
+                "http_status": status if type(status) is int and 100 <= status <= 599 else None,
+                "application_code": code if isinstance(code, str) and code.isdigit() and len(code) <= 12 else None,
+            }
+
+    async def _persist(self):
+        if self.persist is not None:
+            try:
+                await self.persist(self.dump())
+            except OSError:
+                # Preserve the provider's reason and active in-memory cooldown.
+                LOGGER.warning("Cloud cooldown could not be saved; avoid restarting HA until it expires")
 
     @property
     def status(self):
@@ -31,6 +77,7 @@ class CloudRequestGate:
             "reason": self.reason if self.clock() < self._until or self.auth_blocked else None,
             "requests": self.requests,
             "minimum_spacing_seconds": self.spacing,
+            "last_failure": self.last_failure,
         }
 
     def pause(self, reason, *, retry_after=0):
@@ -96,7 +143,7 @@ class CloudRequestGate:
                         if "too many users" in message
                         else "rate_limited"
                         if response.status == 429
-                        or str(code) in ("429", "1110", "1201")
+                        or str(code) == "429"
                         or "rate limit" in message
                         or "too many requests" in message
                         else "authentication_required"
@@ -106,7 +153,13 @@ class CloudRequestGate:
                         else None
                     )
                     if reason:
+                        self.last_failure = {
+                            "reason": reason,
+                            "http_status": response.status,
+                            "application_code": str(code) if str(code).isdigit() and len(str(code)) <= 12 else None,
+                        }
                         self.pause(reason, retry_after=self.retry_after(response.headers))
+                        await self._persist()
                         raise TransportError("Cloud request paused: " + reason)
                     # Preserve failures across partial recovery; reset after a
                     # quiet period, rather than after one successful endpoint.
@@ -116,6 +169,7 @@ class CloudRequestGate:
                     yield response
             except OSError, TimeoutError:
                 self.pause("unavailable")
+                await self._persist()
                 raise TransportError("Cloud network unavailable") from None
 
 

@@ -121,6 +121,13 @@ test('overview mode selection reviews a locked draft and immediately restores th
   assert.match(card._battery(),/data-detail="energy_profile"/);assert.match(card._battery(),/data-detail="strategies"/);
 });
 
+test('a real provider mode remains visible when cloud changes are unavailable', () => {
+  const card=new NavigationCard(fixture({cloud_mode:state('Maximum Self-Powered')}));
+  const html=card._overviewModeControl();
+  assert.match(html,/<option value="" selected disabled>Maximum Self-Powered<\/option>/);
+  assert.doesNotMatch(html,/>Unavailable<\/option>/);
+});
+
 test('overview mode respects an existing unsaved dialog and cancellation never changes the plant mode', () => {
   const card=new NavigationCard(fixture({native_mode:state('self_consumption')})),opened=[];
   const selection={value:'',focus(){}};let prompts=0,closed=0;

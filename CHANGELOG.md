@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.5
+
+- Publish essential Cloud readings and discovered AC/DC presence before slower optional battery-module reads. Collect daily history before those optional reads, and preserve completed observations when a later request fails.
+- Keep a measured daily history total when the live endpoint returns an absent value; preserve real zero values and each observation's freshness and local date.
+- Restore plant-bound device inventory, observed operating mode and fresh same-day energy after restart, before Cloud reconnects. Cached observations never restore permissions or authorize commands.
+- Display the actual provider mode label, including Maximum Self-Powered, even when the native writable selection is temporarily unavailable.
+- Preserve Cloud cooldowns across HA restarts, honor Retry-After, and add sanitized failure diagnostics. Undocumented application codes alone are no longer labelled rate limits. The six-second request spacing is a client policy, not a published Sigenergy quota.
+- Fix overlapping summary panels after shrinking an embedded dashboard and strengthen shrink/expand browser assertions. Preserve the accepted scenes, controls, typography and colors.
+- Update chart source requirements, upgrade instructions and validation boundaries. Existing write/export preferences and dashboards are preserved.
+
 ## 0.2.4
 
 - Version and upgrade the registered frontend resource automatically, retaining its resource ID and leaving other cards untouched. This prevents an updated backend from retaining the previous JavaScript module graph on tablets and browsers.

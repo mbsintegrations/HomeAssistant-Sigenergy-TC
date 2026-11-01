@@ -97,7 +97,10 @@ export const observedOperatingMode = ctx => {
 };
 export function renderOverviewModeControl(ctx = {}) {
   const observed = selectedMode(ctx);
-  return `<label class="overview-mode-control"><span>Current mode</span><select data-overview-mode aria-label="Current mode">${observed ? '' : '<option value="" selected disabled>Unavailable</option>'}${modeChoices(ctx).map(([value, label]) => `<option value="${esc(value)}"${value === observed ? ' selected' : ''}>${esc(label)}</option>`).join('')}</select></label>`;
+  // A readable plant label is an observation, not permission to change it.
+  // Preserve custom/provider labels even when Cloud control is cooling down.
+  const label = current(ctx,'cloud_mode'), known = typeof label==='string' && !['—','Unavailable','unknown','unavailable','none',''].includes(label);
+  return `<label class="overview-mode-control"><span>Current mode</span><select data-overview-mode aria-label="Current mode">${observed ? '' : `<option value="" selected disabled>${esc(known?label:'Unavailable')}</option>`}${modeChoices(ctx).map(([value, name]) => `<option value="${esc(value)}"${value === observed ? ' selected' : ''}>${esc(value===observed&&known?label:name)}</option>`).join('')}</select></label>`;
 }
 const STRATEGY_ACTIONS = Object.freeze([['charge','Force charge'],['discharge','Discharge to home'],['hold','Hold battery'],['export','Allow solar export'],['battery_export','Battery discharge to export']]);
 function permissionFlag(value) {

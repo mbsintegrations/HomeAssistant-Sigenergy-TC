@@ -50,6 +50,8 @@ class SigenCoordinator(DataUpdateCoordinator):
         self.forecast_data = {}
         self.energy_counters = DailyEnergyCounters(getattr(getattr(hass, "config", None), "time_zone", "UTC"))
         self.energy_store = None
+        self.read_cache_store = None
+        self.read_cache_identity = None
         self.controls = None
         self.strategies = None
         self.source_binding_verified = False
@@ -64,6 +66,13 @@ class SigenCoordinator(DataUpdateCoordinator):
 
         self.energy_store = Store(self.hass, 1, f"{DOMAIN}_energy_{self.entry.entry_id}")
         self.energy_counters.restore(await self.energy_store.async_load())
+        from .core.read_cache import plant_identity, restore_cache
+
+        self.read_cache_identity = plant_identity(self.entry.options)
+        self.read_cache_store = Store(self.hass, 1, f"{DOMAIN}_reads_{self.entry.entry_id}")
+        self.cloud_data, self.cloud_daily_data = restore_cache(
+            await self.read_cache_store.async_load(), self.read_cache_identity, utcnow().astimezone(self.energy_counters.timezone)
+        )
         from .controls import OwnerControls
         from .local_controls import HybridOwnerControls, LocalOwnerControls
 
@@ -106,6 +115,8 @@ class SigenCoordinator(DataUpdateCoordinator):
     @property
     def reading_sources(self):
         local = self.data
+        daily = self._daily_cache()
+        live_cloud = {key: value for key, value in self.cloud_data.get("telemetry", {}).items() if value is not None}
         return {
             "modbus": {
                 "observed_at": local.observed_at.isoformat() if local else None,
@@ -115,8 +126,8 @@ class SigenCoordinator(DataUpdateCoordinator):
             },
             "cloud": {
                 "observed_at": self.cloud_data.get("telemetry_observed_at", self.cloud_data.get("updated_at")),
-                "values": {**self.cloud_daily_data.get("values", {}), **self.cloud_data.get("telemetry", {})},
-                "observed_at_by_key": {key: self.cloud_daily_data.get("observed_at") for key in self.cloud_daily_data.get("values", {}) if key not in self.cloud_data.get("telemetry", {})},
+                "values": {**daily.get("values", {}), **live_cloud},
+                "observed_at_by_key": {key: daily.get("observed_at") for key in daily.get("values", {}) if key not in live_cloud},
             },
         }
 
@@ -191,7 +202,28 @@ class SigenCoordinator(DataUpdateCoordinator):
 
             value = getattr(self.data, key, None)
             return Reading(value, "demo", self.data.observed_at.isoformat()) if value is not None else None
-        return select_reading(key, self.reading_sources, self.connections, utcnow())
+        selected = select_reading(key, self.reading_sources, self.connections, utcnow())
+        if selected is not None or not key.endswith("_today") or not enabled_connections(self.entry.data, self.entry.options)["cloud"]:
+            return selected
+        # A measured history bucket is independent of live transport health.
+        # Keep its original clock and normal expiry during reconnect/cooldown.
+        daily = self._daily_cache()
+        return select_reading(key, {"cloud": {"values": daily.get("values", {}), "observed_at": daily.get("observed_at")}},
+                              {"cloud": {"enabled": True, "status": "connected"}}, utcnow())
+
+    def _daily_cache(self):
+        from .core.read_cache import daily_observations
+
+        return daily_observations(self.cloud_daily_data, utcnow().astimezone(self.energy_counters.timezone))
+
+    def _save_read_cache(self):
+        if self.read_cache_store is not None:
+            from .core.read_cache import cache_payload
+
+            self.read_cache_store.async_delay_save(
+                lambda: cache_payload(self.read_cache_identity, self.cloud_data, self.cloud_daily_data,
+                                      utcnow().astimezone(self.energy_counters.timezone)), 5
+            )
 
     async def async_cloud_update(self, _now=None):
         if self._closing:
@@ -214,12 +246,31 @@ class SigenCoordinator(DataUpdateCoordinator):
                         unofficial_opt_in=cloud_options["unofficial_opt_in"],
                         live_refresh_seconds=60 if self.local is None else 900,
                     )
-                self.cloud_data = await self.cloud.refresh()
+                essential = getattr(self.cloud, "refresh_essential", None)
+                self.cloud_data = await (essential() if callable(essential) else self.cloud.refresh())
                 gate = getattr(getattr(self.cloud, "client", None), "request_gate", None)
                 if gate is not None and gate.auth_blocked:
                     raise AuthenticationError("Cloud sign-in requires attention")
                 self.cloud_error = None
+                self._save_read_cache()
+                # Essential readings and device presence must reach the UI
+                # before the slower history/module collection finishes.
+                self.async_update_listeners()
                 await self._async_daily_energy()
+                self._save_read_cache()
+                if callable(essential):
+                    try:
+                        self.cloud_data = await self.cloud.refresh()
+                        self._save_read_cache()
+                    except AuthenticationError:
+                        raise
+                    except Exception:
+                        # Optional collection cannot erase completed essential
+                        # readings or daily totals. The request gate still
+                        # blocks Cloud writes/retries during its cooldown.
+                        LOGGER.debug("Optional cloud details are temporarily unavailable")
+                        if gate is not None and gate.auth_blocked:
+                            raise AuthenticationError("Cloud sign-in requires attention") from None
         except AuthenticationError:
             self.cloud_error = "authentication_required"
             self.entry.async_start_reauth(self.hass)
@@ -248,7 +299,9 @@ class SigenCoordinator(DataUpdateCoordinator):
             if cached is None or cached[0] is not client:
                 cached = (client, HistoryBroker(client, timezone=self.hass.config.time_zone, currency=self.hass.config.currency))
                 brokers[self.entry.entry_id] = cached
-            self.cloud_daily_data = await cached[1].daily_totals()
+            result = await cached[1].daily_totals()
+            if result.get("values"):
+                self.cloud_daily_data = result
         except Exception:
             # History availability cannot turn healthy live telemetry offline.
             # Retained values expire using their original observation clock.

@@ -259,6 +259,35 @@ async def test_cloud_refresh_is_cached_and_empty_prediction_remains_unknown():
         await cloud.set_native_mode(1)
 
 
+async def test_essential_refresh_has_inventory_and_mode_before_optional_device_calls():
+    client = PrivateClient()
+
+    async def station():
+        return {"batteryCapacity": 20, "hasAcCharger": True, "acSnList": ["AC1"], "hasEv": True, "dcSnList": ["DC1"]}
+
+    client.refresh_station = station
+    cloud = CloudAdapter(client, "synthetic-station", unofficial_opt_in=True)
+    essential = await cloud.refresh_essential()
+    assert essential["mode"] == "AI" and essential["telemetry_available"]
+    assert {item["type"] for item in essential["device_inventory"] if item["installed"]} == {"ac", "dc"}
+    assert client.calls == client.power_calls == 0
+    original_clock = essential["telemetry_observed_at"]
+    details = await cloud.refresh()
+    assert client.calls == client.power_calls == 1
+    assert details["telemetry_observed_at"] == original_clock
+    assert await cloud.refresh_essential() == details
+
+
+async def test_optional_refresh_failure_keeps_cached_essential_observation_clock():
+    client = PrivateClient()
+    cloud = CloudAdapter(client, "synthetic-station", unofficial_opt_in=True)
+    essential = await cloud.refresh_essential()
+    client.fail = True
+    with pytest.raises(TransportError):
+        await cloud.refresh()
+    assert await cloud.refresh_essential() == essential
+
+
 async def test_optional_app_power_read_failure_does_not_erase_modes_or_telemetry():
     client = PrivateClient()
 

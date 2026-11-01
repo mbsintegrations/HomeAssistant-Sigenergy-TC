@@ -30,7 +30,7 @@ Update the integration and reload the dashboard to obtain the 0.2.3 frontend imp
 
 ## Backend updated but the old interface remains
 
-Earlier versions retained the unversioned registered TC resource, allowing an open tablet or browser to keep the previous module graph. Version 0.2.4 upgrades its own resource URL automatically. Restart HA after HACS updates, then fully reload the web view. In HA dashboard Resources, the TC URL should end in `?v=0.2.4`. Do not add a second copy of the same module.
+Earlier versions retained the unversioned registered TC resource, allowing an open tablet or browser to keep the previous module graph. Version 0.2.4 and later upgrade their own resource URL automatically. Restart HA after HACS updates, then fully reload the web view. In HA dashboard Resources, the TC URL should match the installed version, for example `?v=0.2.5`. Do not add a second copy of the same module.
 
 ## Installed chargers missing from Photo House
 

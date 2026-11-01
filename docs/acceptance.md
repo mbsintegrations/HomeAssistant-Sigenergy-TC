@@ -5,3 +5,12 @@ The validation workflow runs synthetic backend/frontend tests and official Hassf
 Backend tests exercise transport errors, rate limits, partial acceptance/lost responses, restart recovery, immutable identities, owner priority, SOC/power bounds, expiry, export restrictions, DST/overnight scheduling, conflict detection and competing TC writers. Frontend tests exercise cards, charts, navigation, data normalization, availability, forms and control bindings. Browser examples check desktop, tablet and phone rendering without horizontal overflow or JavaScript errors.
 
 HA Test validation keeps plant writes locked and checks native setup, service registration, module resources, independently running read sources and the optional notification blueprint. No software test or isolated readback proves real-world plant control. Physical command acceptance remains pending invited owner testing.
+
+## 0.2.5 regression verification
+
+- Real-account isolated read-only testing verified the observed operating mode, measured daily totals, both installed chargers and battery-module collection. A restart restored inventory, mode and fresh daily observations before the first Cloud HTTP request.
+- Backend regressions cover essential/optional refresh ordering, missing live fields versus valid history, real zeros, cache expiry, local midnight and cross-plant cache rejection. Request-gate tests cover persisted cooldowns, Retry-After, backoff and privacy-safe diagnostics.
+- Browser checks cover 44 initial desktop/tablet/phone and embedded scene cases, plus 24 shrink/restore checks. Resize checks now assert panel overlap and tile containment, not only reachable controls.
+- Owner-command contract and failure/recovery tests run against synthetic transports. No plant control commands were sent in this read-only validation. Actual command acceptance remains an invited Alpha hardware test, including cancel/expiry and native mySigen recovery.
+
+See [chart source requirements](chart-catalogue.md) for electrical charts that need mapped Recorder sensors. The checks above do not imply that every chart is automatically populated on every installation, or that every firmware accepts every owner setting.

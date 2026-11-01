@@ -64,6 +64,23 @@ async def test_concurrent_history_and_telemetry_are_serialised_and_paced():
     assert all(call[3]["timeout"] == 25 for call in session.calls)
 
 
+@pytest.mark.parametrize("code", [1110, 1201])
+async def test_undocumented_application_codes_are_not_declared_rate_limits(code):
+    clock = Clock()
+    gate = CloudRequestGate(clock=clock, sleep=clock.sleep)
+    await consume(gate, Session(clock, Reply(body={"code": code, "msg": "PRIVATE"})))
+    assert gate.status["reason"] is None
+
+
+async def test_limit_diagnostic_records_only_http_and_bounded_application_code():
+    clock = Clock()
+    gate = CloudRequestGate(clock=clock, sleep=clock.sleep)
+    with pytest.raises(TransportError):
+        await consume(gate, Session(clock, Reply(429, {"code": 429, "msg": "PRIVATE"})))
+    assert gate.status["last_failure"] == {"reason": "rate_limited", "http_status": 429, "application_code": "429"}
+    assert "PRIVATE" not in str(gate.status)
+
+
 @pytest.mark.parametrize(
     "reply,reason",
     [
@@ -153,3 +170,58 @@ async def test_credential_repair_never_bypasses_non_authentication_cooldowns(rea
     with pytest.raises(TransportError):
         await consume(gate, session, "POST", "https://synthetic.invalid/auth/oauth/token")
     assert not session.calls
+
+
+async def test_restart_preserves_retry_after_and_failure_backoff_without_traffic():
+    before, after = Clock(), Clock()
+    wall = [50000.0]
+    saved = []
+
+    async def persist(data):
+        saved.append(data)
+
+    original = CloudRequestGate(clock=before, sleep=before.sleep, wall_clock=lambda: wall[0])
+    original.persist = persist
+    with pytest.raises(TransportError):
+        await consume(original, Session(before, Reply(429, headers={"Retry-After": "7200"})))
+    assert len(saved) == 1
+    wall[0] += 60
+    after.value = 3  # A new process has a different monotonic origin.
+    restored = CloudRequestGate(clock=after, sleep=after.sleep, wall_clock=lambda: wall[0])
+    restored.restore(saved[0])
+    assert restored.status["cooldown_seconds"] == 7140
+    session = Session(after, Reply(429))
+    with pytest.raises(TransportError):
+        await consume(restored, session)
+    assert not session.calls
+    after.value += 7140
+    wall[0] += 7140
+    with pytest.raises(TransportError):
+        await consume(restored, session)
+    assert len(session.calls) == 1 and restored.status["cooldown_seconds"] == 1800
+
+
+def test_restore_expired_invalid_and_private_cooldown_metadata():
+    clock = Clock()
+    gate = CloudRequestGate(clock=clock, wall_clock=lambda: 50000)
+    for saved in (None, {"reason": "rate_limited", "until": float("inf"), "failures": 1},
+                  {"reason": "private", "until": 60000, "failures": 1}):
+        gate.restore(saved)
+        assert gate.status["reason"] is None
+    gate.restore({"reason": "rate_limited", "until": 49900, "failures": 1,
+                  "last_failure": {"reason": "rate_limited", "http_status": "private", "application_code": "private"}})
+    assert gate.status["reason"] is None
+    assert "private" not in str(gate.dump())
+
+
+async def test_storage_failure_preserves_provider_cooldown_reason():
+    async def broken_store(data):
+        raise OSError("synthetic private filesystem path")
+
+    clock = Clock()
+    gate = CloudRequestGate(clock=clock, sleep=clock.sleep)
+    gate.persist = broken_store
+    with pytest.raises(TransportError, match="rate_limited"):
+        await consume(gate, Session(clock, Reply(429)))
+    assert gate.status["reason"] == "rate_limited"
+    assert gate.status["cooldown_seconds"] == 900

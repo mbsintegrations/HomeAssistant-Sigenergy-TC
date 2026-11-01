@@ -25,7 +25,7 @@ test('overview mode displays the observed plant mode rather than a saved prefere
   assert.equal(JSON.stringify(context.interfaceOptions),before);
   const unknown={...context,state:()=>({state:'An unknown mode <unsafe>'})};
   assert.equal(observedOperatingMode(unknown),'');
-  assert.match(renderOverviewModeControl(unknown),/value="" selected disabled>Unavailable/);
+  assert.match(renderOverviewModeControl(unknown),/value="" selected disabled>An unknown mode &lt;unsafe&gt;/);
   assert.doesNotMatch(renderOverviewModeControl(unknown),/<unsafe>/);
   assert.equal(observedOperatingMode({...context,state:key=>key==='cloud_mode'?{state:'Sigen AI Mode',attributes:{available:false}}:{state:'time_of_use'}}),'tou');
 });

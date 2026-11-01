@@ -27,6 +27,19 @@ async def test_cloud_client_initialization_uses_executor_and_shared_session(monk
         return await asyncio.to_thread(function, *args)
 
     monkeypatch.setitem(sys.modules, "sigenergy_cloud", SimpleNamespace(SigenergyCloudClient=client))
+    stores = []
+
+    class Store:
+        def __init__(self, hass, version, key):
+            stores.append(key)
+
+        async def async_load(self):
+            return None
+
+        async def async_save(self, data):
+            pass
+
+    monkeypatch.setitem(sys.modules, "homeassistant.helpers.storage", SimpleNamespace(Store=Store))
     scope = {"async_get_clientsession": lambda hass: session, "__package__": "custom_components.sigen_hybrid"}
     exec(compile(module, "cloud_client.py", "exec"), scope)
     hass = SimpleNamespace(async_add_executor_job=executor, data={})
@@ -37,6 +50,7 @@ async def test_cloud_client_initialization_uses_executor_and_shared_session(monk
     assert result is duplicate
     assert await scope["async_create_cloud_client"](hass, credentials) is result
     assert result.client == "client" and len(calls) == 1
+    assert len(stores) == 1 and "owner@" not in stores[0] and "fake" not in stores[0]
     assert calls[0][0] != loop_thread
     assert calls[0][1:3] == ("owner@example.invalid", "fake")
     assert calls[0][3]["region"] == "eu"

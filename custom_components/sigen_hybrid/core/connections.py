@@ -47,7 +47,8 @@ def select_reading(key, sources, statuses, now):
     """Per-field local/Cloud priority, with the actual observation clock."""
     for route in TRANSPORTS:
         status, source = statuses.get(route, {}), sources.get(route, {})
-        if not status.get("enabled") or status.get("status") != "connected":
+        readable = status.get("status") == "connected" or route == "cloud" and status.get("status") in ("rate_limited", "session_conflict")
+        if not status.get("enabled") or not readable:
             continue
         stamp = source.get("observed_at_by_key", {}).get(key, source.get("observed_at"))
         age = age_seconds(stamp, now)
