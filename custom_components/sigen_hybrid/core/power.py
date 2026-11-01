@@ -3,6 +3,7 @@
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
+from .errors import SafetyError
 from .models import Snapshot
 
 APP_UNLIMITED_KW = Decimal("4294967.295")
@@ -27,6 +28,19 @@ def finite_power_kw(value):
     """Return a finite positive cap in kW; never turn the app sentinel into one."""
     number = _number(value)
     return float(number) if number is not None and 0 < number < APP_UNLIMITED_KW else None
+
+
+def effective_power_limit(owner_limit, plant_limit):
+    """None means follow the verified plant cap, never an invented fallback."""
+    plant = finite_power_kw(plant_limit)
+    if plant is None:
+        raise SafetyError("Verified plant power limits are not available")
+    if owner_limit is None:
+        return plant
+    owner = finite_power_kw(owner_limit)
+    if owner is None:
+        raise SafetyError("The custom owner power limit is invalid")
+    return min(owner, plant)
 
 
 def app_power_limits(payload):

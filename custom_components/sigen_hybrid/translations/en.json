@@ -29,11 +29,13 @@
       },
       "features": {
         "title": "Choose optional features",
-        "description": "Local monitoring works without cloud or forecasts. Demo never connects to a cloud account. Optimizer monitoring is a planned feature requiring a separate supported source; selecting it records your preference only.\n\n{instructions}",
+        "description": "Select installed forecasts covering the same complete panel array. Choose both providers and enable averaging here, or leave the selection empty to continue without a forecast.",
         "data": {
-          "forecast_provider": "Solar forecast provider",
           "optimizer_monitoring": "Plan to use panel optimizer monitoring",
-          "cloud_reads": "Configure optional mySigen app-cloud reads"
+          "cloud_reads": "Configure optional mySigen app-cloud reads",
+          "forecast_sources": "Solar forecast sources (up to two)",
+          "average": "Average selected forecasts",
+          "primary_source": "Main forecast when averaging is off"
         }
       },
       "wizard_forecast": {
@@ -86,18 +88,26 @@
       },
       "wizard_control": {
         "title": "Owner control and limits",
-        "description": "Choose your control limits. Existing device and installer restrictions remain in effect. Export approval here does not raise or enable the plant's export limit.",
+        "description": "Power follows verified plant/device limits automatically. Turn automatic power off only to set your own lower caps. Setup does not send plant commands. Export approval does not change the plant export limit.",
         "data": {
           "enable_control": "Enable plant control",
           "export_permitted": "My site is approved for grid export",
           "reserve_soc": "Minimum reserve (%)",
           "charge_ceiling_soc": "Charge ceiling (%)",
-          "max_charge_kw": "Maximum requested charge power (kW)",
-          "max_discharge_kw": "Maximum requested discharge power (kW)",
-          "enable_local_control": "Enable local Modbus control"
+          "enable_local_control": "Enable local Modbus control",
+          "use_plant_power_limits": "Use plant power limits automatically"
         },
         "data_description": {
-          "enable_local_control": "Uses HA-managed timing and native SOC bounds. Configure the primary inverter unit and local write ownership first. HA must remain running to restore commands on time."
+          "enable_local_control": "Uses HA-managed timing and native SOC bounds. Configure the primary inverter unit and local write ownership first. HA must remain running to restore commands on time.",
+          "use_plant_power_limits": "Uses fresh Modbus/device ratings or finite native app limits. Missing or unlimited metadata is not replaced with a guessed power value."
+        }
+      },
+      "wizard_power_limits": {
+        "title": "Custom power caps",
+        "description": "Optional lower caps for TC commands. Verified plant and device limits still apply. These preferences do not change plant settings during setup.",
+        "data": {
+          "max_charge_kw": "Custom charge cap (kW)",
+          "max_discharge_kw": "Custom discharge cap (kW)"
         }
       }
     },
@@ -105,7 +115,7 @@
       "invalid_host": "Enter a hostname or IP address without a URL path.",
       "competing_client": "Confirm a dedicated connection or choose an additional read-only connection.",
       "forecast_provider_missing": "Install and configure this provider first, or choose no forecast.",
-      "invalid_forecast_source": "Choose available data from the selected provider.",
+      "invalid_forecast_source": "Choose up to two loaded forecast sources and a main source from your selection.",
       "cloud_opt_in_required": "Explicit opt-in is required for the unofficial app interface.",
       "cloud_fields_required": "Enter your mySigen username and password, or disable cloud reads.",
       "invalid_auth": "Sigenergy rejected the cloud sign-in. Verify the mySigen account and selected region.",
@@ -116,7 +126,8 @@
       "modbus_setup_required": "Configure Modbus first.",
       "cloud_setup_required": "Configure Cloud first.",
       "wrong_account": "This account returned a different plant. Your existing plant has not been changed.",
-      "invalid_safety_limits": "Reserve must be below the ceiling; power values must be finite and positive."
+      "invalid_safety_limits": "Reserve must be below the ceiling; power values must be finite and positive.",
+      "invalid_inverter_unit": "Enter a whole inverter unit ID from 1 to 246."
     },
     "abort": {
       "already_configured": "This plant or demo is already configured.",
@@ -139,25 +150,27 @@
       },
       "safety": {
         "title": "Safety limits",
-        "description": "Choose your control limits. Existing device and installer restrictions remain in effect. Export approval here does not raise or enable the plant's export limit.",
+        "description": "Power follows verified plant/device limits automatically. Turn automatic power off only to set your own lower caps. Setup does not send plant commands. Export approval does not change the plant export limit.",
         "data": {
           "enable_control": "Enable plant control",
           "export_permitted": "My site is approved for grid export",
           "reserve_soc": "Minimum reserve (%)",
           "charge_ceiling_soc": "Charge ceiling (%)",
-          "max_charge_kw": "Maximum requested charge power (kW)",
-          "max_discharge_kw": "Maximum requested discharge power (kW)",
-          "enable_local_control": "Enable local Modbus control"
+          "enable_local_control": "Enable local Modbus control",
+          "use_plant_power_limits": "Use plant power limits automatically"
         },
         "data_description": {
-          "enable_local_control": "Uses HA-managed timing and native SOC bounds. Configure the primary inverter unit and local write ownership first. HA must remain running to restore commands on time."
+          "enable_local_control": "Uses HA-managed timing and native SOC bounds. Configure the primary inverter unit and local write ownership first. HA must remain running to restore commands on time.",
+          "use_plant_power_limits": "Uses fresh Modbus/device ratings or finite native app limits. Missing or unlimited metadata is not replaced with a guessed power value."
         }
       },
       "forecast": {
         "title": "Choose an installed forecast provider",
-        "description": "No duplicate provider API calls are made. Install and configure your chosen provider first. No forecast is also valid.",
+        "description": "Select installed forecasts covering the same complete panel array. Choose both providers and enable averaging here, or leave the selection empty to continue without a forecast.",
         "data": {
-          "provider": "Forecast provider"
+          "forecast_sources": "Solar forecast sources (up to two)",
+          "average": "Average selected forecasts",
+          "primary_source": "Main forecast when averaging is off"
         }
       },
       "forecast_source": {
@@ -212,11 +225,19 @@
           "inverter_unit_id": "Use the actual inverter unit ID, not the plant address 247. Required for serial-bound local controls.",
           "allow_shared_writes": "TC must be the only writer. Other clients may monitor; disable their dispatch automations. Shared read-only mode must be off to write."
         }
+      },
+      "power_limits": {
+        "title": "Custom power caps",
+        "description": "Optional lower caps for TC commands. Verified plant and device limits still apply. These preferences do not change plant settings during setup.",
+        "data": {
+          "max_charge_kw": "Custom charge cap (kW)",
+          "max_discharge_kw": "Custom discharge cap (kW)"
+        }
       }
     },
     "error": {
       "invalid_safety_limits": "Reserve must be below the ceiling; power values must be finite and positive.",
-      "invalid_forecast_source": "Choose available sensors belonging to the selected forecast provider, or its loaded configuration.",
+      "invalid_forecast_source": "Choose up to two loaded forecast sources and a main source from your selection.",
       "cloud_fields_required": "Enter your mySigen username and password, or disable cloud reads.",
       "invalid_auth": "Sigenergy rejected the cloud sign-in. Verify the mySigen account and selected region.",
       "cannot_connect": "Sigenergy Cloud is unavailable or rate-limiting requests. Try again later.",
@@ -225,7 +246,8 @@
       "cloud_login_failed": "The integration could not complete cloud login. This is not confirmation of incorrect credentials. Check the integration log for the safe error category.",
       "connection_required": "Choose at least one connection.",
       "modbus_setup_required": "Configure Modbus first.",
-      "cloud_setup_required": "Configure Cloud first."
+      "cloud_setup_required": "Configure Cloud first.",
+      "invalid_inverter_unit": "Enter a whole inverter unit ID from 1 to 246."
     },
     "abort": {
       "forecast_provider_missing": "{provider_name} is not configured and loaded. {instructions}\n\n[Installation guide]({install_url})\n\nAfter setup, reopen Sigenergy TC options and select the provider again.",

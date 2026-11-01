@@ -12,7 +12,7 @@ Add `https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC` under HACS c
 
 ## Manual installation
 
-Download `sigenergy-tc-0.2.1.zip` and `SHA256SUMS.txt` from the matching release. Verify the SHA-256 before extraction. Merge the ZIP's `custom_components/sigen_hybrid` into HA's `config/custom_components/sigen_hybrid`; avoid an extra nested folder. Restart HA and use the native setup dialog. Do not copy the whole repository into `custom_components`.
+Download `sigenergy-tc-0.2.2.zip` and `SHA256SUMS.txt` from the matching release. Verify the SHA-256 before extraction. Merge the ZIP's `custom_components/sigen_hybrid` into HA's `config/custom_components/sigen_hybrid`; avoid an extra nested folder. Restart HA and use the native setup dialog. Do not copy the whole repository into `custom_components`.
 
 ## Connections
 
@@ -20,13 +20,15 @@ Download `sigenergy-tc-0.2.1.zip` and `SHA256SUMS.txt` from the matching release
 - **Cloud:** select the correct region and enter the owner's mySigen username/password, accepting optional unofficial app-interface use. Login discovers the account plant. Ambiguous identity is rejected rather than selecting an arbitrary plant. Reauthentication uses the native HA flow.
 - **Both:** local measurements are preferred where available and fresh; cloud adds supported settings/history. A failed source does not deliberately stop the other. Controls needing Cloud become temporarily unavailable during an outage.
 
-The new-entry wizard exposes owner control enablement and limits. Existing installations are not silently enabled by an upgrade. Modbus-only mode supports explicitly enabled local battery controls and owner limits, with HA-managed timing. Native operating-mode/profile switching and gateway/charger controls require Cloud. No hardware write is required to finish setup.
+The primary inverter unit ID is a typed number box. New setup defaults to **Use plant power limits automatically**: current verified device/plant limits bound commands; no arbitrary 3 kW cap is imposed. Untick it only to enter optional custom lower caps on the next screen. If actual limits cannot be verified, commands requiring them stay unavailable; an unlimited marker is not a device rating. Existing explicit custom caps are preserved by upgrades and can be changed through Configure > Owner limits.
+
+The wizard also exposes owner control enablement and SOC limits. Existing installations are not silently enabled by an upgrade. Modbus-only mode supports explicitly enabled local battery controls and owner limits, with HA-managed timing. Native operating-mode/profile switching and gateway/charger controls require Cloud. No hardware write is required to finish setup.
 
 ## Forecasts
 
 Install/configure a provider integration first: built-in [Forecast.Solar](https://www.home-assistant.io/integrations/forecast_solar/), [Open-Meteo Solar Forecast](https://github.com/rany2/ha-open-meteo-solar-forecast), [Solcast](https://github.com/BJReplay/ha-solcast-solar), or [Volcast](https://github.com/volter-labs/volcast-ha-integration). Provider account/pricing eligibility is the provider's responsibility.
 
-Use the forecast popup or Configure → Forecast to select loaded sources. Average at most two forecasts describing the same panel installation. Missing source values are excluded, not replaced with zero. With only one valid source the result is that source and its badge; the provider settings retain the selected sources. The integration consumes cached forecast data rather than forcing extra provider refreshes.
+Select up to two loaded forecast sources and **Average selected forecasts** directly during setup. Choose the main provider there if averaging is off. The same choices remain available afterward through the forecast popup or Configure > Forecast. Average at most two forecasts describing the same panel installation. Missing source values are excluded, not replaced with zero. With only one valid source the result is that source and its badge; the provider settings retain the selected sources. The integration consumes cached forecast data rather than forcing extra provider refreshes.
 
 ## Dashboard
 
