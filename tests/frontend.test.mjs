@@ -13,6 +13,21 @@ test('standalone chart views reach their installed renderer instead of invoking 
 });
 const state = (value, unit) => ({ state: value, attributes: { unit_of_measurement: unit } });
 
+test('installed AC/DC chargers remain visible and clickable without a power sensor',()=>{
+  const card=new SigenHybridCard();card.setConfig({entities:{cloud_status:'sensor.cloud'}});
+  card.hass={states:{'sensor.cloud':{state:'connected',attributes:{device_inventory:[{type:'ac',installed:true},{type:'dc',installed:true}]}}}};
+  assert.equal(card._has('ac_power'),true);assert.equal(card._has('dc_power'),true);
+  assert.equal(card._value('ac_power'),null);assert.equal(card._value('dc_power'),null);
+  const photo=card._photo();
+  assert.match(photo,/data-detail="ac"/);assert.match(photo,/data-detail="dc"/);
+  assert.match(photo,/data-photo-flow="acFlow"/);assert.match(photo,/data-photo-flow="dcFlow"/);
+  assert.match(photo,/aria-label="AC CHARGER: —/);assert.match(photo,/aria-label="DC CHARGER: —/);
+  card._config.entities.ac_power=null;card._config.entities.ac_state=null;
+  assert.doesNotMatch(card._photo(),/data-photo-flow="acFlow"/);
+  card._hass.states['sensor.cloud'].attributes.device_inventory=[];
+  assert.doesNotMatch(card._photo(),/data-photo-flow="dcFlow"/);
+});
+
 test('connection metadata preserves the approved navigation and manual-control sections',()=>{
   const card=new SigenHybridCard();card.setConfig({config_entry:'synthetic',entities:{control_status:'sensor.control',cloud_mode:'sensor.mode'}});
   const features={native_mode:{supported:false},grid_switch:{supported:false},manual_control:{supported:false,online:false},charger_control:{supported:false}};

@@ -27,3 +27,11 @@ Local-only installations need a continuous midnight crossing or an explicitly ve
 ## Tablet headers or house labels are cut off
 
 Update the integration and reload the dashboard to obtain the 0.2.3 frontend imports. The full drop-in measures the host area, and Photo House preserves the artwork/label ratio. On smaller spaces, scroll inside the drop-in to reach all controls. The supported custom shell should pass its content height using `--sigen-embedded-height`; an old shell that does not render embedded cards needs its own adapter update.
+
+## Backend updated but the old interface remains
+
+Earlier versions retained the unversioned registered TC resource, allowing an open tablet or browser to keep the previous module graph. Version 0.2.4 upgrades its own resource URL automatically. Restart HA after HACS updates, then fully reload the web view. In HA dashboard Resources, the TC URL should end in `?v=0.2.4`. Do not add a second copy of the same module.
+
+## Installed chargers missing from Photo House
+
+Version 0.2.3 hid charger labels when no instantaneous power entity was discovered, even when the Cloud inventory listed the device. Version 0.2.4 separates installed status from telemetry availability. AC/DC labels and cables use actual inventory; missing power stays unknown. Check the discovered inventory and any explicit null/exclusion mapping if a charger remains absent.

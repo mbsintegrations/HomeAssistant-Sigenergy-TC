@@ -26,7 +26,7 @@ The installer never assumes an arbitrary third-party shell can display a card. A
 
 The main navigation is Overview, Energy, Charts, Devices and Settings. Settings groups are Energy, Connections & data, Appearance, System & safety, Service and About. Existing overview shortcuts open the same editors. Scene, day/night and layout choices live in Appearance; test preview badges require `show_preview_controls: true`.
 
-Phone views use readable power tiles under the scene instead of overlaying small labels. All three scene choices retain the same controls and detail destinations. Larger layouts keep the scene and summary side by side when space allows.
+Phone views use readable power tiles under the scene instead of overlaying small labels. All three scene choices retain the same controls and detail destinations. Larger layouts keep the scene and summary side by side when space allows. Compact landscape layouts reflow daily totals into three columns so the picture, summary and all control groups fit beneath the host header. Portrait and phone layouts preserve readable vertical scrolling.
 
 Connection setup renders the integration's native HA options flow inside TC. Credentials stay transient in the form and are submitted only to HA's options API. Cancel closes that flow. Account time/date/number/week-start preferences use HA's native per-user frontend storage; security and account management remain in HA's account page. A reload may be needed for HA itself to apply locale preferences.
 
@@ -73,8 +73,14 @@ Panels, charts and dialogs follow Home Assistant light/dark mode. House lighting
 
 ## Embedded sizing
 
-The full dashboard measures its own width and available height below host headers. A custom shell can offer `--sigen-embedded-height` on the card; TC caps that to the visible viewport and recalculates on resize. Photo House keeps one aspect ratio for its artwork, cables and labels, with a softened matching background filling unused space. Narrower tablets use separate readable, clickable power tiles; charger readings appear only when configured.
+The full dashboard measures its own width and available height below host headers. A custom shell can offer `--sigen-embedded-height` on the card; TC caps that to the visible viewport and recalculates on resize. Photo House keeps one aspect ratio for its artwork, cables and labels, without blurred padding. Narrower tablets use separate readable, clickable power tiles; charger readings appear only when configured.
 
 Large enough containers retain the complete two-column overview. Short or narrow containers scroll inside the bounded drop-in rather than clipping controls or reducing text and touch targets beyond readability. Other tabs retain their content scrolling. An arbitrary third-party shell must itself offer a bounded area or allow scrolling; TC cannot override an external shell that clips or hides its entire child.
 
 ![Embedded tablet below a dashboard header](images/embedded-tablet.png)
+
+## Frontend updates and installed chargers
+
+From 0.2.4, startup registers the frontend at a versioned URL and upgrades an existing unversioned or older TC resource in place. After updating in HACS, restart HA and reload the tablet or browser web view once so it observes the changed resource configuration. A backend update alone cannot replace modules already running in an open web view. Other Lovelace resources are not changed.
+
+Photo/house/flow and narrow-screen power tiles use the discovered installed-device inventory as well as explicitly mapped sensors. An installed AC/DC charger remains visible when instantaneous power is unavailable; its label opens the same device details and the cable remains drawn without a false flow animation. A missing power reading is shown as a dash, never invented as zero. Explicitly disabled entity mappings remain excluded.

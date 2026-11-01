@@ -20,15 +20,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import { installNavigation, CARD_PRESETS, CARD_CHART_CHOICES } from './sigen-hybrid-navigation.js?v=0.2.3';
-import { installHostFit } from './sigen-hybrid-fit.js?v=0.2.3';
-import { WIDGET_ROUTES } from './sigen-hybrid-widgets.js?v=0.2.3';
-import { renderPhotoScene, PHOTO_STYLE } from './sigen-hybrid-photo.js?v=0.2.3';
-import { renderTodayEnergy, renderBatteryLevel, renderChargerControls, renderMobilePower, OVERVIEW_STYLE } from './sigen-hybrid-overview.js?v=0.2.3';
-import { energySankey as buildEnergySankey } from './sigen-hybrid-sankey.js?v=0.2.3';
-import { renderHouseScene, HOUSE_STYLE } from './sigen-hybrid-house.js?v=0.2.3';
-import { renderDeviceOverview, DEVICE_STYLE } from './sigen-hybrid-devices.js?v=0.2.3';
-import { gridConnectionStatus, connectionIndicators, selectReadingState } from './sigen-hybrid-energy.js?v=0.2.3';
+import { installNavigation, CARD_PRESETS, CARD_CHART_CHOICES } from './sigen-hybrid-navigation.js?v=0.2.4';
+import { installHostFit } from './sigen-hybrid-fit.js?v=0.2.4';
+import { WIDGET_ROUTES } from './sigen-hybrid-widgets.js?v=0.2.4';
+import { renderPhotoScene, PHOTO_STYLE } from './sigen-hybrid-photo.js?v=0.2.4';
+import { renderTodayEnergy, renderBatteryLevel, renderChargerControls, renderMobilePower, OVERVIEW_STYLE } from './sigen-hybrid-overview.js?v=0.2.4';
+import { energySankey as buildEnergySankey } from './sigen-hybrid-sankey.js?v=0.2.4';
+import { renderHouseScene, HOUSE_STYLE } from './sigen-hybrid-house.js?v=0.2.4';
+import { renderDeviceOverview, DEVICE_STYLE } from './sigen-hybrid-devices.js?v=0.2.4';
+import { gridConnectionStatus, connectionIndicators, selectReadingState } from './sigen-hybrid-energy.js?v=0.2.4';
 export const MAIN_DISPLAYS = Object.freeze({ house: 'House', flow: 'Flow', photo: 'Photo house' });
 const COLORS = { solar: '#efc900', battery: '#26c9c8', grid: '#6694ff', home: '#a45bf0', ac: '#b46767', dc: '#d29420' };
 const LABELS = { solar: 'Solar', battery: 'Battery', grid: 'Grid', home: 'Home', ac: 'AC charger', dc: 'DC charger' };
@@ -227,7 +227,12 @@ export class SigenHybridCard extends HTMLElement {
   }
   _now() { const snapshot = Date.parse(this._config?.snapshot_at ?? ''); return Number.isFinite(snapshot) ? snapshot : Date.now(); }
   _value(key, kind = 'power') { return measurement(this._state(key), kind); }
-  _has(key) { return Boolean(this._entities[key]); }
+  _has(key) {
+    if (Object.hasOwn(this._config?.entities ?? {}, key) && this._config.entities[key] === null) return false;
+    if (this._entities[key]) return true;
+    const type = {ac_power:'ac',ac_state:'ac',dc_power:'dc'}[key];
+    return Boolean(type && this._deviceInventory().some(device => device.type === type && device.installed === true));
+  }
   _readOnly() { const control=this._state('control_status')?.attributes;return this._config.cloud_paused === true || !this._config.config_entry || control?.live_writes_locked !== false || control?.control_api_version===1&&control?.capabilities?.manual_control?.available!==true; }
   _moduleIds() { return (this._config.optimizers ?? []).flatMap(m => ['power', 'energy', 'voltage', 'current'].map(k => m[k]).filter(Boolean)); }
   _deviceIds() { return (this._config.devices ?? []).flatMap(device => Object.values(device.entities ?? {}).filter(Boolean)); }

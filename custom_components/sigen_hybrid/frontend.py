@@ -5,7 +5,7 @@ from pathlib import Path
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.components.lovelace.const import LOVELACE_DATA
 
-from .const import DOMAIN
+from .const import DOMAIN, VERSION
 
 
 async def async_register_frontend(hass):
@@ -39,5 +39,12 @@ async def async_register_frontend(hass):
     if dashboard is not None and dashboard.resource_mode == "storage":
         resources = dashboard.resources
         await resources.async_get_info()
-        if not any("sigen-hybrid-card.js" in item.get("url", "") for item in resources.async_items()):
-            await resources.async_create_item({"url": f"/{DOMAIN}/sigen-hybrid-card.js", "res_type": "module"})
+        path = f"/{DOMAIN}/sigen-hybrid-card.js"
+        url = f"{path}?v={VERSION}"
+        existing = [item for item in resources.async_items() if item.get("url", "").split("?", 1)[0] == path]
+        if not existing:
+            await resources.async_create_item({"url": url, "res_type": "module"})
+        else:
+            for item in existing:
+                if item["url"] != url:
+                    await resources.async_update_item(item["id"], {"url": url, "res_type": "module"})

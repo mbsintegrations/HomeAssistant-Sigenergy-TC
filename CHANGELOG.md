@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.4
+
+- Version and upgrade the registered frontend resource automatically, retaining its resource ID and leaving other cards untouched. This prevents an updated backend from retaining the previous JavaScript module graph on tablets and browsers.
+- Keep installed AC/DC chargers visible from the actual inventory even when a power sensor is not bound. Missing readings remain unknown; explicit entity exclusions are respected. Add the previously missing conditional charger connection paths and detail links to Photo House.
+- Remove blurred image padding. Preserve the photo proportions and align its leaders, installed-device labels and flow paths within the responsive scene.
+- Fit the complete landscape overview below host headers and beside dashboard sidebars. Reflow daily totals into three columns on compact landscape layouts and retain reachable controls in the same composition. Phones and portrait layouts keep their readable scrolling layout.
+- Test both chargers without power bindings, resource upgrades, and whole-layout visibility across 38 browser layout cases plus six resize checks.
+
 ## 0.2.3
 
 - Fit embedded dashboards to their host space below headers. Keep Photo House artwork, flow lines and labels on one aspect ratio; preserve charger details when resizing and use readable tiles on narrower tablets. Scroll within the drop-in where the available space cannot contain every control.

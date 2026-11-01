@@ -63,11 +63,11 @@ async function run() {
       for (let i = 0; i < layout.rings.length - 1; i++) assert.ok(layout.rings[i].right <= layout.rings[i + 1].x + 1, name + ': rings overlap');
       await context.close();
     }
-    for (const [width, height] of [[1280,1100],[1280,900],[1180,820],[1024,768],[800,1280],[600,960],[412,915]]) {
+    for (const [width, height, sidebar] of [[1280,1100],[1280,900],[1180,820],[1024,768],[800,1280],[600,960],[412,915],[1380,900,true],[1280,800,true],[1200,800,true],[1024,768,true]]) {
       for (const display of ['photo','house','flow']) {
         const context = await browser.newContext({viewport:{width,height}});
         const page = await context.newPage();
-        await page.goto(`http://127.0.0.1:${server.address().port}/tools/gallery.html?shell=1&display=${display}`);
+        await page.goto(`http://127.0.0.1:${server.address().port}/tools/gallery.html?shell=1&inventory_only=1&display=${display}${sidebar?'&sidebar=1':''}`);
         await page.waitForFunction(() => window.galleryReady);
         await page.evaluate(() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
         const check = async () => page.evaluate(() => {
@@ -81,16 +81,19 @@ async function run() {
           box.scrollTop=box.scrollHeight;
           return {top:b.top,bottom:b.bottom,viewport:innerHeight,overflow:box.scrollWidth>box.clientWidth+1,wide:[...r.querySelectorAll('main,.compact-overview,.hero,.overview-sidebar,.main-display-stage,.overview-summary-stack,.overview-side-module,.panel,.primary-navigation')].filter(n=>n.getBoundingClientRect().right>b.right+1).map(n=>[n.className,n.getBoundingClientRect().width,n.getBoundingClientRect().right]),
             controlsReachable:panel.getBoundingClientRect().bottom<=box.getBoundingClientRect().bottom+1,
-            labelsInside,panelOverlap,photoRatio:f?f.width/f.height:null,artFitsFrame:!f||r.querySelector('.sigen-photo-plane').getBoundingClientRect().height<=f.height+1,hasAc:Boolean(r.querySelector('[data-detail=ac]')),hasDc:Boolean(r.querySelector('[data-detail=dc]'))};
+            compact:card.hasAttribute('data-sigen-compact-fit'),allFits:box.scrollHeight<=box.clientHeight+2,scrollHeight:box.scrollHeight,clientHeight:box.clientHeight,controlHeight:panel.getBoundingClientRect().height,overviewHeight:r.querySelector('.compact-overview').getBoundingClientRect().height,rows:getComputedStyle(r.querySelector('.compact-overview')).gridTemplateRows,summary:[...r.querySelectorAll('.overview-summary-stack .panel,.overview-energy-metric,.overview-circle-label,.overview-circle-storage')].map(n=>({cls:n.className,h:n.getBoundingClientRect().height,scroll:n.scrollHeight,min:getComputedStyle(n).minHeight,padding:getComputedStyle(n).padding})),photoHeight:f?.height,sceneHeight:r.querySelector('.sigen-photo-scene')?.getBoundingClientRect().height,blurred:r.querySelector('.sigen-photo-scene')?getComputedStyle(r.querySelector('.sigen-photo-scene'),'::before').content!=='none':false,
+            labelsInside,panelOverlap,photoRatio:f?f.width/f.height:null,artFitsFrame:!f||r.querySelector('.sigen-photo-plane').getBoundingClientRect().height<=f.height+1,hasAc:Boolean(r.querySelector('.sigen-photo-node [data-detail=ac],.mobile-power-grid [data-detail=ac],.flow [data-detail=ac],.house-reading [data-detail=ac]')),hasDc:Boolean(r.querySelector('.sigen-photo-node [data-detail=dc],.mobile-power-grid [data-detail=dc],.flow [data-detail=dc],.house-reading [data-detail=dc]'))};
         });
         let result=await check();
         assert.ok(result.top>=100&&result.bottom<=height-12,`${width} ${display}: ignores host header/bounds ${JSON.stringify(result)}`);
         assert.equal(result.overflow,false,`${width} ${display}: horizontal overflow ${JSON.stringify(result)}`);
         assert.equal(result.controlsReachable,true,`${width} ${display}: unreachable controls`);
         assert.equal(result.panelOverlap,false,`${width} ${display}: summary panels overlap`);
+        if(result.compact)assert.equal(result.allFits,true,`${width} ${height} ${display}: landscape controls cut off ${JSON.stringify(result)}`);
+        assert.equal(result.blurred,false,'Photo has blurred padding');
         if(display==='photo'&&width>=1024){assert.equal(result.labelsInside,true,`${width}: photo labels clipped ${JSON.stringify(result)}`);assert.equal(result.artFitsFrame,true,'Photo artwork cropped independently of labels');assert.ok(Math.abs(result.photoRatio-1490/673)<.02,'Photo artwork/labels lost their aspect ratio');}
         assert.ok(result.hasAc&&result.hasDc,`${width} ${display}: charger details missing`);
-        if(width===1280&&height===1100&&display==='photo'){
+        if(width===1280&&height===800&&sidebar&&display==='photo'){
           await page.evaluate(()=>{document.querySelector('sigen-hybrid-card').shadowRoot.querySelector('ha-card').scrollTop=0;});
           await page.screenshot({path:path.join(root,'docs/images/embedded-tablet.png'),fullPage:false});
         }
