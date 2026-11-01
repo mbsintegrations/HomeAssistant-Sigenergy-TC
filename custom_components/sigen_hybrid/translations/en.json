@@ -59,7 +59,7 @@
       },
       "dashboard": {
         "title": "Choose your dashboard",
-        "description": "One complete card or separate cards, with layouts that adapt to phone, tablet and computer. Save these defaults now; add the dashboard resource and card afterwards using the card guide. This wizard does not change existing dashboards.",
+        "description": "Choose defaults for the complete dashboard or individual cards. After setup, use Configure → Add to dashboard to place it on an existing page or supported custom menu without editing YAML.",
         "data": {
           "preset": "Card layout",
           "main_display": "Main display",
@@ -69,7 +69,7 @@
       },
       "review": {
         "title": "Review your setup",
-        "description": "Connection: {connection}\nCloud: {cloud}\nForecast: {forecast}\nDashboard: {dashboard}\n\nDevice writes remain locked. Export permission stays off. Submit creates this configuration; it does not alter your existing dashboard. You can change optional features later. It is not yet a hardware-accepted release."
+        "description": "Connection: {connection}\nCloud: {cloud}\nForecast: {forecast}\nDashboard: {dashboard}\nControl requests: {writes}\nLocal writes: {local_writes}\nExport: {export}\n\nSubmit saves this configuration. Plant limits and connection ownership still apply. It does not alter an existing dashboard. Afterwards, use Configure → Add to dashboard to choose an existing page or supported custom menu."
       },
       "connections": {
         "title": "Connections",
@@ -145,7 +145,8 @@
           "remove_cloud": "Remove optional cloud credentials",
           "dashboard": "Dashboard layout and charts",
           "connections": "Enable or disable connections",
-          "modbus": "Configure Modbus"
+          "modbus": "Configure Modbus",
+          "placement": "Add to dashboard"
         }
       },
       "safety": {
@@ -233,6 +234,22 @@
           "max_charge_kw": "Custom charge cap (kW)",
           "max_discharge_kw": "Custom discharge cap (kW)"
         }
+      },
+      "placement": {
+        "title": "Add Sigenergy TC to a dashboard",
+        "description": "Choose an existing editable dashboard. Only the destination selected in the next step will change. A rollback copy is saved before placement.",
+        "data": {
+          "dashboard": "Dashboard"
+        }
+      },
+      "placement_target": {
+        "title": "Choose the destination",
+        "description": "Select an existing page or custom menu. Existing native page cards are preserved. For custom menus, confirm that the shell supports embedded Home Assistant cards; the updated Tab A7 shell does. Replacing an existing menu card requires explicit confirmation.",
+        "data": {
+          "destination": "Page or menu",
+          "replace_existing": "Replace the existing card in this menu",
+          "shell_supported": "My custom menu supports embedded Home Assistant cards"
+        }
       }
     },
     "error": {
@@ -247,13 +264,18 @@
       "connection_required": "Choose at least one connection.",
       "modbus_setup_required": "Configure Modbus first.",
       "cloud_setup_required": "Configure Cloud first.",
-      "invalid_inverter_unit": "Enter a whole inverter unit ID from 1 to 246."
+      "invalid_inverter_unit": "Enter a whole inverter unit ID from 1 to 246.",
+      "placement_changed": "The destination changed or a required confirmation is missing. Check the selection; reopen Add to dashboard if someone edited it."
     },
     "abort": {
       "forecast_provider_missing": "{provider_name} is not configured and loaded. {instructions}\n\n[Installation guide]({install_url})\n\nAfter setup, reopen Sigenergy TC options and select the provider again.",
       "cloud_opt_in_required": "Cloud access was not enabled. Local monitoring remains available.",
       "demo_isolated": "Demo is isolated and never connects to cloud accounts. Use a validated local configuration for optional cloud reads.",
-      "control_recovery_required": "The active command could not be safely released. Stop it and restore its settings in mySigen, then retry this connection change."
+      "control_recovery_required": "The active command could not be safely released. Stop it and restore its settings in mySigen, then retry this connection change.",
+      "dashboard_added": "Sigenergy TC was added to the selected dashboard destination.",
+      "placement_admin_required": "Sign in as a Home Assistant administrator to add dashboard cards.",
+      "placement_no_dashboard": "No editable dashboard was found. Create or take control of a dashboard in Home Assistant first.",
+      "placement_save_failed": "Placement could not be verified. Inspect the destination before retrying. The rollback copy is stored in Home Assistant."
     }
   }
 }

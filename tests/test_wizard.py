@@ -213,6 +213,26 @@ async def test_review_never_echoes_cloud_credentials():
 
 
 @pytest.mark.asyncio
+async def test_review_permissions_follow_selected_preferences():
+    flow = wizard()
+    flow._pending_title = "Example"
+    flow._pending_data = {"demo": False, "host": "synthetic.invalid", "shared_read_only": False}
+    flow._pending_options = {"forecast": {"provider": "none"}, "dashboard": {"preset": "overview"},
+                             "control": {"enabled": True, "local_enabled": True}, "safety": {"export_permitted": True}}
+    form = await flow.async_step_review()
+    values = form["description_placeholders"]
+    assert values["writes"] == values["local_writes"] == "Enabled"
+    assert values["export"].startswith("Allowed")
+    assert values["connection"] == "Local Modbus"
+    flow._pending_data["shared_read_only"] = True
+    flow._pending_options["control"]["enabled"] = False
+    flow._pending_options["safety"]["export_permitted"] = False
+    values = (await flow.async_step_review())["description_placeholders"]
+    assert values["writes"] == values["local_writes"] == "Disabled"
+    assert values["export"].startswith("Not permitted")
+
+
+@pytest.mark.asyncio
 async def test_cloud_only_setup_has_no_local_host_or_hardware_probe():
     flow = wizard()
     await flow.async_step_cloud_only()

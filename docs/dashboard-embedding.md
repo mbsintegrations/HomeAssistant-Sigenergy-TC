@@ -1,6 +1,12 @@
 # Dashboard placement and interface settings
 
-Open **Sigenergy TC → Settings → Add to dashboard** using a Home Assistant administrator account.
+## Add to an existing dashboard without a starter card
+
+Open **Settings → Devices & services → Sigenergy TC → Configure → Add to dashboard** as an HA administrator. Choose the existing dashboard, then its existing page or supported custom-menu destination. Submit adds only that card. No new dashboard is created. Existing native page content remains intact. To replace an occupied custom-menu card, tick the replacement confirmation. For a custom menu, also confirm that its shell supports embedded HA cards.
+
+The backend saves the last five placement snapshots in HA private storage (`sigen_hybrid_dashboard_backups_<entry>`), checks for concurrent edits, saves through HA Lovelace, and verifies readback. YAML/auto-generated dashboards are not edited. Placement sends no plant command and does not reload the integration.
+
+The in-card **Sigenergy TC → Settings → Add to dashboard** remains available, with additional individual-card/chart choices.
 
 Choose a storage dashboard and one of these destinations:
 
@@ -64,3 +70,11 @@ Use the configuration form's integration selector to choose the actual entry. No
 ## Theme and house lighting
 
 Panels, charts and dialogs follow Home Assistant light/dark mode. House lighting (Auto, Day, Night or Home Assistant theme) only selects the house scene. A daylight house therefore stays compatible with dark dashboard charts, and selecting a night scene does not force a dark interface when HA is in light mode.
+
+## Embedded sizing
+
+The full dashboard measures its own width and available height below host headers. A custom shell can offer `--sigen-embedded-height` on the card; TC caps that to the visible viewport and recalculates on resize. Photo House keeps one aspect ratio for its artwork, cables and labels, with a softened matching background filling unused space. Narrower tablets use separate readable, clickable power tiles; charger readings appear only when configured.
+
+Large enough containers retain the complete two-column overview. Short or narrow containers scroll inside the bounded drop-in rather than clipping controls or reducing text and touch targets beyond readability. Other tabs retain their content scrolling. An arbitrary third-party shell must itself offer a bounded area or allow scrolling; TC cannot override an external shell that clips or hides its entire child.
+
+![Embedded tablet below a dashboard header](images/embedded-tablet.png)
