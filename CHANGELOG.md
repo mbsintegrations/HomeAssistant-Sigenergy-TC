@@ -6,7 +6,7 @@
 - Keep installed AC/DC chargers visible from the actual inventory even when a power sensor is not bound. Missing readings remain unknown; explicit entity exclusions are respected. Add the previously missing conditional charger connection paths and detail links to Photo House.
 - Remove blurred image padding. Preserve the photo proportions and align its leaders, installed-device labels and flow paths within the responsive scene.
 - Fit the complete landscape overview below host headers and beside dashboard sidebars. Reflow daily totals into three columns on compact landscape layouts and retain reachable controls in the same composition. Phones and portrait layouts keep their readable scrolling layout.
-- Test both chargers without power bindings, resource upgrades, and whole-layout visibility across 38 browser layout cases plus six resize checks.
+- Test both chargers without power bindings, resource upgrades, and whole-layout visibility across 44 browser layout cases plus 12 resize checks.
 
 ## 0.2.3
 

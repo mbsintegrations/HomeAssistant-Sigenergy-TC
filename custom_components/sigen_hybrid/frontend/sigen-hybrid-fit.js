@@ -27,7 +27,9 @@ export function installHostFit(Card) {
       if (available <= 0) return;
       const value = `${available}px`;
       if (this.style.getPropertyValue('--sigen-host-height') !== value) this.style.setProperty('--sigen-host-height', value);
-      const fit = (box.width >= 950 || box.width >= 740 && available <= box.width * .95) && available >= 600;
+      // Below this space budget, preserve readable controls in a scrollable
+      // layout instead of compressing panels until their contents overlap.
+      const fit = box.width >= 950 && available >= 660;
       this.toggleAttribute('data-sigen-fit', fit);
       this.toggleAttribute('data-sigen-compact-fit', fit && (box.width < 1100 || available < 820));
     };
@@ -101,30 +103,35 @@ ha-card.embedded-shell>main{min-width:0;min-height:0}
 :host([data-sigen-compact-fit]) .compact-overview>.hero{grid-column:1!important}
 :host([data-sigen-compact-fit]) .compact-overview>.overview-sidebar{grid-column:2!important}
 :host([data-sigen-compact-fit]) .compact-overview .main-display-stage{width:100%!important;height:100%!important;max-height:none!important;aspect-ratio:auto!important;min-height:0}
-:host([data-sigen-compact-fit]) .compact-overview .overview-summary-stack{display:grid!important;grid-template-columns:1fr!important;grid-template-rows:auto minmax(0,1fr) auto!important;gap:6px!important;height:100%!important;min-height:0}
+:host([data-sigen-compact-fit]) .compact-overview .overview-summary-stack{display:grid!important;grid-template-columns:1fr!important;grid-template-rows:auto minmax(min-content,1fr) auto!important;gap:6px!important;height:100%!important;min-height:0}
 :host([data-sigen-compact-fit]) .overview-side-module>.panel{padding:6px!important;min-height:0}
 :host([data-sigen-compact-fit]) .overview-side-module h2{font-size:15px!important;margin:0 0 5px!important;line-height:20px}
 :host([data-sigen-compact-fit]) .overview-side-module .section-title{margin-bottom:4px;gap:4px}
 :host([data-sigen-compact-fit]) .overview-forecast-panel .tile{min-height:44px!important;padding:4px 6px!important;gap:9px!important}
 :host([data-sigen-compact-fit]) .overview-forecast-panel .tile strong{font-size:18px!important;line-height:22px}
 :host([data-sigen-compact-fit]) .overview-forecast-panel .tile small{font-size:11px!important;line-height:14px}
+:host([data-sigen-compact-fit]) [data-display-module=forecast] .tile{min-height:44px!important;padding:4px 6px!important;gap:9px!important}
+:host([data-sigen-compact-fit]) [data-display-module=forecast] .tile strong{font-size:18px!important;line-height:22px}
+:host([data-sigen-compact-fit]) [data-display-module=forecast] .tile small{font-size:11px!important;line-height:14px}
 :host([data-sigen-compact-fit]) .forecast-source-badges .badge{font-size:9px!important;min-height:20px!important;padding:2px 4px!important}
 :host([data-sigen-compact-fit]) .overview-energy-metrics{gap:5px!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;grid-template-rows:repeat(2,minmax(44px,1fr))!important}
-:host([data-sigen-compact-fit]) .overview-energy-metric{min-height:44px!important;padding:4px 6px!important}
-:host([data-sigen-compact-fit]) .overview-energy-metric small{font-size:11px!important;line-height:13px;margin-bottom:2px!important}
-:host([data-sigen-compact-fit]) .overview-energy-metric strong{font-size:17px!important;line-height:22px;white-space:nowrap}
-:host([data-sigen-compact-fit]) .overview-summary-ring{max-width:56px!important;padding:4px!important}
+:host([data-sigen-compact-fit]) .overview-energy-metric{min-height:44px!important;padding:3px 6px!important}
+:host([data-sigen-compact-fit]) .overview-energy-metric small{font-size:11px!important;line-height:12px;margin-bottom:1px!important}
+:host([data-sigen-compact-fit]) .overview-energy-metric strong{font-size:17px!important;line-height:20px;white-space:nowrap}
+:host([data-sigen-compact-fit]) .overview-summary-ring{max-width:52px!important;padding:4px!important}
+:host([data-sigen-compact-fit]) .overview-side-module>.overview-circle-panel{padding:4px!important}
 :host([data-sigen-compact-fit]) .overview-circle-label{font-size:10px!important;line-height:13px;min-height:14px!important}
 :host([data-sigen-compact-fit]) .overview-circle-panel .overview-summary-ring strong{font-size:13px!important}
 :host([data-sigen-compact-fit]) .overview-ring-centre small{font-size:8px!important;margin-top:2px}
+:host([data-sigen-compact-fit]) .overview-circle-button{gap:4px!important}
 :host([data-sigen-compact-fit]) .overview-circle-storage{font-size:10px!important;margin-top:4px!important;line-height:12px}
 :host([data-sigen-compact-fit]) .overview-primary-controls>.panel{padding:6px!important}
 :host([data-sigen-compact-fit]) .instant-manual-panel h2{font-size:15px;margin:0!important}
-:host([data-sigen-compact-fit]) .instant-manual-panel>.section-title{margin-bottom:6px!important}
+:host([data-sigen-compact-fit]) .instant-manual-panel>.section-title{margin-bottom:4px!important;line-height:20px}
 :host([data-sigen-compact-fit]) .battery-control-buttons{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:5px}
 :host([data-sigen-compact-fit]) .control-buttons button{min-height:44px!important;font-size:12px!important;line-height:15px;padding:5px!important}
 :host([data-sigen-compact-fit]) .overview-charger-controls{grid-template-columns:repeat(2,minmax(0,1fr))!important;margin-top:6px!important;padding-top:5px!important;gap:8px}
-:host([data-sigen-compact-fit]) .overview-charger-heading{font-size:12px!important;padding:0 0 4px!important;min-height:24px}
+:host([data-sigen-compact-fit]) .overview-charger-heading{font-size:12px!important;line-height:16px!important;padding:0 0 4px!important;min-height:24px}
 :host([data-sigen-compact-fit]) .overview-device-links{display:grid!important;grid-template-columns:1fr!important;grid-template-rows:repeat(3,minmax(44px,1fr))!important;gap:5px!important;margin:0!important;min-height:0}
 :host([data-sigen-compact-fit]) .overview-device-links>*{grid-column:1!important;min-height:44px!important;font-size:12px!important;padding:6px 8px!important}
 :host([data-sigen-compact-fit]) .overview-mode-control select{min-height:24px!important;font-size:13px!important}
