@@ -482,10 +482,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 if self._pending_data["demo"]
                 else "Cloud only, no Modbus connection"
                 if self._pending_data.get("cloud_only")
-                else "Local Modbus, read-only",
+                else "Local Modbus",
                 "cloud": "Optional app-cloud reads" if "cloud" in self._pending_options else "Disabled",
                 "forecast": self._pending_options["forecast"]["provider"],
                 "dashboard": self._pending_options["dashboard"]["preset"],
+                "writes": "Enabled" if self._pending_options.get("control", {}).get("enabled") else "Disabled",
+                "local_writes": "Enabled" if self._pending_options.get("control", {}).get("local_enabled") and not self._pending_data.get("shared_read_only") else "Disabled",
+                "export": "Allowed by TC preferences; plant limits still apply" if self._pending_options.get("safety", {}).get("export_permitted") else "Not permitted by TC preferences",
             },
         )
 
@@ -517,8 +520,63 @@ class OptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
         return self.async_show_menu(
             step_id="init",
-            menu_options=["connections", "modbus", "cloud", "safety", "forecast", "remove_cloud", "dashboard"],
+            menu_options=["connections", "modbus", "cloud", "safety", "forecast", "remove_cloud", "dashboard", "placement"],
         )
+
+    async def async_step_placement(self, user_input=None):
+        from .dashboard_placement import dashboards
+
+        try:
+            choices = await dashboards(self.hass)
+        except PermissionError:
+            return self.async_abort(reason="placement_admin_required")
+        if not choices:
+            return self.async_abort(reason="placement_no_dashboard")
+        errors = {}
+        if user_input is not None:
+            selected = user_input.get("dashboard")
+            if selected in choices:
+                self._placement_dashboard, self._placement_original = choices[selected]
+                return await self.async_step_placement_target()
+            errors["base"] = "placement_changed"
+        return self.async_show_form(step_id="placement", errors=errors, data_schema=vol.Schema({
+            vol.Required("dashboard"): selector.SelectSelector(selector.SelectSelectorConfig(options=[
+                {"value": key, "label": (item[0].config or {}).get("title", "Overview")} for key, item in choices.items()
+            ]))
+        }))
+
+    async def async_step_placement_target(self, user_input=None):
+        from .dashboard_placement import place, save, targets
+
+        choices = targets(self._placement_original)
+        errors = {}
+        if user_input is not None:
+            try:
+                target = choices[user_input["destination"]]
+                if "page" in target and not user_input.get("shell_supported"):
+                    raise ValueError("Custom menu support must be confirmed")
+                changed = place(self._placement_original, user_input["destination"], self.config_entry.entry_id,
+                                self.config_entry.options.get("dashboard", {}), replace_existing=user_input.get("replace_existing", False))
+                # Revalidate admin status immediately before the only mutation.
+                from .dashboard_placement import dashboards
+                current = await dashboards(self.hass)
+                if not any(item[0] is self._placement_dashboard for item in current.values()):
+                    raise ValueError("Dashboard no longer exists")
+                await save(self.hass, self._placement_dashboard, self._placement_original, changed, self.config_entry.entry_id)
+                return self.async_abort(reason="dashboard_added")
+            except PermissionError:
+                return self.async_abort(reason="placement_admin_required")
+            except (ValueError, KeyError):
+                errors["base"] = "placement_changed"
+            except Exception:
+                return self.async_abort(reason="placement_save_failed")
+        return self.async_show_form(step_id="placement_target", errors=errors, data_schema=vol.Schema({
+            vol.Required("destination"): selector.SelectSelector(selector.SelectSelectorConfig(options=[
+                {"value": key, "label": item["label"] + (" (replace existing card)" if item.get("occupied") else "")} for key, item in choices.items()
+            ])),
+            vol.Optional("replace_existing", default=False): bool,
+            vol.Optional("shell_supported", default=False): bool,
+        }))
 
     async def async_step_connections(self, user_input=None):
         current = enabled_connections(self.config_entry.data, self.config_entry.options)

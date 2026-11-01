@@ -18,6 +18,7 @@ async def async_register_frontend(hass):
             )
             for filename in (
                 "sigen-hybrid-card.js",
+                "sigen-hybrid-fit.js",
                 "sigen-hybrid-navigation.js",
                 "sigen-hybrid-details.js",
                 "sigen-hybrid-charts.js",

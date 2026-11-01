@@ -15,6 +15,8 @@ const context = (values = {}, extra = {}) => ({
 const flowTag = (body, key) => body.match(new RegExp(`<g class="[^"]*" data-photo-flow="${key}"[^>]*>`))?.[0] ?? '';
 
 test('uses local newly generated day/night assets with renderer attribution and no embedded upstream images', async () => {
+  assert.match(renderPhotoScene(context()), /--sigen-photo-image:url\('[^']+overview-house-day-v1.webp'\)/);
+  assert.match(renderPhotoScene(context({}, {night:true})), /--sigen-photo-image:url\('[^']+overview-house-night-v1.webp'\)/);
   const source = await readFile(MODULE, 'utf8');
   const hashes = {
     'overview-house-day-v1.webp': '4fb5e608e53f88bdf8cd33ee86b11d906ff277fd3993be2300a6618d91ff2512',

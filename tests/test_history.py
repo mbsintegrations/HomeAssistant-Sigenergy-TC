@@ -16,6 +16,30 @@ NOW = datetime(2026, 10, 27, 19, tzinfo=UTC)
 DAY = {"date": "2026-10-27", "start_time": "2026-10-27T00:00:00Z", "end_time": "2026-10-28T00:00:00Z"}
 
 
+@pytest.mark.asyncio
+async def test_first_day_measured_totals_share_chart_cache_and_reject_missing_predictions():
+    from types import SimpleNamespace
+
+    calls = []
+
+    async def history_energy(**kwargs):
+        calls.append(kwargs)
+        return {"chartData": {"unit": "kWh", "dataSeries": [
+            series("FROM_GRID", ("20261027 00:00", 22.42, {})),
+            series("TO_BATTERY", ("20261027 00:00", -17.8, {})),
+            series("TO_EVAC", ("20261027 00:00", 0, {})),
+            series("FROM_SOLAR", ("20261027 00:00", 50, {"isForecast": True})),
+            series("TO_GRID", ("20261026 00:00", .3, {})),
+        ]}}
+
+    broker = HistoryBroker(SimpleNamespace(history_energy=history_energy), timezone="Europe/Dublin", currency="EUR", now=lambda: NOW)
+    first = await broker.daily_totals()
+    assert first["values"] == {"grid_import_today": 22.42, "battery_charge_today": 17.8, "ac_today": 0}
+    assert await broker.daily_totals() == first
+    assert len(calls) == 1
+    assert calls[0]["date_flag"] == 2  # daily measured buckets, not sampled day power
+
+
 def series(identity, *points, **extra):
     return {
         "id": identity,

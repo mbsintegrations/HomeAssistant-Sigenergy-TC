@@ -4,7 +4,7 @@
 
 > **INVITATION-ONLY ALPHA — DO NOT INSTALL unless you have been invited by MBS Integrations.**
 >
-> Version **0.2.0** is an experimental, owner-supervised control release. It is not a stable release or a Sigenergy product. Real commands can change battery operation, charging and grid connection. Read the [control and recovery guide](docs/controls-and-recovery.md) before enabling control.
+> Version **0.2.3** is an experimental, owner-supervised control release. It is not a stable release or a Sigenergy product. Real commands can change battery operation, charging and grid connection. Read the [control and recovery guide](docs/controls-and-recovery.md) before enabling control.
 
 [![Validation](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/actions/workflows/validate.yml/badge.svg)](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/actions/workflows/validate.yml)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://www.hacs.xyz/docs/faq/custom_repositories/)
@@ -17,7 +17,7 @@ A local-first Home Assistant integration and responsive energy dashboard for Sig
 
 ## Features
 
-- Local power, battery SOC, native energy counters and persistent daily baselines. Independent cloud availability lets Modbus continue during internet failures.
+- Local power, battery SOC, native energy counters and persistent daily baselines, with cached measured Cloud daily buckets covering the first installation day. Independent cloud availability lets Modbus continue during internet failures.
 - Optional cached cloud telemetry, history, supported operating modes, discovered battery modules, gateway and charger information.
 - Real local/cloud battery charge, discharge to home, discharge to grid, hold and self-consumption commands; native cloud mode selection, gateway switching and AC/DC charger start/stop.
 - Owner SOC, battery/PV power, backup reserve, grid power/current, energy priorities, peak-shaving and AC/DC charging-mode settings. Popups read actual settings and reject stale edits. [Setting formats and availability](docs/owner-settings.md).
@@ -29,6 +29,8 @@ A local-first Home Assistant integration and responsive energy dashboard for Sig
 - Existing-dashboard embedding, visual card configuration, light/dark themes, sanitized diagnostics and optional local connection notifications.
 
 **Boundaries:** all implemented writes are available to an owner who enables their control connection; an upgrade never silently enables an existing entry. Local timing requires HA to remain running, and local home-only discharge caps total grid export at zero. Cloud discharge can block battery export while allowing PV export. Installer/protection settings, V2X dispatch, firmware operations, external AI execution, direct Tigo discovery and native charger scheduling are not implemented as working controls. [Full capability matrix](docs/compatibility.md).
+
+Use **Settings → Devices & services → Sigenergy TC → Configure → Add to dashboard** to place the full interface on an existing editable page or supported custom-shell menu. Embedded layouts measure their available space below dashboard headers. See [dashboard placement and sizing](docs/dashboard-embedding.md).
 
 ## Invited testers: install with HACS
 

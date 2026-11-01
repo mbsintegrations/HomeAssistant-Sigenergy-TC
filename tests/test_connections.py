@@ -11,6 +11,14 @@ from custom_components.sigen_hybrid.core.connections import (
 NOW = datetime(2026, 10, 28, tzinfo=timezone.utc)
 
 
+def test_daily_cache_keeps_its_own_clock_when_live_cloud_refreshes():
+    cloud = {"observed_at": NOW.isoformat(), "values": {"grid_import_today": 20, "pv_kw": 2},
+             "observed_at_by_key": {"grid_import_today": (NOW - timedelta(hours=2)).isoformat()}}
+    status = {"cloud": {"enabled": True, "status": "connected"}}
+    assert select_reading("grid_import_today", {"cloud": cloud}, status, NOW) is None
+    assert select_reading("pv_kw", {"cloud": cloud}, status, NOW).value == 2
+
+
 def sources():
     return {
         k: {"observed_at": NOW.isoformat(), "values": {"pv_kw": v}}

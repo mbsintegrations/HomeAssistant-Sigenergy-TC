@@ -63,6 +63,46 @@ async function run() {
       for (let i = 0; i < layout.rings.length - 1; i++) assert.ok(layout.rings[i].right <= layout.rings[i + 1].x + 1, name + ': rings overlap');
       await context.close();
     }
+    for (const [width, height] of [[1280,1100],[1280,900],[1180,820],[1024,768],[800,1280],[600,960],[412,915]]) {
+      for (const display of ['photo','house','flow']) {
+        const context = await browser.newContext({viewport:{width,height}});
+        const page = await context.newPage();
+        await page.goto(`http://127.0.0.1:${server.address().port}/tools/gallery.html?shell=1&display=${display}`);
+        await page.waitForFunction(() => window.galleryReady);
+        await page.evaluate(() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+        const check = async () => page.evaluate(() => {
+          const card=document.querySelector('sigen-hybrid-card'),r=card.shadowRoot,box=r.querySelector('ha-card'),b=box.getBoundingClientRect();
+          const panel=r.querySelector('.overview-primary-controls'),stage=r.querySelector('.main-display-stage'),s=stage.getBoundingClientRect();
+          const frame=r.querySelector('.sigen-photo-frame'),f=frame?.getBoundingClientRect();
+          const labels=[...r.querySelectorAll('.sigen-photo-node')].filter(n=>getComputedStyle(n).display!=='none');
+          const labelsInside=labels.every(n=>{const q=n.getBoundingClientRect();return q.left>=s.left-1&&q.right<=s.right+1&&q.top>=s.top-1&&q.bottom<=s.bottom+1;});
+          const panels=[...r.querySelectorAll('.overview-summary-stack .overview-side-module>.panel,.overview-sidebar>.overview-device-links')].map(n=>n.getBoundingClientRect());
+          const panelOverlap=panels.some((a,i)=>panels.slice(i+1).some(b=>a.left<b.right-1&&a.right>b.left+1&&a.top<b.bottom-1&&a.bottom>b.top+1));
+          box.scrollTop=box.scrollHeight;
+          return {top:b.top,bottom:b.bottom,viewport:innerHeight,overflow:box.scrollWidth>box.clientWidth+1,wide:[...r.querySelectorAll('main,.compact-overview,.hero,.overview-sidebar,.main-display-stage,.overview-summary-stack,.overview-side-module,.panel,.primary-navigation')].filter(n=>n.getBoundingClientRect().right>b.right+1).map(n=>[n.className,n.getBoundingClientRect().width,n.getBoundingClientRect().right]),
+            controlsReachable:panel.getBoundingClientRect().bottom<=box.getBoundingClientRect().bottom+1,
+            labelsInside,panelOverlap,photoRatio:f?f.width/f.height:null,artFitsFrame:!f||r.querySelector('.sigen-photo-plane').getBoundingClientRect().height<=f.height+1,hasAc:Boolean(r.querySelector('[data-detail=ac]')),hasDc:Boolean(r.querySelector('[data-detail=dc]'))};
+        });
+        let result=await check();
+        assert.ok(result.top>=100&&result.bottom<=height-12,`${width} ${display}: ignores host header/bounds ${JSON.stringify(result)}`);
+        assert.equal(result.overflow,false,`${width} ${display}: horizontal overflow ${JSON.stringify(result)}`);
+        assert.equal(result.controlsReachable,true,`${width} ${display}: unreachable controls`);
+        assert.equal(result.panelOverlap,false,`${width} ${display}: summary panels overlap`);
+        if(display==='photo'&&width>=1024){assert.equal(result.labelsInside,true,`${width}: photo labels clipped ${JSON.stringify(result)}`);assert.equal(result.artFitsFrame,true,'Photo artwork cropped independently of labels');assert.ok(Math.abs(result.photoRatio-1490/673)<.02,'Photo artwork/labels lost their aspect ratio');}
+        assert.ok(result.hasAc&&result.hasDc,`${width} ${display}: charger details missing`);
+        if(width===1280&&height===1100&&display==='photo'){
+          await page.evaluate(()=>{document.querySelector('sigen-hybrid-card').shadowRoot.querySelector('ha-card').scrollTop=0;});
+          await page.screenshot({path:path.join(root,'docs/images/embedded-tablet.png'),fullPage:false});
+        }
+        if(width===1280){
+          await page.setViewportSize({width:900,height:700});
+          await page.evaluate(() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+          result=await check();
+          assert.ok(result.bottom<=688&&!result.overflow&&result.controlsReachable,'Live resize left clipped controls');
+        }
+        report.push({embedded:true,width,height,display,...result});await context.close();
+      }
+    }
     console.log(JSON.stringify(report));
   } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }
 }

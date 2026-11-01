@@ -20,14 +20,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import { installNavigation, CARD_PRESETS, CARD_CHART_CHOICES } from './sigen-hybrid-navigation.js?v=0.2.2';
-import { WIDGET_ROUTES } from './sigen-hybrid-widgets.js?v=0.2.2';
-import { renderPhotoScene, PHOTO_STYLE } from './sigen-hybrid-photo.js?v=0.2.2';
-import { renderTodayEnergy, renderBatteryLevel, renderChargerControls, renderMobilePower, OVERVIEW_STYLE } from './sigen-hybrid-overview.js?v=0.2.2';
-import { energySankey as buildEnergySankey } from './sigen-hybrid-sankey.js?v=0.2.2';
-import { renderHouseScene, HOUSE_STYLE } from './sigen-hybrid-house.js?v=0.2.2';
-import { renderDeviceOverview, DEVICE_STYLE } from './sigen-hybrid-devices.js?v=0.2.2';
-import { gridConnectionStatus, connectionIndicators, selectReadingState } from './sigen-hybrid-energy.js?v=0.2.2';
+import { installNavigation, CARD_PRESETS, CARD_CHART_CHOICES } from './sigen-hybrid-navigation.js?v=0.2.3';
+import { installHostFit } from './sigen-hybrid-fit.js?v=0.2.3';
+import { WIDGET_ROUTES } from './sigen-hybrid-widgets.js?v=0.2.3';
+import { renderPhotoScene, PHOTO_STYLE } from './sigen-hybrid-photo.js?v=0.2.3';
+import { renderTodayEnergy, renderBatteryLevel, renderChargerControls, renderMobilePower, OVERVIEW_STYLE } from './sigen-hybrid-overview.js?v=0.2.3';
+import { energySankey as buildEnergySankey } from './sigen-hybrid-sankey.js?v=0.2.3';
+import { renderHouseScene, HOUSE_STYLE } from './sigen-hybrid-house.js?v=0.2.3';
+import { renderDeviceOverview, DEVICE_STYLE } from './sigen-hybrid-devices.js?v=0.2.3';
+import { gridConnectionStatus, connectionIndicators, selectReadingState } from './sigen-hybrid-energy.js?v=0.2.3';
 export const MAIN_DISPLAYS = Object.freeze({ house: 'House', flow: 'Flow', photo: 'Photo house' });
 const COLORS = { solar: '#efc900', battery: '#26c9c8', grid: '#6694ff', home: '#a45bf0', ac: '#b46767', dc: '#d29420' };
 const LABELS = { solar: 'Solar', battery: 'Battery', grid: 'Grid', home: 'Home', ac: 'AC charger', dc: 'DC charger' };
@@ -567,6 +568,7 @@ main[data-view=house]>.scene-wrap,main[data-view=flow]>.flow{width:72%;max-width
 `;
 
 installNavigation(SigenHybridCard);
+installHostFit(SigenHybridCard);
 if (!customElements.get('sigen-hybrid-card')) customElements.define('sigen-hybrid-card', SigenHybridCard);
 window.customCards = window.customCards ?? [];
 if (!window.customCards.some(c => c.type === 'sigen-hybrid-card')) window.customCards.push({ type: 'sigen-hybrid-card', name: 'Sigenergy TC', description: 'Total Control: adaptive overview, original house artwork, flow and individual device/chart views', preview: true });

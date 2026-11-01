@@ -49,13 +49,14 @@ def select_reading(key, sources, statuses, now):
         status, source = statuses.get(route, {}), sources.get(route, {})
         if not status.get("enabled") or status.get("status") != "connected":
             continue
-        age = age_seconds(source.get("observed_at"), now)
+        stamp = source.get("observed_at_by_key", {}).get(key, source.get("observed_at"))
+        age = age_seconds(stamp, now)
         if age is None or age > MAX_AGE[route]:
             continue
         value = source.get("values", {}).get(key)
         if value is None or isinstance(value, float) and not isfinite(value):
             continue
-        return Reading(value, route, source["observed_at"])
+        return Reading(value, route, stamp)
     return None
 
 

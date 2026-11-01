@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.3
+
+- Fit embedded dashboards to their host space below headers. Keep Photo House artwork, flow lines and labels on one aspect ratio; preserve charger details when resizing and use readable tiles on narrower tablets. Scroll within the drop-in where the available space cannot contain every control.
+- Add Configure → Add to dashboard for existing editable pages and supported custom-shell menus, with explicit replacement confirmation, rollback storage, concurrency checks and verified readback. No starter dashboard or YAML editing is required.
+- Supply measured first-day daily energy from Cloud calendar buckets through the shared history cache. Prefer established local daily counters; never infer a midnight baseline from asynchronous Cloud/Modbus readings.
+- Correct setup review permissions and export text to match selected preferences.
+- Extend browser regression coverage to embedded header/resize cases across all three scenes; update documentation and screenshots.
+
 ## 0.2.2
 
 - Replace the primary inverter unit-ID slider with an integer number box.

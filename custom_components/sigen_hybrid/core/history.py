@@ -283,6 +283,32 @@ class HistoryBroker:
         self._last_request = float("-inf")
         self._retry_after = float("-inf")
 
+    async def daily_totals(self):
+        """Use the measured current-day bucket, sharing the weekly chart cache.
+
+        A cloud bucket is not a timestamp-aligned Modbus cumulative counter and
+        must never be subtracted from one to manufacture a midnight baseline.
+        """
+        now = self.now().astimezone(self.zone)
+        midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        first = midnight - timedelta(days=midnight.weekday())
+        result = await self.get("power", "week", now.date().isoformat(), first.isoformat(), (first + timedelta(days=7)).isoformat())
+        mapping = {
+            "solar_energy": "solar_today", "home_energy": "home_today",
+            "battery_charge_energy": "battery_charge_today", "battery_discharge_energy": "battery_discharge_today",
+            "grid_import_energy": "grid_import_today", "grid_export_energy": "grid_export_today",
+            "ac_energy": "ac_today", "dc_charge_energy": "dc_today", "dc_discharge_energy": "dc_discharge_today",
+        }
+        values = {}
+        for series in result.get("series", []):
+            key = mapping.get(series["key"])
+            if key is None or series.get("unit") != "kWh":
+                continue
+            points = [point for point in series["points"] if point["time"] == int(midnight.timestamp() * 1000)]
+            if len(points) == 1 and (value := points[0]["value"]) is not None and math.isfinite(value):
+                values[key] = abs(value)
+        return {"values": values, "observed_at": result.get("observed_at")} if values else {}
+
     async def get(self, kind, period, date, start_time, end_time):
         if kind not in HISTORY_KINDS:
             raise ValueError("Unsupported history chart")

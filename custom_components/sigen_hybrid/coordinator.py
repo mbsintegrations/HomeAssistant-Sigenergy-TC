@@ -42,6 +42,7 @@ class SigenCoordinator(DataUpdateCoordinator):
         self.cloud = cloud
         self.local_error = None
         self.cloud_data = {}
+        self.cloud_daily_data = {}
         self.cloud_error = None
         self._cloud_tasks = set()
         self._cloud_update_lock = asyncio.Lock()
@@ -114,7 +115,8 @@ class SigenCoordinator(DataUpdateCoordinator):
             },
             "cloud": {
                 "observed_at": self.cloud_data.get("telemetry_observed_at", self.cloud_data.get("updated_at")),
-                "values": self.cloud_data.get("telemetry", {}),
+                "values": {**self.cloud_daily_data.get("values", {}), **self.cloud_data.get("telemetry", {})},
+                "observed_at_by_key": {key: self.cloud_daily_data.get("observed_at") for key in self.cloud_daily_data.get("values", {}) if key not in self.cloud_data.get("telemetry", {})},
             },
         }
 
@@ -217,6 +219,7 @@ class SigenCoordinator(DataUpdateCoordinator):
                 if gate is not None and gate.auth_blocked:
                     raise AuthenticationError("Cloud sign-in requires attention")
                 self.cloud_error = None
+                await self._async_daily_energy()
         except AuthenticationError:
             self.cloud_error = "authentication_required"
             self.entry.async_start_reauth(self.hass)
@@ -231,6 +234,25 @@ class SigenCoordinator(DataUpdateCoordinator):
             self._cloud_tasks.discard(task)
             if not self._closing:
                 self.async_update_listeners()
+
+    async def _async_daily_energy(self):
+        """One cached history request, independent of local polling and controls."""
+        client = getattr(self.cloud, "client", None)
+        if not callable(getattr(client, "history_energy", None)):
+            return
+        try:
+            from .core.history import HistoryBroker
+
+            brokers = self.hass.data.setdefault(DOMAIN, {}).setdefault("history", {})
+            cached = brokers.get(self.entry.entry_id)
+            if cached is None or cached[0] is not client:
+                cached = (client, HistoryBroker(client, timezone=self.hass.config.time_zone, currency=self.hass.config.currency))
+                brokers[self.entry.entry_id] = cached
+            self.cloud_daily_data = await cached[1].daily_totals()
+        except Exception:
+            # History availability cannot turn healthy live telemetry offline.
+            # Retained values expire using their original observation clock.
+            LOGGER.debug("Daily cloud energy is temporarily unavailable")
 
     async def async_close(self):
         self._closing = True
