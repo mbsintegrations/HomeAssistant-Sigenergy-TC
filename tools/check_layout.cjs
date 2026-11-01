@@ -63,7 +63,7 @@ async function run() {
       for (let i = 0; i < layout.rings.length - 1; i++) assert.ok(layout.rings[i].right <= layout.rings[i + 1].x + 1, name + ': rings overlap');
       await context.close();
     }
-    for (const [width, height] of [[1280,1000],[1280,900],[1180,820],[1024,768],[800,1280],[600,960],[412,915]]) {
+    for (const [width, height] of [[1280,1100],[1280,900],[1180,820],[1024,768],[800,1280],[600,960],[412,915]]) {
       for (const display of ['photo','house','flow']) {
         const context = await browser.newContext({viewport:{width,height}});
         const page = await context.newPage();
@@ -81,16 +81,19 @@ async function run() {
           box.scrollTop=box.scrollHeight;
           return {top:b.top,bottom:b.bottom,viewport:innerHeight,overflow:box.scrollWidth>box.clientWidth+1,wide:[...r.querySelectorAll('main,.compact-overview,.hero,.overview-sidebar,.main-display-stage,.overview-summary-stack,.overview-side-module,.panel,.primary-navigation')].filter(n=>n.getBoundingClientRect().right>b.right+1).map(n=>[n.className,n.getBoundingClientRect().width,n.getBoundingClientRect().right]),
             controlsReachable:panel.getBoundingClientRect().bottom<=box.getBoundingClientRect().bottom+1,
-            labelsInside,panelOverlap,photoRatio:f?f.width/f.height:null,hasAc:Boolean(r.querySelector('[data-detail=ac]')),hasDc:Boolean(r.querySelector('[data-detail=dc]'))};
+            labelsInside,panelOverlap,photoRatio:f?f.width/f.height:null,artFitsFrame:!f||r.querySelector('.sigen-photo-plane').getBoundingClientRect().height<=f.height+1,hasAc:Boolean(r.querySelector('[data-detail=ac]')),hasDc:Boolean(r.querySelector('[data-detail=dc]'))};
         });
         let result=await check();
         assert.ok(result.top>=100&&result.bottom<=height-12,`${width} ${display}: ignores host header/bounds ${JSON.stringify(result)}`);
         assert.equal(result.overflow,false,`${width} ${display}: horizontal overflow ${JSON.stringify(result)}`);
         assert.equal(result.controlsReachable,true,`${width} ${display}: unreachable controls`);
         assert.equal(result.panelOverlap,false,`${width} ${display}: summary panels overlap`);
-        if(display==='photo'&&width>=1024){assert.equal(result.labelsInside,true,`${width}: photo labels clipped ${JSON.stringify(result)}`);assert.ok(Math.abs(result.photoRatio-1490/673)<.02,'Photo artwork/labels lost their aspect ratio');}
+        if(display==='photo'&&width>=1024){assert.equal(result.labelsInside,true,`${width}: photo labels clipped ${JSON.stringify(result)}`);assert.equal(result.artFitsFrame,true,'Photo artwork cropped independently of labels');assert.ok(Math.abs(result.photoRatio-1490/673)<.02,'Photo artwork/labels lost their aspect ratio');}
         assert.ok(result.hasAc&&result.hasDc,`${width} ${display}: charger details missing`);
-        if(width===1280&&height===1000&&display==='photo')await page.screenshot({path:path.join(root,'docs/images/embedded-tablet.png'),fullPage:false});
+        if(width===1280&&height===1100&&display==='photo'){
+          await page.evaluate(()=>{document.querySelector('sigen-hybrid-card').shadowRoot.querySelector('ha-card').scrollTop=0;});
+          await page.screenshot({path:path.join(root,'docs/images/embedded-tablet.png'),fullPage:false});
+        }
         if(width===1280){
           await page.setViewportSize({width:900,height:700});
           await page.evaluate(() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
