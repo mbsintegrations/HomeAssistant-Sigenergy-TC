@@ -105,8 +105,8 @@ class Snapshot:
 class SafetyLimits:
     reserve_soc: float = 20
     charge_ceiling_soc: float = 90
-    max_charge_kw: float = 3
-    max_discharge_kw: float = 3
+    max_charge_kw: float | None = 3
+    max_discharge_kw: float | None = 3
     export_permitted: bool = False
     max_duration_minutes: int = MAX_MANUAL_DURATION_MINUTES
     telemetry_max_age: float = 30
@@ -117,15 +117,13 @@ class SafetyLimits:
             for value in (
                 self.reserve_soc,
                 self.charge_ceiling_soc,
-                self.max_charge_kw,
-                self.max_discharge_kw,
                 self.telemetry_max_age,
             )
         ):
             raise ValueError("Safety limits must be finite numeric values")
         if not (0 <= self.reserve_soc < self.charge_ceiling_soc <= 100):
             raise ValueError("Reserve must be below the charge ceiling")
-        if any(not isfinite(v) or v <= 0 for v in (self.max_charge_kw, self.max_discharge_kw)):
+        if any(v is not None and (type(v) not in (int, float) or not isfinite(v) or v <= 0) for v in (self.max_charge_kw, self.max_discharge_kw)):
             raise ValueError("Power limits must be finite and positive")
         validate_duration_minutes(self.max_duration_minutes)
         if type(self.export_permitted) is not bool or not 1 <= self.telemetry_max_age <= 300:

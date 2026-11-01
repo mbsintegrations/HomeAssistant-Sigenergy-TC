@@ -31,6 +31,26 @@ class FlowDouble:
 
 class SelectorDouble:
     TextSelectorType = SimpleNamespace(PASSWORD="password")
+    NumberSelectorMode = SimpleNamespace(BOX="box")
+
+    def NumberSelector(self, config):
+        class NumberBox:
+            def __init__(self):
+                self.config = config
+
+            def __call__(self, value):
+                return vol.All(vol.Coerce(float), vol.Range(min=config["min"], max=config["max"]))(value)
+        return NumberBox()
+
+    def SelectSelector(self, config):
+        class Select:
+            def __getitem__(self, key):
+                return config[key]
+
+            def __call__(self, value):
+                values = [item["value"] if isinstance(item, dict) else item for item in config["options"]]
+                return (vol.All([vol.In(values)]) if config.get("multiple") else vol.In(values))(value)
+        return Select()
 
     def __getattr__(self, name):
         return lambda *args, **kwargs: args[0] if args else kwargs
@@ -51,7 +71,7 @@ def wizard(login=discovered_station, *, options=False):
     helpers = [
         node
         for node in tree.body
-        if isinstance(node, ast.FunctionDef) and node.name in ("cloud_credentials", "owner_limits_schema")
+        if isinstance(node, ast.FunctionDef)
     ]
     module = ast.Module(body=[*helpers, target], type_ignores=[])
     scope = {

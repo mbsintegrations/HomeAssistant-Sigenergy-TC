@@ -53,7 +53,8 @@ def charging_plan(
         ceiling, max(floor, floor + 100 * max(0, conservative_demand - conservative_solar) / snapshot.capacity_kwh)
     )
     energy = max(0, (target - snapshot.soc) / 100 * snapshot.capacity_kwh) / efficiency
-    maximum = min(limits.max_charge_kw, snapshot.max_charge_kw)
+    from .power import effective_power_limit
+    maximum = effective_power_limit(limits.max_charge_kw, snapshot.max_charge_kw)
     if maximum <= 0:
         raise SafetyError("No valid charging power is available")
     # Iterate UTC instants. DST days cannot duplicate or omit elapsed time slots.

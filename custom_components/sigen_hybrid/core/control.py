@@ -19,6 +19,7 @@ from .models import (
     Source,
     validate_duration_minutes,
 )
+from .power import effective_power_limit
 
 
 class Controller:
@@ -82,9 +83,9 @@ class Controller:
             if type(intent.power_kw) not in (int, float) or not isfinite(intent.power_kw) or intent.power_kw <= 0:
                 raise SafetyError("Charge/discharge needs an explicit finite positive power")
             maximum = (
-                min(self.limits.max_charge_kw, snapshot.max_charge_kw)
+                effective_power_limit(self.limits.max_charge_kw, snapshot.max_charge_kw)
                 if intent.mode == Mode.CHARGE
-                else min(self.limits.max_discharge_kw, snapshot.max_discharge_kw)
+                else effective_power_limit(self.limits.max_discharge_kw, snapshot.max_discharge_kw)
             )
             if intent.power_kw > maximum:
                 raise SafetyError("Requested power exceeds the configured or device limit")

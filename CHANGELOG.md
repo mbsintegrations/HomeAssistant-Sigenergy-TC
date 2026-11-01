@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.2
+
+- Replace the primary inverter unit-ID slider with an integer number box.
+- Use verified plant power limits automatically during new setup; custom charge/discharge caps are optional follow-up fields. Preserve existing custom caps.
+- Resolve automatic power from fresh readings for commands, strategies and advisory plans; never invent a rating from missing/unlimited metadata.
+- Select up to two installed forecast providers and averaging during setup and in HA options, using the same saved source identities as the dashboard settings.
+- Refresh stale local control evidence before previews; setup still sends no plant commands.
+
 ## 0.2.1
 
 - Fix the short-height tablet sidebar: forecast, daily energy and battery/energy rings keep their full width rather than being squeezed into half-width boxes.

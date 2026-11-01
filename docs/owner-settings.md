@@ -10,7 +10,7 @@ Open **Settings → Energy settings** or the relevant charger popup. Values are 
 | `grid_connection` | Boolean: true on-grid, false off-grid | Cloud gateway |
 | `ac_charging`, `dc_charging` | Boolean start/stop; optional exact discovered `serial` | Cloud |
 | `battery_levels` | `{charge_soc, discharge_soc, backup_soc, peak_shaving_soc}` | Local or cloud; local peak-shaving SOC remains null |
-| `battery_power_limits` | `{charge_kw, discharge_kw}` | Local or cloud; null uses the configured owner power bound |
+| `battery_power_limits` | `{charge_kw, discharge_kw}` | Local or cloud; null uses the custom owner cap when configured, otherwise the local verified device cap or the native Cloud unlimited setting |
 | `pv_power_limit` | `{limit_kw}` | Local or cloud; null clears the owner PV power cap |
 | `backup_reserve` | `{soc}` | Local or cloud |
 | `battery_export_block` | Boolean; true blocks battery export | Cloud; clearing needs export approval and installer permission |
@@ -41,3 +41,5 @@ data:
 Permanent owner-setting changes are committed after readback. They are not automatically undone when the popup closes. The private write-ahead journal records their previous values; retain it and your native mySigen settings record. Timed overrides have separate cancellation/restoration. See [controls and recovery](controls-and-recovery.md).
 
 Native charger schedules, unsupported charger options, installer/grid-code settings, firmware operations and external AI execution remain outside the working control set. Local tariff edits and draft-only optional screens do not claim to upload a native Sigen plan.
+
+Automatic command-power preferences are stored as null extra owner caps. Command execution still requires fresh finite plant/device limits; null does not authorize unbounded power. Explicit custom caps are additional ceilings, not settings uploaded during setup.

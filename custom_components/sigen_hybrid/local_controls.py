@@ -36,6 +36,11 @@ class LocalOwnerControls(OwnerControls):
 
     async def snapshot(self):
         snapshot = self.runtime.data
+        if (snapshot is not None and not self.runtime.local_error
+                and (self.clock()-snapshot.observed_at).total_seconds() > self.runtime.controller.limits.telemetry_max_age
+                and hasattr(self.runtime, "async_request_refresh")):
+            await self.runtime.async_request_refresh()
+            snapshot = self.runtime.data
         if self.runtime.local_error or snapshot is None:
             raise CapabilityError("Fresh local readings are required for local control")
         snapshot.validate(self.clock(), self.runtime.controller.limits.telemetry_max_age)

@@ -1,11 +1,11 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-import { renderDeviceDetail, solarStringSeries, DETAIL_STYLE } from './sigen-hybrid-details.js?v=0.2.1';
-import { renderSettingsDetail, collectSettings, SETTINGS_STYLE, SETTINGS_ROUTES, CHART_CHOICES, DEFAULT_CHART_SELECTION, DISPLAY_MODULES, DISPLAY_PRESETS, HOMEPAGE_APPEARANCES, HOMEPAGE_BACKGROUNDS, homepageBackground, displayDefaults, encodeChargerScheduleId, decodeChargerScheduleId, bindTariffEditor, bindStrategyEditor, OPERATING_MODES, observedOperatingMode, renderOverviewModeControl, strategyExportEligibility } from './sigen-hybrid-settings.js?v=0.2.1';
-import { periodRange, dateAt, shiftDate, toCSV, preserveChartScroll } from './sigen-hybrid-charts.js?v=0.2.1';
-import { renderSummaryWidget, renderSummaryDetail, WIDGET_ROUTES, WIDGET_STYLE } from './sigen-hybrid-widgets.js?v=0.2.1';
-import { ENERGY_ROUTES, renderEnergyProfile, ENERGY_STYLE, ownerSettingTarget, renderOwnerSetting, collectOwnerSetting, bindOwnerSettingForm } from './sigen-hybrid-energy.js?v=0.2.1';
-import { renderChargingEnergy, renderTodayEnergy, renderBatteryLevel, renderMobilePower, renderChargerControls } from './sigen-hybrid-overview.js?v=0.2.1';
-import { modeChoices, selectedMode, nativeModeChoices } from './sigen-hybrid-settings.js?v=0.2.1';
+import { renderDeviceDetail, solarStringSeries, DETAIL_STYLE } from './sigen-hybrid-details.js?v=0.2.2';
+import { renderSettingsDetail, collectSettings, SETTINGS_STYLE, SETTINGS_ROUTES, CHART_CHOICES, DEFAULT_CHART_SELECTION, DISPLAY_MODULES, DISPLAY_PRESETS, HOMEPAGE_APPEARANCES, HOMEPAGE_BACKGROUNDS, homepageBackground, displayDefaults, encodeChargerScheduleId, decodeChargerScheduleId, bindTariffEditor, bindStrategyEditor, OPERATING_MODES, observedOperatingMode, renderOverviewModeControl, strategyExportEligibility } from './sigen-hybrid-settings.js?v=0.2.2';
+import { periodRange, dateAt, shiftDate, toCSV, preserveChartScroll } from './sigen-hybrid-charts.js?v=0.2.2';
+import { renderSummaryWidget, renderSummaryDetail, WIDGET_ROUTES, WIDGET_STYLE } from './sigen-hybrid-widgets.js?v=0.2.2';
+import { ENERGY_ROUTES, renderEnergyProfile, ENERGY_STYLE, ownerSettingTarget, renderOwnerSetting, collectOwnerSetting, bindOwnerSettingForm } from './sigen-hybrid-energy.js?v=0.2.2';
+import { renderChargingEnergy, renderTodayEnergy, renderBatteryLevel, renderMobilePower, renderChargerControls } from './sigen-hybrid-overview.js?v=0.2.2';
+import { modeChoices, selectedMode, nativeModeChoices } from './sigen-hybrid-settings.js?v=0.2.2';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
 
@@ -487,7 +487,7 @@ export function installNavigation(Card) {
     }catch{host.textContent='Dashboard setup requires a Home Assistant administrator account.';}
   };
   Card.prototype._optionsFlowPage=function(){
-    const flow=this._optionsFlow,labels={connections:'Connections',modbus:'Local Modbus',remove_cloud:'Remove saved cloud sign-in',local:'Local Modbus',cloud:'mySigen Cloud',forecast:'Solar forecast',forecast_entities:'Forecast sensors',safety:'Owner limits',dashboard:'Dashboard defaults'};
+    const flow=this._optionsFlow,labels={connections:'Connections',modbus:'Local Modbus',remove_cloud:'Remove saved cloud sign-in',local:'Local Modbus',cloud:'mySigen Cloud',forecast:'Solar forecast',forecast_entities:'Forecast sensors',safety:'Owner limits',power_limits:'Custom power caps',dashboard:'Dashboard defaults'};
     if(!flow)return {title:'Connection setup',body:'<p>Loading connection options…</p>'};
     const title=labels[flow.step_id]??'Connection setup';
     if(flow.type==='menu')return {title,body:`<div class="settings-page">${(flow.menu_options??[]).filter(step=>['connections','modbus','cloud','remove_cloud'].includes(step)).map(step=>`<button type="button" class="settings-row" data-options-menu="${escape(step)}">${escape(labels[step]??step.replaceAll('_',' '))}<span>›</span></button>`).join('')}</div>`};
@@ -501,7 +501,7 @@ export function installNavigation(Card) {
   };
   Card.prototype._bindOptionsForm=function(){
     const form=this._detailDialog?.querySelector('[data-options-form]');if(!form||!this._optionsFlow)return;
-    const labels={host:'Modbus address',port:'Port',sole_modbus_client:'Dedicated Modbus connection',shared_read_only:'Additional read-only connection',poll_seconds:'Polling interval (seconds)',username:'mySigen username',password:'Password',region:'Region',enabled:'Enabled',allow_unofficial:'Accept use of the mySigen app interface',cloud:'mySigen Cloud',modbus:'Local Modbus',enable_control:'Enable plant control',export_permitted:'My site is approved for grid export',reserve_soc:'Minimum reserve (%)',charge_ceiling_soc:'Charge ceiling (%)',max_charge_kw:'Maximum requested charge power (kW)',max_discharge_kw:'Maximum requested discharge power (kW)'};
+    const labels={host:'Modbus address',port:'Port',sole_modbus_client:'Dedicated Modbus connection',shared_read_only:'Additional read-only connection',poll_seconds:'Polling interval (seconds)',username:'mySigen username',password:'Password',region:'Region',enabled:'Enabled',allow_unofficial:'Accept use of the mySigen app interface',cloud:'mySigen Cloud',modbus:'Local Modbus',enable_control:'Enable plant control',export_permitted:'My site is approved for grid export',reserve_soc:'Minimum reserve (%)',charge_ceiling_soc:'Charge ceiling (%)',use_plant_power_limits:'Use plant power limits automatically',max_charge_kw:'Custom charge cap (kW)',max_discharge_kw:'Custom discharge cap (kW)'};
     form.hass=this._hass;form.schema=this._optionsFlow.data_schema??[];form.computeLabel=schema=>labels[schema.name]??schema.name.replaceAll('_',' ');form.data=Object.fromEntries(form.schema.filter(s=>s.default!==undefined||s.description?.suggested_value!==undefined).map(s=>[s.name,s.default??s.description.suggested_value]));this._optionsFlowData={...form.data};
     form.addEventListener('value-changed',event=>{this._optionsFlowData=event.detail.value;});
   };

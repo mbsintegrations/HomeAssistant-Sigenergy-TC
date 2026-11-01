@@ -73,7 +73,7 @@ async def cloud_control_telemetry(provider, user_limits, *, clock, max_age=30):
         app = finite_power_kw(caps.get(direction, {}).get("app_default_kw"))
         available = [value for value in (configured, app) if value is not None]
         if not available:
-            raise SafetyError("Set an explicit owner power limit; the app's unlimited marker is not a device rating")
+            raise SafetyError("Verified plant power limits are unavailable; use an explicit owner power limit only if needed. An unlimited marker is not a device rating")
         powers[direction] = min(available)
     result = ControlTelemetry(
         observed,

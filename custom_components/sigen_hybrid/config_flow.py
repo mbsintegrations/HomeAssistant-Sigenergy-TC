@@ -43,26 +43,83 @@ def cloud_credentials(user_input, station_id):
     }
 
 
+def number_box(low, high, *, step="any", unit=None):
+    options = {"min": low, "max": high, "step": step, "mode": selector.NumberSelectorMode.BOX}
+    if unit is not None:
+        options["unit_of_measurement"] = unit
+    return selector.NumberSelector(selector.NumberSelectorConfig(**options))
+
+
+def modbus_form_data(data):
+    result = dict(data)
+    if "inverter_unit_id" in result:
+        value = result["inverter_unit_id"]
+        if type(value) not in (int, float) or not float(value).is_integer() or not 1 <= value <= 246:
+            raise ValueError("A whole inverter unit ID is required")
+        result["inverter_unit_id"] = int(value)
+    return result
+
+
 def owner_limits_schema(current, enabled, *, local_enabled=None):
-    return vol.Schema(
-        {
-            vol.Required("enable_control", default=enabled): bool,
-            **({vol.Required("enable_local_control", default=local_enabled): bool} if local_enabled is not None else {}),
-            vol.Required("export_permitted", default=current.get("export_permitted", False)): bool,
-            vol.Required("reserve_soc", default=current.get("reserve_soc", 20)): vol.All(
-                vol.Coerce(float), vol.Range(min=0, max=99)
-            ),
-            vol.Required("charge_ceiling_soc", default=current.get("charge_ceiling_soc", 90)): vol.All(
-                vol.Coerce(float), vol.Range(min=1, max=100)
-            ),
-            vol.Required("max_charge_kw", default=current.get("max_charge_kw", 3)): vol.All(
-                vol.Coerce(float), vol.Range(min=0.001, max=100)
-            ),
-            vol.Required("max_discharge_kw", default=current.get("max_discharge_kw", 3)): vol.All(
-                vol.Coerce(float), vol.Range(min=0.001, max=100)
-            ),
-        }
-    )
+    automatic = current.get("max_charge_kw") is None and current.get("max_discharge_kw") is None
+    return vol.Schema({
+        vol.Required("enable_control", default=enabled): bool,
+        **({vol.Required("enable_local_control", default=local_enabled): bool} if local_enabled is not None else {}),
+        vol.Required("export_permitted", default=current.get("export_permitted", False)): bool,
+        vol.Required("reserve_soc", default=current.get("reserve_soc", 20)): number_box(0, 99, unit="%"),
+        vol.Required("charge_ceiling_soc", default=current.get("charge_ceiling_soc", 90)): number_box(1, 100, unit="%"),
+        vol.Required("use_plant_power_limits", default=automatic): bool,
+    })
+
+
+def owner_limits_data(current, data):
+    result = {**current, **{key: value for key, value in data.items() if key not in ("enable_control", "enable_local_control", "use_plant_power_limits")}}
+    if data.get("use_plant_power_limits", not any(key in data for key in ("max_charge_kw", "max_discharge_kw"))):
+        result.update(max_charge_kw=None, max_discharge_kw=None)
+    SafetyLimits(**result)
+    return result
+
+
+def custom_power_schema(current):
+    fields = {}
+    for key in ("max_charge_kw", "max_discharge_kw"):
+        value = current.get(key)
+        default = {"default": value} if type(value) in (int, float) and 0 < value <= 100 else {}
+        fields[vol.Required(key, **default)] = number_box(.001, 100, unit="kW")
+    return vol.Schema(fields)
+
+
+def forecast_choices(hass):
+    return {f"{provider}:{entry.entry_id}": {"provider": provider, "entry_id": entry.entry_id,
+            "label": f"{info['name']} · {entry.title}"}
+            for provider, info in PROVIDERS.items() for entry in provider_entries(hass, provider)}
+
+
+def forecast_setup_schema(hass, current):
+    choices = forecast_choices(hass)
+    sources = current.get("sources") or ([current] if current.get("entry_id") else [])
+    selected = [f"{row['provider']}:{row['entry_id']}" for row in sources if f"{row['provider']}:{row['entry_id']}" in choices]
+    options = [{"value": key, "label": row["label"]} for key, row in choices.items()]
+    return vol.Schema({
+        vol.Required("forecast_sources", default=selected): selector.SelectSelector(selector.SelectSelectorConfig(options=options, multiple=True)),
+        vol.Required("average", default=current.get("average") is True): bool,
+        vol.Optional("primary_source", default=current.get("primary_source", "")): selector.SelectSelector(selector.SelectSelectorConfig(
+            options=[{"value": "", "label": "First selected provider"}]+options)),
+    })
+
+
+def forecast_setup_options(hass, data):
+    choices = forecast_choices(hass)
+    selected = data.get("forecast_sources", [])
+    if not isinstance(selected, list) or any(not isinstance(key, str) for key in selected):
+        raise ValueError("Choose configured forecast sources")
+    primary = data.get("primary_source") or (selected[0] if selected else "")
+    if (len(selected) > 2 or len(set(selected)) != len(selected)
+            or any(key not in choices for key in selected) or selected and primary not in selected):
+        raise ValueError("Choose up to two loaded forecasts covering the same panels")
+    return {"provider": "ensemble" if selected else "none", "sources": [
+        {"provider": choices[key]["provider"], "entry_id": choices[key]["entry_id"]} for key in selected],
+        "average": data.get("average") is True, "primary_source": primary}
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -154,6 +211,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_local(self, user_input=None):
         errors = {}
         if user_input is not None:
+            try:
+                user_input = modbus_form_data(user_input)
+            except ValueError:
+                errors["inverter_unit_id"] = "invalid_inverter_unit"
+                user_input = None
+        if user_input is not None:
             host = user_input["host"].strip().lower()
             if not host or "/" in host or "://" in host:
                 errors["host"] = "invalid_host"
@@ -176,7 +239,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required("host"): str,
                     vol.Required("port", default=502): vol.All(vol.Coerce(int), vol.Range(min=1, max=65535)),
                     vol.Required("sole_modbus_client", default=False): bool,
-                    vol.Optional("inverter_unit_id"): vol.All(vol.Coerce(int), vol.Range(min=1, max=246)),
+                    vol.Optional("inverter_unit_id"): number_box(1, 246, step=1),
                     vol.Optional("allow_shared_writes", default=False): bool,
                     vol.Optional(
                         "shared_read_only",
@@ -191,6 +254,17 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_features(self, user_input=None):
         errors = {}
+        if user_input is not None and "forecast_sources" in user_input:
+            try:
+                forecast = forecast_setup_options(self.hass, user_input)
+            except ValueError:
+                errors["forecast_sources"] = "invalid_forecast_source"
+            else:
+                self._pending_options["forecast"] = forecast
+                self._pending_options["optimizer_monitoring_planned"] = user_input.get("optimizer_monitoring", False)
+                self._wizard_cloud = self._pending_options.get("connections", {}).get("cloud", user_input.get("cloud_reads", False)) and not self._pending_data["demo"]
+                return await self._after_forecast()
+            user_input = None
         instructions = "Choose no forecast to continue without one."
         if user_input is not None:
             provider = user_input["forecast_provider"]
@@ -206,15 +280,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     choices.get("cloud", user_input.get("cloud_reads", False)) and not self._pending_data["demo"]
                 )
                 return await self.async_step_wizard_forecast() if provider != "none" else await self._after_forecast()
-        schema = {
-            vol.Required("forecast_provider", default="none"): selector.SelectSelector(
-                selector.SelectSelectorConfig(
-                    options=[{"value": "none", "label": "No forecast for now"}]
-                    + [{"value": key, "label": value["name"]} for key, value in PROVIDERS.items()]
-                )
-            ),
-            vol.Required("optimizer_monitoring", default=False): bool,
-        }
+        schema = dict(forecast_setup_schema(self.hass, self._pending_options.get("forecast", {})).schema)
+        schema[vol.Required("optimizer_monitoring", default=False)] = bool
         if not self._pending_data["demo"] and not hasattr(self, "_connection_choices"):
             schema[vol.Required("cloud_reads", default=self._pending_data.get("cloud_only", False))] = bool
         return self.async_show_form(
@@ -275,19 +342,36 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_wizard_control(self, user_input=None):
         errors = {}
         if user_input is not None:
-            safety = {key: value for key, value in user_input.items() if key not in ("enable_control", "enable_local_control")}
             try:
-                SafetyLimits(**safety)
+                safety = owner_limits_data({}, user_input)
             except ValueError:
                 errors["base"] = "invalid_safety_limits"
             else:
                 self._pending_options["safety"] = safety
                 self._pending_options["control"] = {"enabled": user_input["enable_control"] is True,
-                                                    "local_enabled": user_input.get("enable_local_control") is True}
+                    "local_enabled": user_input.get("enable_local_control") is True}
+                if user_input.get("use_plant_power_limits") is False:
+                    return await self.async_step_wizard_power_limits()
                 return await self.async_step_dashboard()
         local_available = bool(self._pending_data.get("inverter_unit_id") and not self._pending_data.get("shared_read_only"))
         return self.async_show_form(step_id="wizard_control", errors=errors,
-                                    data_schema=owner_limits_schema({}, True, local_enabled=True if local_available else None))
+            data_schema=owner_limits_schema(self._pending_options.get("safety", {}), True, local_enabled=True if local_available else None))
+
+    async def async_step_wizard_power_limits(self, user_input=None):
+        errors = {}
+        if user_input is not None:
+            try:
+                safety = {**self._pending_options["safety"], **user_input}
+                SafetyLimits(**safety)
+                if any(safety.get(key) is None for key in ("max_charge_kw", "max_discharge_kw")):
+                    raise ValueError
+            except ValueError:
+                errors["base"] = "invalid_safety_limits"
+            else:
+                self._pending_options["safety"] = safety
+                return await self.async_step_dashboard()
+        return self.async_show_form(step_id="wizard_power_limits", errors=errors,
+            data_schema=custom_power_schema(self._pending_options.get("safety", {})))
 
     async def async_step_wizard_cloud(self, user_input=None):
         errors = {}
@@ -458,6 +542,12 @@ class OptionsFlow(config_entries.OptionsFlow):
     async def async_step_modbus(self, user_input=None):
         errors = {}
         if user_input is not None:
+            try:
+                user_input = modbus_form_data(user_input)
+            except ValueError:
+                errors["inverter_unit_id"] = "invalid_inverter_unit"
+                user_input = None
+        if user_input is not None:
             host = user_input.get("host", "").strip().lower()
             if not host or "/" in host or "://" in host:
                 errors["host"] = "invalid_host"
@@ -488,7 +578,7 @@ class OptionsFlow(config_entries.OptionsFlow):
                         vol.Coerce(int), vol.Range(min=1, max=65535)
                     ),
                     vol.Required("sole_modbus_client", default=False): bool,
-                    vol.Optional("inverter_unit_id", **({"default": self.config_entry.data["inverter_unit_id"]} if self.config_entry.data.get("inverter_unit_id") else {})): vol.All(vol.Coerce(int), vol.Range(min=1, max=246)),
+                    vol.Optional("inverter_unit_id", **({"default": self.config_entry.data["inverter_unit_id"]} if self.config_entry.data.get("inverter_unit_id") else {})): number_box(1, 246, step=1),
                     vol.Optional("allow_shared_writes", default=self.config_entry.data.get("allow_shared_writes", False)): bool,
                     vol.Optional(
                         "shared_read_only",
@@ -549,53 +639,47 @@ class OptionsFlow(config_entries.OptionsFlow):
         errors = {}
         if user_input is not None:
             try:
-                safety = {**current, **{key: value for key, value in user_input.items() if key not in ("enable_control", "enable_local_control")}}
-                SafetyLimits(**safety)
+                safety = owner_limits_data(current, user_input)
                 if user_input.get("enable_local_control") and not self.config_entry.data.get("inverter_unit_id"):
                     raise ValueError("Configure the primary inverter unit first")
-                return await self._save_options(
-                    {
-                        **self.config_entry.options,
-                        "safety": safety,
-                        "control": {
-                            **self.config_entry.options.get("control", {}),
-                            "local_enabled": user_input.get("enable_local_control", self.config_entry.options.get("control", {}).get("local_enabled", False)) is True,
-                            "enabled": user_input.get(
-                                "enable_control", self.config_entry.options.get("control", {}).get("enabled", False)
-                            )
-                            is True
-                        },
-                    },
-                )
+                self._pending_safety_options = {**self.config_entry.options, "safety": safety, "control": {
+                    **self.config_entry.options.get("control", {}),
+                    "local_enabled": user_input.get("enable_local_control", self.config_entry.options.get("control", {}).get("local_enabled", False)) is True,
+                    "enabled": user_input.get("enable_control", self.config_entry.options.get("control", {}).get("enabled", False)) is True}}
+                if user_input.get("use_plant_power_limits") is False:
+                    return await self.async_step_power_limits()
+                return await self._save_options(self._pending_safety_options)
             except ValueError:
                 errors["base"] = "invalid_safety_limits"
-        return self.async_show_form(
-            step_id="safety",
-            errors=errors,
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        "enable_control", default=self.config_entry.options.get("control", {}).get("enabled", False)
-                    ): bool,
-                    vol.Required("enable_local_control", default=self.config_entry.options.get("control", {}).get("local_enabled", False)): bool,
-                    vol.Required("export_permitted", default=current.get("export_permitted", False)): bool,
-                    vol.Required("reserve_soc", default=current.get("reserve_soc", 20)): vol.All(
-                        vol.Coerce(float), vol.Range(min=0, max=99)
-                    ),
-                    vol.Required("charge_ceiling_soc", default=current.get("charge_ceiling_soc", 90)): vol.All(
-                        vol.Coerce(float), vol.Range(min=1, max=100)
-                    ),
-                    vol.Required("max_charge_kw", default=current.get("max_charge_kw", 3)): vol.All(
-                        vol.Coerce(float), vol.Range(min=0.001, max=100)
-                    ),
-                    vol.Required("max_discharge_kw", default=current.get("max_discharge_kw", 3)): vol.All(
-                        vol.Coerce(float), vol.Range(min=0.001, max=100)
-                    ),
-                }
-            ),
-        )
+        control = self.config_entry.options.get("control", {})
+        return self.async_show_form(step_id="safety", errors=errors,
+            data_schema=owner_limits_schema(current, control.get("enabled", False), local_enabled=control.get("local_enabled", False)))
+
+    async def async_step_power_limits(self, user_input=None):
+        errors = {}
+        options = self._pending_safety_options
+        if user_input is not None:
+            try:
+                safety = {**options["safety"], **user_input}
+                SafetyLimits(**safety)
+                if any(safety.get(key) is None for key in ("max_charge_kw", "max_discharge_kw")):
+                    raise ValueError
+            except ValueError:
+                errors["base"] = "invalid_safety_limits"
+            else:
+                return await self._save_options({**options, "safety": safety})
+        return self.async_show_form(step_id="power_limits", errors=errors, data_schema=custom_power_schema(options["safety"]))
 
     async def async_step_forecast(self, user_input=None):
+        errors = {}
+        if user_input is not None and "forecast_sources" in user_input:
+            try:
+                forecast = forecast_setup_options(self.hass, user_input)
+            except ValueError:
+                errors["forecast_sources"] = "invalid_forecast_source"
+            else:
+                return self.async_create_entry(title="", data={**self.config_entry.options, "forecast": forecast})
+            user_input = None
         if user_input is not None:
             self._forecast_provider = user_input["provider"]
             if self._forecast_provider == "none":
@@ -613,27 +697,8 @@ class OptionsFlow(config_entries.OptionsFlow):
                     },
                 )
             return await self.async_step_forecast_source()
-        return self.async_show_form(
-            step_id="forecast",
-            data_schema=vol.Schema(
-                {
-                    vol.Required("provider", default="none"): selector.SelectSelector(
-                        selector.SelectSelectorConfig(
-                            options=[
-                                {"value": "none", "label": "No forecast"},
-                                {"value": "solcast", "label": "Solcast (existing HACS integration)"},
-                                {"value": "forecast_solar", "label": "Forecast.Solar (built-in integration)"},
-                                {"value": "volcast", "label": "Volcast (existing HACS integration)"},
-                                {
-                                    "value": "open_meteo_solar_forecast",
-                                    "label": "Open-Meteo Solar Forecast (existing HACS integration)",
-                                },
-                            ]
-                        )
-                    )
-                }
-            ),
-        )
+        return self.async_show_form(step_id="forecast", errors=errors,
+            data_schema=forecast_setup_schema(self.hass, self.config_entry.options.get("forecast", {})))
 
     async def async_step_forecast_source(self, user_input=None):
         provider = self._forecast_provider

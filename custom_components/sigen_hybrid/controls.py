@@ -185,7 +185,13 @@ class OwnerControls:
         local = self.runtime.data
         if (getattr(self.runtime, "source_binding_verified", True) and local is not None
             and not self.runtime.local_error and getattr(local, "source", None) == "modbus"):
+            if ((self.clock()-local.observed_at).total_seconds() > self.runtime.controller.limits.telemetry_max_age
+                    and hasattr(self.runtime, "async_request_refresh")):
+                await self.runtime.async_request_refresh()
+                local = self.runtime.data
             try:
+                if self.runtime.local_error or local is None:
+                    raise SafetyError("Fresh local plant limits are unavailable")
                 local.validate(self.clock(), self.runtime.controller.limits.telemetry_max_age)
                 return local
             except SigenError:
@@ -367,10 +373,13 @@ class OwnerControls:
                 snapshot = await self.snapshot()
                 if intent.source != Source.MANUAL and intent.mode.value in ("charge", "discharge"):
                     from dataclasses import replace
-                    if type(intent.power_kw) not in (int, float):
-                        raise SafetyError("Automatic charge/discharge requires an explicit power limit")
-                    maximum = snapshot.max_charge_kw if intent.mode.value == "charge" else snapshot.max_discharge_kw
-                    intent = replace(intent, power_kw=min(intent.power_kw, maximum))
+
+                    from .core.power import effective_power_limit
+                    direction = intent.mode.value
+                    maximum = effective_power_limit(getattr(self.runtime.controller.limits, f"max_{direction}_kw"), getattr(snapshot, f"max_{direction}_kw"))
+                    if intent.power_kw is not None and type(intent.power_kw) not in (int, float):
+                        raise SafetyError("Automatic charge/discharge requires a valid power limit")
+                    intent = replace(intent, power_kw=maximum if intent.power_kw is None else min(intent.power_kw, maximum))
                 result = await self.runtime.controller.execute(intent, snapshot, self.clock(), dry_run=False)
                 self.operation = {**asdict(result), "phase": result.status}
         except asyncio.CancelledError:

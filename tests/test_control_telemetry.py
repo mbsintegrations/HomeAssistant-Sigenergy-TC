@@ -64,6 +64,19 @@ async def test_unlimited_marker_without_an_explicit_owner_cap_is_rejected():
         await cloud_control_telemetry(provider, {}, clock=lambda: clock[0])
 
 
+async def test_automatic_power_uses_finite_native_plant_limits_and_tracks_changes():
+    clock, provider, _, _, caps = cloud_only()
+    caps["batteryMaxChargingPower"] = "5.25"
+    automatic = {"max_charge_kw": None, "max_discharge_kw": None}
+    first = await cloud_control_telemetry(provider, automatic, clock=lambda: clock[0])
+    assert first.max_charge_kw == 5.25 and first.max_discharge_kw == 2.5
+    caps["batteryMaxChargingPower"] = "2.0"
+    assert (await cloud_control_telemetry(provider, automatic, clock=lambda: clock[0])).max_charge_kw == 2
+    caps["batteryMaxChargingPower"] = "4294967.295"
+    with pytest.raises(SafetyError):
+        await cloud_control_telemetry(provider, automatic, clock=lambda: clock[0])
+
+
 async def test_slow_cloud_reads_are_rejected_as_stale_without_resetting_the_clock():
     clock, provider, header, live, caps = cloud_only()
     original = provider.client._data

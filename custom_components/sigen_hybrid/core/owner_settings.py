@@ -100,8 +100,8 @@ async def prepare_setting(provider, key, value, *, owner_limits, station, serial
         value = dict(value)
         for field, maximum in (("charge_kw", owner_limits.max_charge_kw), ("discharge_kw", owner_limits.max_discharge_kw)):
             if value[field] is None:
-                value[field] = maximum
-            if value[field] > maximum:
+                value[field] = maximum if maximum is not None else getattr(provider, "max_"+field, None)
+            if maximum is not None and value[field] is not None and value[field] > maximum:
                 raise SafetyError("Battery power exceeds the configured owner limit")
     if key == "peak_shaving" and value["soc"] < owner_limits.reserve_soc:
         raise SafetyError("Peak-shaving SOC must preserve the owner reserve")
