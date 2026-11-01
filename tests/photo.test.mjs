@@ -15,8 +15,8 @@ const context = (values = {}, extra = {}) => ({
 const flowTag = (body, key) => body.match(new RegExp(`<g class="[^"]*" data-photo-flow="${key}"[^>]*>`))?.[0] ?? '';
 
 test('uses local newly generated day/night assets with renderer attribution and no embedded upstream images', async () => {
-  assert.match(renderPhotoScene(context()), /--sigen-photo-image:url\('[^']+overview-house-day-v1.webp'\)/);
-  assert.match(renderPhotoScene(context({}, {night:true})), /--sigen-photo-image:url\('[^']+overview-house-night-v1.webp'\)/);
+  assert.match(renderPhotoScene(context()), /href="[^"]+overview-house-day-v1.webp"/);
+  assert.match(renderPhotoScene(context({}, {night:true})), /href="[^"]+overview-house-night-v1.webp"/);
   const source = await readFile(MODULE, 'utf8');
   const hashes = {
     'overview-house-day-v1.webp': '4fb5e608e53f88bdf8cd33ee86b11d906ff277fd3993be2300a6618d91ff2512',
@@ -164,7 +164,7 @@ test('covers every scene row with real photograph pixels and keeps the cables on
   assert.ok(body.includes('x="0" y="56" width="1676" height="557"'));
   for (const path of ['M838 18 V221.111', 'M1258.474 18 V339.521', 'M816.251 525.592 V641', 'M1154.564 578.756 V641', 'M838 239 V267 Q838 274 832 280 V389', 'M854 442 L858 449 Q860 453 864 449 L866 438']) assert.ok(body.includes(`d="${path}"`));
   for (const path of body.matchAll(/<path\b[^>]+>/g)) assert.ok(path[0].includes('fill="none"'));
-  assert.equal((body.match(/data-photo-flow=/g) ?? []).length, 5);
+  assert.equal((body.match(/data-photo-flow=/g) ?? []).length, 6);
   assert.match(PHOTO_STYLE, /container-type:inline-size/);
   assert.match(PHOTO_STYLE, /@container \(max-width:560px\)/);
   assert.match(PHOTO_STYLE, /aspect-ratio:1360\/673/);

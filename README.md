@@ -4,7 +4,7 @@
 
 > **INVITATION-ONLY ALPHA — DO NOT INSTALL unless you have been invited by MBS Integrations.**
 >
-> Version **0.2.3** is an experimental, owner-supervised control release. It is not a stable release or a Sigenergy product. Real commands can change battery operation, charging and grid connection. Read the [control and recovery guide](docs/controls-and-recovery.md) before enabling control.
+> Version **0.2.4** is an experimental, owner-supervised control release. It is not a stable release or a Sigenergy product. Real commands can change battery operation, charging and grid connection. Read the [control and recovery guide](docs/controls-and-recovery.md) before enabling control.
 
 [![Validation](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/actions/workflows/validate.yml/badge.svg)](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/actions/workflows/validate.yml)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://www.hacs.xyz/docs/faq/custom_repositories/)
