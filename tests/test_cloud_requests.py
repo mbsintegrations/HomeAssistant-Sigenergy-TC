@@ -64,6 +64,23 @@ async def test_concurrent_history_and_telemetry_are_serialised_and_paced():
     assert all(call[3]["timeout"] == 25 for call in session.calls)
 
 
+@pytest.mark.parametrize("code", [1110, 1201])
+async def test_undocumented_application_codes_are_not_declared_rate_limits(code):
+    clock = Clock()
+    gate = CloudRequestGate(clock=clock, sleep=clock.sleep)
+    await consume(gate, Session(clock, Reply(body={"code": code, "msg": "PRIVATE"})))
+    assert gate.status["reason"] is None
+
+
+async def test_limit_diagnostic_records_only_http_and_bounded_application_code():
+    clock = Clock()
+    gate = CloudRequestGate(clock=clock, sleep=clock.sleep)
+    with pytest.raises(TransportError):
+        await consume(gate, Session(clock, Reply(429, {"code": 429, "msg": "PRIVATE"})))
+    assert gate.status["last_failure"] == {"reason": "rate_limited", "http_status": 429, "application_code": "429"}
+    assert "PRIVATE" not in str(gate.status)
+
+
 @pytest.mark.parametrize(
     "reply,reason",
     [

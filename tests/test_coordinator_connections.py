@@ -27,6 +27,52 @@ from custom_components.sigen_hybrid.core.models import SafetyLimits, Snapshot
 NOW = datetime(2026, 10, 28, tzinfo=timezone.utc)
 
 
+async def test_core_and_daily_readings_publish_before_optional_rate_limit():
+    events = []
+
+    class PrioritizedCloud:
+        client = SimpleNamespace(request_gate=SimpleNamespace(auth_blocked=False, status={"reason": None}))
+
+        async def refresh_essential(self):
+            events.append("essential")
+            return {"mode": "Maximum Self-Powered", "updated_at": NOW.isoformat(), "telemetry": {"pv_kw": 1, "solar_today": None}}
+
+        async def refresh(self):
+            events.append("optional")
+            self.client.request_gate.status["reason"] = "rate_limited"
+            raise OSError("optional collector failed")
+
+    runtime = coordinator(None, PrioritizedCloud())
+
+    async def daily():
+        assert runtime.notifications == 1
+        events.append("daily")
+        runtime.cloud_daily_data = {"observed_at": NOW.isoformat(), "values": {"solar_today": 7.64}}
+
+    runtime._async_daily_energy = daily
+    await runtime.async_cloud_update()
+    assert events == ["essential", "daily", "optional"]
+    assert runtime.cloud_data["mode"] == "Maximum Self-Powered" and runtime.cloud_error is None
+    assert runtime.connections["cloud"]["status"] == "rate_limited"
+    assert runtime.reading("solar_today").value == 7.64
+    assert not runtime.capabilities["native_mode"]["available"]
+
+
+async def test_missing_live_daily_field_cannot_erase_measured_history_or_retimestamp_it():
+    runtime = coordinator(None, Cloud())
+    await runtime.async_cloud_update()
+    observed = NOW.isoformat()
+    later = NOW + timedelta(minutes=10)
+    runtime.reading.__func__.__globals__["utcnow"] = lambda: later
+    runtime.cloud_data["updated_at"] = later.isoformat()
+    runtime.cloud_data["telemetry"]["solar_today"] = None
+    runtime.cloud_daily_data = {"values": {"solar_today": 7.64}, "observed_at": observed}
+    reading = runtime.reading("solar_today")
+    assert reading.value == 7.64 and reading.observed_at == observed
+    runtime.cloud_data["telemetry"]["solar_today"] = 0
+    assert runtime.reading("solar_today").value == 0
+
+
 class CoordinatorDouble:
     def __init__(self, *args, **kwargs):
         self.data = None
@@ -200,7 +246,7 @@ async def test_startup_cloud_creation_failure_is_retried_on_later_update(monkeyp
             super().__init__(client, *args, **kwargs)
             adapters.append(kwargs)
 
-        async def refresh(self):
+        async def refresh(self, **kwargs):
             return await Cloud().refresh()
 
     monkeypatch.setitem(

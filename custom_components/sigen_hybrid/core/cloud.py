@@ -238,6 +238,7 @@ class CloudAdapter:
                         key: station[key] for key in ("hasGateway", "hasAcCharger", "hasEv", "hasPv", "pvCapacity", "hasInstantSetting", "acSnList", "dcSnList")
                         if key in station
                     }
+                    self._device_inventory = system_inventory({}, self._owner_controls)
             except AuthenticationError:
                 raise
             except Exception:
@@ -252,27 +253,41 @@ class CloudAdapter:
         except Exception:
             raise TransportError("Cloud connection is temporarily unavailable") from None
 
-    async def refresh(self) -> dict:
+    async def refresh_essential(self) -> dict:
+        """Publish mode, station inventory and flow before optional device reads."""
+        return await self.refresh(essential_only=True)
+
+    async def refresh(self, *, essential_only=False) -> dict:
         async with self._lock:
             now = time.monotonic()
+            if essential_only and self._cache and now - self._fetched < self.live_refresh_seconds:
+                return dict(self._cache)
             if now < self._retry_after:
                 raise TransportError("Cloud is in backoff; local monitoring is unaffected")
-            if self._cache and now - self._fetched < self.live_refresh_seconds:
+            live_fresh = bool(self._cache) and now - self._fetched < self.live_refresh_seconds
+            details_fresh = now - self._details_fetched < self.refresh_seconds
+            if live_fresh and (essential_only or details_fresh):
                 return dict(self._cache)
             try:
                 if not self._connected:
                     await self.connect()
                 if str(self.client.station_id) != self.station_id:
                     raise AuthenticationError("Cloud station no longer matches the selected plant")
-                details_due = not self._cache or now - self._details_fetched >= self.refresh_seconds
+                details_due = not essential_only and not details_fresh
                 details = dict(self._cache)
+                if live_fresh:
+                    current = details.get("mode")
+                    telemetry = details.get("telemetry", {})
+                    telemetry_clock = details.get("telemetry_observed_at")
+                    mode_clock = details.get("mode_observed_at")
+                else:
+                    current = await self.client.current_operational_mode()
+                    mode_clock = datetime.now(timezone.utc).isoformat()
+                    flow = await self.client.energy_flow()
+                    telemetry_clock = datetime.now(timezone.utc).isoformat()
+                    telemetry = cloud_measurements(flow, self._capacity)
                 if details_due:
                     details["modes"] = await self.client.available_operational_modes()
-                current = await self.client.current_operational_mode()
-                flow = await self.client.energy_flow()
-                telemetry_clock = datetime.now(timezone.utc).isoformat()
-                telemetry = cloud_measurements(flow, self._capacity)
-                if details_due:
                     manual = await self.client.instant_manual_control()
                     details.update(manual_enabled=bool(manual.enabled), manual_end_time=manual.end_time)
                     try:
@@ -299,15 +314,17 @@ class CloudAdapter:
                     "owner_controls": dict(self._owner_controls),
                     "device_inventory": list(self._device_inventory),
                     "mode": current,
+                    "mode_observed_at": mode_clock,
                     "telemetry": telemetry,
                     "telemetry_observed_at": telemetry_clock,
-                    "telemetry_schema": flow_schema(flow),
+                    "telemetry_schema": details.get("telemetry_schema", {}) if live_fresh else flow_schema(flow),
                     "telemetry_available": any(
                         telemetry.get(key) is not None for key in ("pv_kw", "home_kw", "grid_kw", "battery_kw", "soc")
                     ),
                     "updated_at": datetime.now(timezone.utc).isoformat(),
                 }
-                self._fetched = time.monotonic()
+                if not live_fresh:
+                    self._fetched = time.monotonic()
                 return dict(self._cache)
             except AuthenticationError:
                 self._retry_after = time.monotonic() + self.live_refresh_seconds

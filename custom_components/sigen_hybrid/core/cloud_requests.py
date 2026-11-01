@@ -23,6 +23,7 @@ class CloudRequestGate:
         self.reason = None
         self.requests = 0
         self.auth_blocked = False
+        self.last_failure = None
 
     @property
     def status(self):
@@ -31,6 +32,7 @@ class CloudRequestGate:
             "reason": self.reason if self.clock() < self._until or self.auth_blocked else None,
             "requests": self.requests,
             "minimum_spacing_seconds": self.spacing,
+            "last_failure": self.last_failure,
         }
 
     def pause(self, reason, *, retry_after=0):
@@ -96,7 +98,7 @@ class CloudRequestGate:
                         if "too many users" in message
                         else "rate_limited"
                         if response.status == 429
-                        or str(code) in ("429", "1110", "1201")
+                        or str(code) == "429"
                         or "rate limit" in message
                         or "too many requests" in message
                         else "authentication_required"
@@ -106,6 +108,11 @@ class CloudRequestGate:
                         else None
                     )
                     if reason:
+                        self.last_failure = {
+                            "reason": reason,
+                            "http_status": response.status,
+                            "application_code": str(code) if str(code).isdigit() and len(str(code)) <= 12 else None,
+                        }
                         self.pause(reason, retry_after=self.retry_after(response.headers))
                         raise TransportError("Cloud request paused: " + reason)
                     # Preserve failures across partial recovery; reset after a

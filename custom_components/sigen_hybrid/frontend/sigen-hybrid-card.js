@@ -20,15 +20,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import { installNavigation, CARD_PRESETS, CARD_CHART_CHOICES } from './sigen-hybrid-navigation.js?v=0.2.4';
-import { installHostFit } from './sigen-hybrid-fit.js?v=0.2.4';
-import { WIDGET_ROUTES } from './sigen-hybrid-widgets.js?v=0.2.4';
-import { renderPhotoScene, PHOTO_STYLE } from './sigen-hybrid-photo.js?v=0.2.4';
-import { renderTodayEnergy, renderBatteryLevel, renderChargerControls, renderMobilePower, OVERVIEW_STYLE } from './sigen-hybrid-overview.js?v=0.2.4';
-import { energySankey as buildEnergySankey } from './sigen-hybrid-sankey.js?v=0.2.4';
-import { renderHouseScene, HOUSE_STYLE } from './sigen-hybrid-house.js?v=0.2.4';
-import { renderDeviceOverview, DEVICE_STYLE } from './sigen-hybrid-devices.js?v=0.2.4';
-import { gridConnectionStatus, connectionIndicators, selectReadingState } from './sigen-hybrid-energy.js?v=0.2.4';
+import { installNavigation, CARD_PRESETS, CARD_CHART_CHOICES } from './sigen-hybrid-navigation.js?v=0.2.5.dev0';
+import { installHostFit } from './sigen-hybrid-fit.js?v=0.2.5.dev0';
+import { WIDGET_ROUTES } from './sigen-hybrid-widgets.js?v=0.2.5.dev0';
+import { renderPhotoScene, PHOTO_STYLE } from './sigen-hybrid-photo.js?v=0.2.5.dev0';
+import { renderTodayEnergy, renderBatteryLevel, renderChargerControls, renderMobilePower, OVERVIEW_STYLE } from './sigen-hybrid-overview.js?v=0.2.5.dev0';
+import { energySankey as buildEnergySankey } from './sigen-hybrid-sankey.js?v=0.2.5.dev0';
+import { renderHouseScene, HOUSE_STYLE } from './sigen-hybrid-house.js?v=0.2.5.dev0';
+import { renderDeviceOverview, DEVICE_STYLE } from './sigen-hybrid-devices.js?v=0.2.5.dev0';
+import { gridConnectionStatus, connectionIndicators, selectReadingState } from './sigen-hybrid-energy.js?v=0.2.5.dev0';
 export const MAIN_DISPLAYS = Object.freeze({ house: 'House', flow: 'Flow', photo: 'Photo house' });
 const COLORS = { solar: '#efc900', battery: '#26c9c8', grid: '#6694ff', home: '#a45bf0', ac: '#b46767', dc: '#d29420' };
 const LABELS = { solar: 'Solar', battery: 'Battery', grid: 'Grid', home: 'Home', ac: 'AC charger', dc: 'DC charger' };

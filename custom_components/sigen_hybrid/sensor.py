@@ -234,7 +234,11 @@ class SigenSensor(CoordinatorEntity, SensorEntity):
                 else ("Normal" if data.running else "Stopped") + (" | On Grid" if data.on_grid else " | Off Grid")
             )
         if key == "cloud_mode":
-            return self.coordinator.cloud_data.get("mode") if not self.coordinator.cloud_error else None
+            from .core.read_cache import fresh
+
+            data = self.coordinator.cloud_data
+            stamp = data.get("mode_observed_at", data.get("updated_at"))
+            return data.get("mode") if fresh(stamp, utcnow()) else None
         if key == "control_status":
             controls = getattr(self.coordinator, "controls", None)
             if controls is not None and controls.enabled:
