@@ -1,4 +1,4 @@
-import { renderSceneWeather, renderWeatherEffects } from './sigen-hybrid-house.js?v=0.2.5.dev0';
+import { renderSceneWeather, renderWeatherEffects } from './sigen-hybrid-house.js?v=0.2.5';
 /*
  * Copyright 2025-2026 Jean-Yves Avenard
  *

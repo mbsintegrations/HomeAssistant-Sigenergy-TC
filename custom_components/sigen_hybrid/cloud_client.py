@@ -72,6 +72,8 @@ async def async_create_cloud_client(hass, credentials, *, reauthenticate=False):
     import asyncio
     from hashlib import sha256
 
+    from homeassistant.helpers.storage import Store
+
     from .const import DOMAIN
     from .core.cloud_requests import CloudRequestGate
 
@@ -83,8 +85,14 @@ async def async_create_cloud_client(hass, credentials, *, reauthenticate=False):
     gate = state["gate"]
     state.setdefault("lock", asyncio.Lock())
     async with state["lock"]:
+        if "store" not in state:
+            store = Store(hass, 1, f"{DOMAIN}_cloud_budget_{account}")
+            gate.restore(await store.async_load())
+            gate.persist = store.async_save
+            state["store"] = store
         if reauthenticate:
             gate.resume_authentication()
+            await state["store"].async_save(gate.dump())
         if (
             not reauthenticate
             and state.get("identity") == identity

@@ -58,6 +58,9 @@ ha-card.embedded-shell>main{min-width:0;min-height:0}
 :host(:not([data-sigen-fit])) ha-card.embedded-shell .compact-overview{height:auto!important;grid-template-rows:minmax(min-content,1fr) auto!important}
 :host(:not([data-sigen-fit])) ha-card.embedded-shell .overview-summary-stack{height:auto!important;min-height:min-content;grid-template-rows:auto auto auto!important}
 :host(:not([data-sigen-fit])) ha-card.embedded-shell .hero{display:flex!important;flex-direction:column;grid-template-rows:none!important;min-width:0}
+:host(:not([data-sigen-fit])) ha-card.embedded-shell .hero,:host(:not([data-sigen-fit])) ha-card.embedded-shell .overview-sidebar{grid-row:auto!important;grid-column:auto!important}
+:host(:not([data-sigen-fit])) ha-card.embedded-shell .overview-sidebar{display:flex!important;flex-direction:column;grid-template-rows:none!important;align-self:start;min-height:0}
+:host(:not([data-sigen-fit])) ha-card.embedded-shell .overview-sidebar>.overview-summary-stack,:host(:not([data-sigen-fit])) ha-card.embedded-shell .overview-sidebar>.overview-device-links{flex:none;grid-row:auto!important;height:auto!important}
 :host(:not([data-sigen-fit])) ha-card.embedded-shell .main-display-stage{width:100%!important;flex:none;height:auto!important;aspect-ratio:2.05!important}
 :host(:not([data-sigen-fit])) ha-card.embedded-shell .main-display-stage[data-display=house]{aspect-ratio:1.18!important}
 :host([data-sigen-fit]) ha-card:has(main[data-view=overview]>.compact-overview){height:var(--sigen-host-height,calc(100dvh - 56px))!important;min-height:0!important;display:grid!important;grid-template-rows:auto minmax(0,1fr)}

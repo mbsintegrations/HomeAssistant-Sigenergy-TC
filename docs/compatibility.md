@@ -24,6 +24,8 @@ Historical readings differ from instant measurements. Native daily cloud totals,
 
 Cloud-only installations use shared pacing/caching, cooldown after throttling and no blind control retry. Polling does not happen once per card. History requests use caching and the same account gate. This reduces traffic, but cannot promise immunity from undocumented Sigenergy limits or another app's simultaneous sessions.
 
+From 0.2.5, account cooldowns and retry backoff survive Core restart. Six-second minimum request spacing is an internal client policy, not a verified provider quota. Retry-After may extend a cooldown. Restarting or repeatedly reloading the integration is not a way to clear a provider throttle. Cached inventory, mode and measured daily totals can appear during reconnect without authorizing writes; readings retain their original timestamps and expire normally.
+
 Not implemented as working plant controls: installer protection/grid-code changes, reboot/firmware updates, V2X dispatch, native charger schedules, unsupported charger options, direct Tigo monitoring and external AI execution. Some optional configuration screens save local preferences/drafts; a saved draft must not be described as an applied plant setting. Optimizer/module views require real mapped/discovered data; a new real entry does not invent panel counts or battery modules.
 
 This release uses the unofficial password-based mySigen app interface. Official NBI/API developer access and Sigen MCP are outside this release. No commercial-grade availability, firmware compatibility or absolute financial saving is implied by the Total Control name.

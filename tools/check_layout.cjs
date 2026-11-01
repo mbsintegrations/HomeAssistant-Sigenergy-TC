@@ -86,6 +86,7 @@ async function run() {
             labelsInside,panelOverlap,tilesContained,photoRatio:f?f.width/f.height:null,artFitsFrame:!f||r.querySelector('.sigen-photo-plane').getBoundingClientRect().height<=f.height+1,hasAc:Boolean(r.querySelector('.sigen-photo-node [data-detail=ac],.mobile-power-grid [data-detail=ac],.flow [data-detail=ac],.house-reading [data-detail=ac]')),hasDc:Boolean(r.querySelector('.sigen-photo-node [data-detail=dc],.mobile-power-grid [data-detail=dc],.flow [data-detail=dc],.house-reading [data-detail=dc]'))};
         });
         let result=await check();
+        const initialResult=result,resizes=[];
         assert.ok(result.top>=100&&result.bottom<=height-12,`${width} ${display}: ignores host header/bounds ${JSON.stringify(result)}`);
         assert.equal(result.overflow,false,`${width} ${display}: horizontal overflow ${JSON.stringify(result)}`);
         assert.equal(result.controlsReachable,true,`${width} ${display}: unreachable controls`);
@@ -104,8 +105,18 @@ async function run() {
           await page.evaluate(() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
           result=await check();
           assert.ok(result.bottom<=688&&!result.overflow&&result.controlsReachable,'Live resize left clipped controls');
+          assert.equal(result.panelOverlap,false,'Live resize made summary panels overlap');
+          assert.equal(result.tilesContained,true,'Live resize moved energy tiles outside their panel');
+          resizes.push({width:900,height:700,...result});
+          await page.setViewportSize({width,height});
+          await page.evaluate(() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+          result=await check();
+          assert.equal(result.panelOverlap,false,'Returning to the original size left summary panels overlapping');
+          assert.equal(result.tilesContained,true,'Returning to the original size left energy tiles outside their panel');
+          assert.equal(result.overflow,false,'Returning to the original size left horizontal overflow');
+          resizes.push({width,height,...result});
         }
-        report.push({embedded:true,width,height,display,...result});await context.close();
+        report.push({embedded:true,width,height,display,...initialResult,resizes});await context.close();
       }
     }
     console.log(JSON.stringify(report));
