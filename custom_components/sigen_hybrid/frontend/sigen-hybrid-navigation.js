@@ -1,12 +1,13 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-import { renderDeviceDetail, solarStringSeries, DETAIL_STYLE } from './sigen-hybrid-details.js?v=0.2.7';
-import { presetTarget, renderPreset, PRESET_STYLE } from './sigen-hybrid-presets.js?v=0.2.7';
-import { renderSettingsDetail, collectSettings, SETTINGS_STYLE, SETTINGS_ROUTES, CHART_CHOICES, DEFAULT_CHART_SELECTION, DISPLAY_MODULES, DISPLAY_PRESETS, HOMEPAGE_APPEARANCES, HOMEPAGE_BACKGROUNDS, homepageBackground, displayDefaults, encodeChargerScheduleId, decodeChargerScheduleId, bindTariffEditor, bindStrategyEditor, OPERATING_MODES, observedOperatingMode, renderOverviewModeControl, strategyExportEligibility } from './sigen-hybrid-settings.js?v=0.2.7';
-import { periodRange, dateAt, shiftDate, toCSV, preserveChartScroll } from './sigen-hybrid-charts.js?v=0.2.7';
-import { renderSummaryWidget, renderSummaryDetail, WIDGET_ROUTES, WIDGET_STYLE } from './sigen-hybrid-widgets.js?v=0.2.7';
-import { ENERGY_ROUTES, renderEnergyProfile, ENERGY_STYLE, ownerSettingTarget, renderOwnerSetting, collectOwnerSetting, bindOwnerSettingForm } from './sigen-hybrid-energy.js?v=0.2.7';
-import { renderChargingEnergy, renderTodayEnergy, renderBatteryLevel, renderMobilePower, renderChargerControls } from './sigen-hybrid-overview.js?v=0.2.7';
-import { modeChoices, selectedMode, nativeModeChoices } from './sigen-hybrid-settings.js?v=0.2.7';
+import { renderDeviceDetail, solarStringSeries, DETAIL_STYLE } from './sigen-hybrid-details.js?v=0.2.8';
+import { presetTarget, renderPreset, PRESET_STYLE } from './sigen-hybrid-presets.js?v=0.2.8';
+import { bindNativeStrategies } from './sigen-hybrid-strategies.js?v=0.2.8';
+import { renderSettingsDetail, collectSettings, SETTINGS_STYLE, SETTINGS_ROUTES, CHART_CHOICES, DEFAULT_CHART_SELECTION, DISPLAY_MODULES, DISPLAY_PRESETS, HOMEPAGE_APPEARANCES, HOMEPAGE_BACKGROUNDS, homepageBackground, displayDefaults, encodeChargerScheduleId, decodeChargerScheduleId, bindTariffEditor, bindStrategyEditor, OPERATING_MODES, observedOperatingMode, renderOverviewModeControl, strategyExportEligibility } from './sigen-hybrid-settings.js?v=0.2.8';
+import { periodRange, dateAt, shiftDate, toCSV, preserveChartScroll } from './sigen-hybrid-charts.js?v=0.2.8';
+import { renderSummaryWidget, renderSummaryDetail, WIDGET_ROUTES, WIDGET_STYLE } from './sigen-hybrid-widgets.js?v=0.2.8';
+import { ENERGY_ROUTES, renderEnergyProfile, ENERGY_STYLE, ownerSettingTarget, renderOwnerSetting, collectOwnerSetting, bindOwnerSettingForm } from './sigen-hybrid-energy.js?v=0.2.8';
+import { renderChargingEnergy, renderTodayEnergy, renderBatteryLevel, renderMobilePower, renderChargerControls } from './sigen-hybrid-overview.js?v=0.2.8';
+import { modeChoices, selectedMode, nativeModeChoices } from './sigen-hybrid-settings.js?v=0.2.8';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
 
@@ -755,7 +756,7 @@ export function installNavigation(Card) {
     let options={};try{options=JSON.parse(localStorage.getItem(`sigen-hybrid:interface:${this._config.config_entry??this._config.title??'default'}`)??'{}');}catch{}
     options=mergeInterfacePreferences(options,this._sharedInterfaceOptions);
     const forecastConfiguration=this._forecastConfiguration,ownerConfiguration=this._ownerConfiguration,plantConfiguration=this._plantConfiguration;
-    return {id,forecastConfiguration,ownerConfiguration,plantConfiguration,connections:this._connectionOverview?.(),entities:this._entities,optimizers:this._config.optimizers??[],inventory:this._deviceInventory?.()??this._config.devices??[],history:this._history,now:this._now(),timezone:this._config.timezone??this._hass?.config?.time_zone??'UTC',currency:this._hass?.config?.currency??this._config.currency,haLocale:this._hass?.locale,haUnitSystem:this._hass?.config?.unit_system,haDarkMode:this._hass?.themes?.darkMode,night:this._night(),config:this._config,interfaceOptions:options,alertFilters:this._alertFilters??{},chargerRecordFilters:this._chargerRecordFilters??{},controlPermission:this._config.cloud_paused!==true&&this._state('control_status')?.attributes?.live_writes_locked===false&&this._state('control_status')?.attributes?.control_api_version===1&&this._state('control_status')?.attributes?.config_entry_id===this._config.config_entry,capabilities:this._state('control_status')?.attributes?.capabilities??{},state:key=>this._entities[key]?typeof this._state==='function'?this._state(key):this._hass?.states[this._entities[key]]:this._hass?.states[key],rawState:key=>this._hass?.states[this._entities[key]??key],value:(key,quantity='power')=>this._entities[key]?this._value(key,quantity):null,entity:key=>this._entities[key]??key};
+    return {id,forecastConfiguration,ownerConfiguration,plantConfiguration,strategyOperation:this._strategyOperation,connections:this._connectionOverview?.(),entities:this._entities,optimizers:this._config.optimizers??[],inventory:this._deviceInventory?.()??this._config.devices??[],history:this._history,now:this._now(),timezone:this._config.timezone??this._hass?.config?.time_zone??'UTC',currency:this._hass?.config?.currency??this._config.currency,haLocale:this._hass?.locale,haUnitSystem:this._hass?.config?.unit_system,haDarkMode:this._hass?.themes?.darkMode,night:this._night(),config:this._config,interfaceOptions:options,alertFilters:this._alertFilters??{},chargerRecordFilters:this._chargerRecordFilters??{},controlPermission:this._config.cloud_paused!==true&&this._state('control_status')?.attributes?.live_writes_locked===false&&this._state('control_status')?.attributes?.control_api_version===1&&this._state('control_status')?.attributes?.config_entry_id===this._config.config_entry,capabilities:this._state('control_status')?.attributes?.capabilities??{},state:key=>this._entities[key]?typeof this._state==='function'?this._state(key):this._hass?.states[this._entities[key]]:this._hass?.states[key],rawState:key=>this._hass?.states[this._entities[key]??key],value:(key,quantity='power')=>this._entities[key]?this._value(key,quantity):null,entity:key=>this._entities[key]??key};
   };
   Card.prototype._loadForecastConfiguration=async function(){
     const entry=this._config.config_entry;if(!entry||this._forecastConfigurationLoading)return;
@@ -847,6 +848,7 @@ export function installNavigation(Card) {
     this._detailDialog.querySelectorAll('form').forEach(form=>{form.addEventListener('input',()=>{this._detailDirty=true;});form.addEventListener('change',()=>{this._detailDirty=true;});form.addEventListener('submit',event=>{event.preventDefault();form.hasAttribute('data-native-owner-form')?this._saveNativeOwnerSetting(form):this._saveDetail();});});
     this._detailDialog.scrollTop=0;this._detailDialog.querySelector('[data-detail-back]').focus();this._upgradeCharts(this._detailDialog);this._bindSankeyRoutes(this._detailDialog);
     this._bindDisplayForm();this._bindDashboardInstaller();this._bindOptionsForm();
+    bindNativeStrategies(this);
     for(const form of this._detailDialog.querySelectorAll('[data-native-owner-form]'))bindOwnerSettingForm(form);
     this._bindForecastForm();if(route==='forecast_settings'&&!replace)this._loadForecastConfiguration();
     if(ownerSettingTarget(route,this._detailContext(id))&&(!this._ownerConfiguration||this._ownerConfiguration.route!==route||String(this._ownerConfiguration.id??'')!==String(id??'')))this._loadOwnerConfiguration(route,id);

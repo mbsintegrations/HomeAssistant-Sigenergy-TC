@@ -37,3 +37,11 @@ To check the documentation examples in a local Chrome installation, install Play
 ![Native Personal Strategies](images/native-strategies.png)
 
 ![Native tariff plan](images/native-tariffs.png)
+
+## Native strategy controls
+
+[Create, change, rename and delete native strategies](native-strategies.md). Public screenshots use synthetic data.
+
+![Desktop native strategy editor](images/native-strategy-editor.png)
+
+<img alt="Phone native strategy editor" src="images/phone-strategy-editor.png" width="412">

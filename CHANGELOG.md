@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.8
+
+Released 2 November 2026. Invitation-only Alpha. [Release and upgrade notes](docs/release-0.2.8.md).
+
+- Add New, Change, Rename and Delete actions for native mySigen Personal Strategies, separate from TC-owned HA schedules.
+- Use the native personalization assistant for rule creation/changes, including explicit reviews, returned proposal confirmation and bounded response polling. Rename/delete use direct native requests with fresh readback.
+- Bind previews/conversations to the HA administrator and configured plant. Reject stale rule revisions and foreign-plant responses; consume mutation requests before dispatch to prevent automatic replay after timeout/reconnection.
+- Save a private pre-change rule snapshot, retain existing scalar/manual controls and add desktop/tablet/phone strategy interaction coverage. Document remaining supervised plant-write acceptance separately from software/read-only checks.
+
 ## 0.2.7
 
 - Read existing mySigen Personal Strategies through the configured Cloud account, separately from TC's HA schedules. Display native names, conditions and actions without activating or duplicating rules.

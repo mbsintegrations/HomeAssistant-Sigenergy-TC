@@ -29,3 +29,7 @@ Saved tariffs drive displayed price history and planning inputs. They are local 
 ## Forecasts
 
 Select one provider or average two cached providers covering the same panels. Avoid averaging individual strings and a whole-system forecast, or counting an aggregate twice. Provider badges reflect sources that actually contributed valid values; a missing source remains selected in settings but is excluded from an affected total. Correct location, orientation, tilt and kWp are essential. Provider service quotas and forecast uncertainty remain relevant even when HA can calculate an average cheaply.
+
+## Native mySigen rules
+
+For New, Change, Rename and Delete actions on plant-saved Personal Strategies, use the [native strategy guide](native-strategies.md). These rules remain separate from the TC scheduler described above.

@@ -30,7 +30,7 @@ Update the integration and reload the dashboard to obtain the current frontend i
 
 ## Backend updated but the old interface remains
 
-Earlier versions retained the unversioned registered TC resource, allowing an open tablet or browser to keep the previous module graph. Version 0.2.4 and later upgrade their own resource URL automatically. Restart HA after HACS updates, then fully reload the web view. In HA dashboard Resources, the TC URL should match the installed version, for example `?v=0.2.7`. Do not add a second copy of the same module.
+Earlier versions retained the unversioned registered TC resource, allowing an open tablet or browser to keep the previous module graph. Version 0.2.4 and later upgrade their own resource URL automatically. Restart HA after HACS updates, then fully reload the web view. In HA dashboard Resources, the TC URL should match the installed version, for example `?v=0.2.8`. Do not add a second copy of the same module.
 
 ## Installed chargers missing from Photo House
 
@@ -43,3 +43,7 @@ Update to 0.2.7 or later, restart HA and reload the dashboard. Open Personal str
 ## A DC charger uses V2X but the charging-mode popup is blank
 
 Version 0.2.7 reads an existing native DC mode 2 as V2X and keeps it selected instead of silently selecting Fast charging. V2X dispatch is not implemented by the ordinary charging-mode writer.
+
+## Native strategies are visible but controls are missing
+
+Use 0.2.8 or later, restart HA after updating, and fully reload the client. Native rule management requires an HA administrator, a connected mySigen Cloud account and enabled Cloud plant control. Modbus alone cannot manage native rules. Keep the existing entry; no developer API key or browser session is required. A rule change is confirmed only by fresh native readback. If confirmation is uncertain, inspect mySigen before trying again; writes are never replayed automatically. See [native strategy controls](native-strategies.md).

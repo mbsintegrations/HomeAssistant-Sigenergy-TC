@@ -23,7 +23,7 @@ async def test_frontend_serves_only_the_complete_known_asset_set():
         served.extend(paths)
 
     await namespace["async_register_frontend"](SimpleNamespace(data={}, http=SimpleNamespace(async_register_static_paths=register)))
-    expected = {"sigen-hybrid-presets.js", "sigen-hybrid-status.js", "sigen-hybrid-fit.js", "sigen-hybrid-card.js", "sigen-hybrid-navigation.js", "sigen-hybrid-details.js", "sigen-hybrid-settings.js", "sigen-hybrid-charts.js", "sigen-hybrid-widgets.js", "sigen-hybrid-energy.js", "sigen-hybrid-photo.js", "sigen-hybrid-overview.js", "sigen-hybrid-sankey.js", "sigen-hybrid-house.js", "sigen-hybrid-devices.js", "assets/overview-house-day-v1.webp", "assets/overview-house-night-v1.webp"}
+    expected = {"sigen-hybrid-strategies.js", "sigen-hybrid-presets.js", "sigen-hybrid-status.js", "sigen-hybrid-fit.js", "sigen-hybrid-card.js", "sigen-hybrid-navigation.js", "sigen-hybrid-details.js", "sigen-hybrid-settings.js", "sigen-hybrid-charts.js", "sigen-hybrid-widgets.js", "sigen-hybrid-energy.js", "sigen-hybrid-photo.js", "sigen-hybrid-overview.js", "sigen-hybrid-sankey.js", "sigen-hybrid-house.js", "sigen-hybrid-devices.js", "assets/overview-house-day-v1.webp", "assets/overview-house-night-v1.webp"}
     frontend = source.parent / "frontend"
     assert {str(Path(path).relative_to(frontend.resolve())).replace("\\", "/") for _, path, _ in served} == expected
     assert len(served) == len(expected)

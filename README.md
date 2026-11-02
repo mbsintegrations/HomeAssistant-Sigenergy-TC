@@ -4,7 +4,7 @@
 
 > **INVITATION-ONLY ALPHA — DO NOT INSTALL unless you have been invited by MBS Integrations.**
 >
-> Version **0.2.7** is an experimental, owner-supervised control release. It is not a stable release or a Sigenergy product. Real commands can change battery operation, charging and grid connection. Read the [control and recovery guide](docs/controls-and-recovery.md) before enabling control.
+> Version **0.2.8** is an experimental, owner-supervised control release. It is not a stable release or a Sigenergy product. Real commands can change battery operation, charging and grid connection. Read the [control and recovery guide](docs/controls-and-recovery.md) before enabling control.
 
 [![Validation](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/actions/workflows/validate.yml/badge.svg)](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/actions/workflows/validate.yml)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://www.hacs.xyz/docs/faq/custom_repositories/)
@@ -15,10 +15,12 @@
 
 A local-first Home Assistant integration and responsive energy dashboard for SigenStor systems. Use **Modbus**, **mySigen Cloud**, or **both**. Each owner supplies their own cloud credentials. No developer application, NBI key, hosted MBS backend or VPP registration is needed.
 
+[0.2.8 release notes](docs/release-0.2.8.md) · [Validation and acceptance scope](docs/acceptance.md)
+
 ## Features
 
 - Local power, battery SOC, native energy counters and persistent daily baselines, with cached measured Cloud daily buckets covering the first installation day. Independent cloud availability lets Modbus continue during internet failures.
-- Optional cached cloud telemetry, history, supported operating modes, discovered battery modules, gateway and charger information. Existing mySigen Personal Strategies, tariffs and device configuration are read through your configured Cloud login; see [native settings and coverage](docs/native-settings.md).
+- Optional cached cloud telemetry, history, supported operating modes, discovered battery modules, gateway and charger information. Existing mySigen Personal Strategies, tariffs and device configuration are read through your configured Cloud login; see [native settings and coverage](docs/native-settings.md). Native Personal Strategies also have [New, Change, Rename and Delete controls](docs/native-strategies.md), subject to the documented Alpha acceptance scope.
 - Real local/cloud battery charge, discharge to home, discharge to grid, hold and self-consumption commands; native cloud mode selection, gateway switching and AC/DC charger start/stop.
 - Owner SOC, battery/PV power, backup reserve, grid power/current, energy priorities, peak-shaving and AC/DC charging-mode settings. Popups read actual settings and reject stale edits. [Setting formats and availability](docs/owner-settings.md).
 - Durable command journal, fresh identity/permission checks, finite power/SOC bounds and compare-before-restore recovery. Cloud manual commands use native expiry; explicitly enabled local commands use HA-managed timing and native SOC thresholds. Owner changes take priority.
