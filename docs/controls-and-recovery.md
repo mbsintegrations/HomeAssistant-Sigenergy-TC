@@ -54,3 +54,13 @@ Disabling a connection or control through TC options first attempts to release T
 Use Developer tools → Actions and the integration's native action fields. `manual_control` accepts the integration entry, `mode`, optional `power_kw`, `duration_minutes`, `request_id`, source and `dry_run`. `owner_setting` accepts only the closed supported setting names and validates their structured value. `cancel_manual_control` releases only TC-owned state. `preview_plan` is advisory and sends no plant command. Start with previews when inspecting parameters; deliberately use `dry_run: false` for owner-approved real testing.
 
 Do not copy another plant's entry ID or serial. Diagnostics and journals are different: diagnostics are allowlisted; private journal files can contain device identities and must not be posted publicly.
+
+## Temporary override status
+
+The Instant manual control header shows the selected action and remaining duration, for example **Hold battery · 58 min remaining**, with **Cancel override** beside it. The selected control is highlighted. The normal operating-mode selector remains separate.
+
+Checking and Applying are pending states, not confirmation that the battery is already following the command. An elapsed counter remains visible while dispatch is pending. Confirmed local register readback establishes the control setting; fresh battery telemetry separately checks Hold. A small standby flow up to 50 W is treated as holding. Older telemetry shows Awaiting reading; continued movement shows Check battery power. The countdown follows the confirmed command expiry, not the time the popup was opened.
+
+Reloading a dashboard keeps the status through HA's control sensor. Restarting HA restores the journal metadata as Checking previous override until device identity/readback reconciliation succeeds. Expiry displays Ending override until restoration is confirmed. Cancel remains available from the dashboard after closing the popup. An uncertain cancellation does not enable blind repeat requests.
+
+Local command and recovery traffic take priority between requests on the existing connection. Protocol pacing and safeguards remain in place, so local commands are not instantaneous. Cloud-only commands still follow the shared Cloud gate and provider cooldowns. This update does not bypass either transport's limits.

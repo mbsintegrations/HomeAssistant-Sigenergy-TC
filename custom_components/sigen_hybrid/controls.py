@@ -57,6 +57,7 @@ class OwnerControls:
             self._job.cancel()
             await asyncio.gather(self._job, return_exceptions=True)
         self.operation = {
+            **self.operation,
             "request_id": str(uuid4()),
             "phase": "cancelling",
             "message": "Releasing this integration's manual control",
@@ -106,15 +107,54 @@ class OwnerControls:
             self._notify()
 
     def diagnostics(self):
+        operation = dict(self.operation)
+        snapshot = self.runtime.data
+        stamp = operation.get("confirmed_at")
+        if operation.get("phase") == "confirmed" and operation.get("mode") == "hold" and snapshot is not None and stamp:
+            try:
+                fresh = -5 <= (self.clock() - snapshot.observed_at).total_seconds() <= 120
+                after = snapshot.observed_at >= datetime.fromisoformat(stamp)
+                operation["power_check"] = ("holding" if abs(snapshot.battery_kw) <= 0.05 else "not_settled") if fresh and after else "awaiting_reading"
+            except (TypeError, ValueError, AttributeError):
+                operation["power_check"] = "awaiting_reading"
         return {
             "control_api_version": 1,
             "live_writes_locked": not self.enabled,
-            "operation": dict(self.operation),
+            "operation": operation,
         }
 
     def _notify(self):
         if not self._closing:
             self.runtime.async_update_listeners()
+
+    def _stage(self, stage):
+        self.operation = {**self.operation, "stage": stage, "stage_at": self.clock().isoformat()}
+        self._notify()
+
+    def _restore_operation(self, record, *, verified=False):
+        context = record.get("context", {})
+        if context.get("mode") not in ("charge", "discharge", "hold", "self_consumption"):
+            return
+        if self._job is not None and not self._job.done():
+            return
+        phase = record.get("phase") if verified else "recovery_pending"
+        self.operation = {
+            "request_id": record["request_id"], "phase": phase,
+            "mode": context["mode"], "export_requested": context.get("export_requested", False),
+            "source": context.get("source"), "duration_minutes": context.get("duration_minutes"),
+            "requested_at": record.get("created_at"), "expires_at": record.get("expires_at"),
+            "confirmed_at": record.get("confirmed_at", record.get("created_at")),
+            "route": self.route, "message": "Manual control active" if phase == "confirmed" else "Checking previous control",
+        }
+        if verified and phase == "confirmed" and context.get("source") == "manual" and record.get("expires_at"):
+            self.runtime.controller.manual_until = datetime.fromisoformat(record["expires_at"])
+
+    async def restore_status(self):
+        """Show durable pending work immediately; verification still gates activity."""
+        if self.enabled:
+            saved = await self.store.async_load()
+            if isinstance(saved, dict) and saved.get("active"):
+                self._restore_operation(saved["active"])
 
     async def _bind(self):
         if not self.enabled or self._closing:
@@ -162,6 +202,7 @@ class OwnerControls:
                 )
                 provider.devices[key] = bound.devices[key]
         journal = RecoveryJournal(self.store, provider, plant_identity=identity, clock=self.clock)
+        journal.progress = self._stage
         self._session = CloudControlSession(journal, clock=self.clock)
         pending = await journal.pending()
         if pending and pending.get("expires_at") and pending.get("context", {}).get("source") == "manual":
@@ -227,7 +268,10 @@ class OwnerControls:
             return dict(self.operation)
         self._intent = intent
         self._setting_request = None
-        self.operation = {"request_id": intent.request_id, "phase": "queued", "message": "Checking plant state"}
+        self.operation = {"request_id": intent.request_id, "phase": "queued", "stage": "checking",
+                          "mode": intent.mode.value, "export_requested": intent.export_requested,
+                          "source": intent.source.value, "duration_minutes": intent.duration_minutes,
+                          "requested_at": self.clock().isoformat(), "route": self.route, "message": "Checking plant state"}
         self._job = self.runtime.entry.async_create_background_task(
             self.runtime.hass, self._run(intent), "sigenergy_tc_owner_command"
         )
@@ -362,12 +406,13 @@ class OwnerControls:
             # Background cloud polling must not interleave with a command's
             # recovery snapshot. Independent Modbus monitoring stays active.
             async with self.operation_lock:
+                self._stage("checking")
                 session = await self._bind()
                 await session.reconcile()  # Explicit execution may first release interrupted work.
                 from .core.models import Source
                 if intent.source != Source.MANUAL and (await session.journal.automation_pause()).get("paused") is True:
                     raise SafetyError("Scheduling is paused after an owner change")
-                if self.runtime.data is not None and self.runtime.local_error is None and hasattr(self.runtime, "async_request_refresh"):
+                if self.route != Route.MODBUS and self.runtime.data is not None and self.runtime.local_error is None and hasattr(self.runtime, "async_request_refresh"):
                     if (self.clock()-self.runtime.data.observed_at).total_seconds() > self.runtime.controller.limits.telemetry_max_age:
                         await self.runtime.async_request_refresh()
                 snapshot = await self.snapshot()
@@ -381,9 +426,11 @@ class OwnerControls:
                         raise SafetyError("Automatic charge/discharge requires a valid power limit")
                     intent = replace(intent, power_kw=maximum if intent.power_kw is None else min(intent.power_kw, maximum))
                 result = await self.runtime.controller.execute(intent, snapshot, self.clock(), dry_run=False)
-                self.operation = {**asdict(result), "phase": result.status}
+                self.operation = {**self.operation, **asdict(result), "phase": result.status, "stage": "complete",
+                                  "confirmed_at": self.clock().isoformat()}
         except asyncio.CancelledError:
             self.operation = {
+                **self.operation,
                 "request_id": intent.request_id,
                 "phase": "interrupted",
                 "message": "Reconcile the previous command before retrying",
@@ -431,7 +478,7 @@ class OwnerControls:
             uncertain = pending is not None and pending["phase"] != "confirmed"
         except Exception:
             uncertain = True
-        self.operation = {"request_id": request_id, "phase": "uncertain" if uncertain else "failed", "message": message}
+        self.operation = {**self.operation, "request_id": request_id, "phase": "uncertain" if uncertain else "failed", "message": message}
 
     async def reconcile(self, _now=None):
         if self._closing:
@@ -454,6 +501,8 @@ class OwnerControls:
             try:
                 session = await self._bind()
                 result = await session.reconcile()
+                if result.get("phase") == "confirmed":
+                    self._restore_operation(result, verified=True)
                 self._update_setting_cache(result)
                 if result["phase"] in ("idle", "restored"):
                     self.runtime.controller.manual_until = None

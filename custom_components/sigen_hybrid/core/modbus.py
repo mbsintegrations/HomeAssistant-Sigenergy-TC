@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import inspect
 import time
+from contextlib import asynccontextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from typing import Any
 
@@ -14,7 +16,7 @@ from .registers import ENERGY_REGISTERS, READ_REGISTERS, WRITE_REGISTERS, option
 
 
 class ModbusTransport:
-    def __init__(self, client: Any, *, plant_id: int = 247, request_interval: float = 1.0, read_only: bool = False):
+    def __init__(self, client: Any, *, plant_id: int = 247, request_interval: float = 1.0, read_only: bool = False, charger_units=None):
         if plant_id != 247:
             raise ValueError("Sigenergy plant registers require unit 247")
         if request_interval < 1:
@@ -26,6 +28,38 @@ class ModbusTransport:
         self.trace = {"read_requests": 0, "write_requests": 0, "errors": 0, "snapshots": 0}
         self._lock = asyncio.Lock()
         self._last_request = float("-inf")
+        self.charger_units = charger_units or {}
+        self._priority = ContextVar(f"modbus_command_{id(self)}", default=False)
+        self._command_waiters = 0
+        self._condition = asyncio.Condition()
+        self._busy = False
+        self.clock, self.sleep = time.monotonic, asyncio.sleep
+
+    @asynccontextmanager
+    async def command(self):
+        """Pause routine reads between requests while a bounded command runs."""
+        async with self._condition:
+            self._command_waiters += 1
+        token = self._priority.set(True)
+        try:
+            yield
+        finally:
+            self._priority.reset(token)
+            async with self._condition:
+                self._command_waiters -= 1
+                self._condition.notify_all()
+
+    @asynccontextmanager
+    async def _request_slot(self):
+        async with self._condition:
+            await self._condition.wait_for(lambda: not self._busy and (self._priority.get() or not self._command_waiters))
+            self._busy = True
+        try:
+            yield
+        finally:
+            async with self._condition:
+                self._busy = False
+                self._condition.notify_all()
 
     async def close(self):
         result = self.client.close()
@@ -39,9 +73,9 @@ class ModbusTransport:
             raise SafetyError("Only device identity reads may target the selected inverter")
         if writing and self.read_only:
             raise SafetyError("This additional Modbus connection is read-only")
-        async with self._lock:
-            await asyncio.sleep(max(0, self.request_interval - (time.monotonic() - self._last_request)))
-            self._last_request = time.monotonic()
+        async with self._request_slot(), self._lock:
+            await self.sleep(max(0, self.request_interval - (self.clock() - self._last_request)))
+            self._last_request = self.clock()
             self.trace["write_requests" if writing else "read_requests"] += 1
             self.trace["last_address"] = kwargs.get("address")
             self.trace["last_request_at"] = datetime.now(timezone.utc).isoformat()
@@ -85,14 +119,59 @@ class ModbusTransport:
         except ValueError, TypeError, AttributeError:
             raise TransportError("Malformed Modbus register response") from None
 
-    async def write_confirmed(self, key: str, value: float) -> None:
+    async def write_confirmed(self, key: str, value: float) -> float:
         reg = WRITE_REGISTERS[key]  # closed allowlist, never arbitrary addresses
         await self._call(self.client.write_registers, address=reg.address, values=reg.encode(value))
         actual = await self.read(key)  # new device response, not a coordinator cache
         if abs(actual - value) > 0.5 / reg.gain:
             raise ConfirmationError("Write sent but fresh register readback did not match")
+        return actual
 
-    async def snapshot(self) -> Snapshot:
+    async def read_many(self, keys):
+        """Group adjacent allowlisted registers; never read unsupported gaps."""
+        groups = []
+        for key in sorted(set(keys), key=lambda key: ((READ_REGISTERS.get(key) or WRITE_REGISTERS[key]).holding, (READ_REGISTERS.get(key) or WRITE_REGISTERS[key]).address)):
+            reg = READ_REGISTERS.get(key) or WRITE_REGISTERS[key]
+            if groups and groups[-1][-1][1].holding == reg.holding and groups[-1][-1][1].address + groups[-1][-1][1].count == reg.address:
+                groups[-1].append((key, reg))
+            else:
+                groups.append([(key, reg)])
+        values = {}
+        for group in groups:
+            first = group[0][1]
+            response = await self._call(self.client.read_holding_registers if first.holding else self.client.read_input_registers,
+                                        address=first.address, count=sum(reg.count for _, reg in group))
+            if len(response.registers) != sum(reg.count for _, reg in group):
+                raise TransportError("Malformed grouped register response")
+            offset = 0
+            for key, reg in group:
+                values[key] = reg.decode(response.registers[offset:offset + reg.count])
+                offset += reg.count
+        return values
+
+    async def charger_readings(self):
+        from .chargers import AC_STATES, CHARGER_REGISTERS, DC_STATES
+
+        values = {}
+        for kind, unit in self.charger_units.items():
+            if unit is None:
+                continue
+            for key in (f"{kind}_state", f"{kind}_power"):
+                reg = CHARGER_REGISTERS[key]
+                try:
+                    response = await self._call(self.client.read_input_registers, _device_id=unit, address=reg.address, count=reg.count)
+                    if all(word == 65535 for word in response.registers):
+                        continue
+                    value = reg.decode(response.registers)
+                    if key.endswith("_state"):
+                        value = (AC_STATES if kind == "ac" else DC_STATES).get(value)
+                    if value is not None:
+                        values[key] = value
+                except (TransportError, ValueError, TypeError, AttributeError):
+                    continue
+        return values
+
+    async def snapshot(self, *, essential_only=False) -> Snapshot:
         # Bounded contiguous groups avoid reading unsupported gaps. Fixed addresses,
         # no probing/scanning, no second connection per register.
         # Conservative timestamp: oldest sample, not the end of the read cycle.
@@ -136,7 +215,8 @@ class ModbusTransport:
         if charge is None or discharge is None or max_active <= 0:
             raise SafetyError("Valid battery and inverter ratings are required")
         self.trace["snapshots"] += 1
-        energy = await self.energy_readings()
+        energy = {} if essential_only else await self.energy_readings()
+        chargers = {} if essential_only else await self.charger_readings()
         self.trace["last_cycle_seconds"] = round(time.monotonic() - started, 3)
         return Snapshot(
             observed_at=observed_at,
@@ -158,6 +238,7 @@ class ModbusTransport:
             native_mode=int(values["native_mode"]),
             total_load_kw=values["total_load_kw"],
             energy=energy,
+            chargers=chargers,
         )
 
     async def energy_readings(self):

@@ -11,9 +11,16 @@ import asyncio
 import copy
 import hashlib
 import json
+from dataclasses import dataclass
 from datetime import datetime
 
 from .errors import ConfirmationError, SafetyError
+
+
+@dataclass(frozen=True)
+class ConfirmedReadback:
+    """Fresh response obtained by a checked local write, never a cached value."""
+    value: object
 
 
 def canonical(value):
@@ -35,6 +42,7 @@ class RecoveryJournal:
         self.store, self.provider, self.plant_identity, self.clock = store, provider, plant_identity, clock
         self._lock = asyncio.Lock()
         self._document = None
+        self.progress = None
 
     async def _load(self):
         if self._document is None:
@@ -198,6 +206,8 @@ class RecoveryJournal:
                 canonical(record["provider_metadata"])
             document["active"] = record
             await self._save()  # If persistence fails, no plant mutation is allowed.
+            if self.progress:
+                self.progress("applying")
             try:
                 for step in record["steps"]:
                     key, value = step["key"], step["requested"]
@@ -225,13 +235,14 @@ class RecoveryJournal:
                         arguments = {"context": record.get("context")}
                         if "before_send" in inspect.signature(checked_write).parameters:
                             arguments["before_send"] = before_send
-                        await checked_write(key, copy.deepcopy(value), copy.deepcopy(actual), **arguments)
-                    observed = (await self._read([key]))[key]
+                        receipt = await checked_write(key, copy.deepcopy(value), copy.deepcopy(actual), **arguments)
+                    observed = receipt.value if checked_write is not None and isinstance(receipt, ConfirmedReadback) else (await self._read([key]))[key]
                     if not self._matches(step, observed):
                         raise ConfirmationError("Command was sent but fresh setting readback did not match")
                     step["after"] = copy.deepcopy(observed)
                     await self._save()
                 record["phase"] = "confirmed"
+                record["confirmed_at"] = self.clock().isoformat()
                 expiry = getattr(self.provider, "command_expiry", None)
                 if expires_at is not None and expiry is not None:
                     actual_expiry = expiry(record)

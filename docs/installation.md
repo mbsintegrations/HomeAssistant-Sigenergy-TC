@@ -43,3 +43,11 @@ Read the release notes; take a backup; release active commands before restarting
 ## Removal
 
 Disable scheduled strategies and release any active TC command while Cloud is available. Verify the native plant settings in mySigen. Disable/remove the integration entry, remove its dashboard cards/resource if unused, then remove the package in HACS and restart. Do not remove the original integration or OCPP configuration as part of this process. If a command cannot be released, use the [recovery procedure](controls-and-recovery.md) first. Saved HA history follows HA Recorder retention; uninstalling software is not a history migration.
+
+## Charger telemetry
+
+Under **Configure → Modbus**, optional **AC charger Modbus unit ID** and **DC charger inverter Modbus unit ID** fields identify the actual devices on the configured endpoint. Use the inverter unit hosting the DC charger, not plant unit 247. Leaving a field empty permits unambiguous reuse of a currently configured Sigen Local Modbus device on that same host/port. Conflicting or foreign-endpoint configurations are never guessed or scanned.
+
+The reads use AC registers 32000/32003 and DC registers 31513/31502, with the register definitions and attribution retained in the source. Unsupported charger reads do not disable aggregate plant measurements. Charger telemetry entities are added for configured/discovered devices; absent devices are not invented. Cloud inventory may establish installed presence without supplying a connection-state measurement. Such a state remains Unknown; map an existing state sensor explicitly if needed.
+
+Upgrade to **0.2.6** through HACS, restart HA, and fully reload the tablet/browser or Companion App. Keep the existing integration entry and dashboard. Verify both charger labels and the override header; plant-command acceptance remains supervised owner testing.

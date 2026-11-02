@@ -21,6 +21,10 @@ class Description:
 
 
 DESCRIPTIONS = (
+    Description("ac_state", "AC charger state"),
+    Description("dc_state", "DC charger state"),
+    Description("ac_power", "AC charging power", "kW", SensorDeviceClass.POWER),
+    Description("dc_power", "DC charging power", "kW", SensorDeviceClass.POWER),
     Description("soc", "Battery state of charge", "%", SensorDeviceClass.BATTERY),
     Description("pv_kw", "Solar power", "kW", SensorDeviceClass.POWER),
     Description("home_kw", "Load power", "kW", SensorDeviceClass.POWER),
@@ -63,11 +67,20 @@ DESCRIPTIONS = (
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    async_add_entities([SigenSensor(entry.runtime_data, entry, description) for description in DESCRIPTIONS])
+    charger_keys = {"ac_state", "dc_state", "ac_power", "dc_power"}
+    async_add_entities([SigenSensor(entry.runtime_data, entry, description) for description in DESCRIPTIONS if description.key not in charger_keys])
     known_modules = set()
+    known_chargers = set()
 
     def add_modules():
         additions = []
+        units = getattr(entry.runtime_data.local, "charger_units", {})
+        inventory = entry.runtime_data.cloud_data.get("device_inventory", [])
+        for kind in ("ac", "dc"):
+            installed = units.get(kind) is not None or any(row.get("type") == kind and row.get("installed") is True for row in inventory)
+            if installed and kind not in known_chargers:
+                known_chargers.add(kind)
+                additions.extend(SigenSensor(entry.runtime_data, entry, desc) for desc in DESCRIPTIONS if desc.key in {f"{kind}_state", f"{kind}_power"})
         for module in entry.runtime_data.cloud_data.get("battery_modules", []):
             serial = module.get("serial")
             if not isinstance(serial, str) or serial in known_modules:

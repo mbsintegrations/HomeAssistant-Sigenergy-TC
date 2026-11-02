@@ -4,7 +4,7 @@
 
 > **INVITATION-ONLY ALPHA — DO NOT INSTALL unless you have been invited by MBS Integrations.**
 >
-> Version **0.2.5** is an experimental, owner-supervised control release. It is not a stable release or a Sigenergy product. Real commands can change battery operation, charging and grid connection. Read the [control and recovery guide](docs/controls-and-recovery.md) before enabling control.
+> Version **0.2.6** is an experimental, owner-supervised control release. It is not a stable release or a Sigenergy product. Real commands can change battery operation, charging and grid connection. Read the [control and recovery guide](docs/controls-and-recovery.md) before enabling control.
 
 [![Validation](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/actions/workflows/validate.yml/badge.svg)](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/actions/workflows/validate.yml)
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://www.hacs.xyz/docs/faq/custom_repositories/)
@@ -25,6 +25,7 @@ A local-first Home Assistant integration and responsive energy dashboard for Sig
 - Personal time/SOC strategies with explicit master enable, overnight and DST handling, priority conflict detection and bounded native leases.
 - Local buying/selling tariffs, weekly periods and seasons. A separate forecast-based charging planner produces recommendations; financial optimization is advisory.
 - Forecast.Solar, Open-Meteo Solar Forecast, Solcast and Volcast integrations as optional cached sources; average up to two sources covering the same panels.
+- Charger connection states read independently of power, and a persistent manual-override countdown with Cancel in the control header.
 - Photo House, House and Flow scenes; automatic day/night appearance and weather effects; phone, tablet and desktop layouts; standalone charts, summaries and control cards.
 - Existing-dashboard embedding, visual card configuration, light/dark themes, sanitized diagnostics and optional local connection notifications.
 
