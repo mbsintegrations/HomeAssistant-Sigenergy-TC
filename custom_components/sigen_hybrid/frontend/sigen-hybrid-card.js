@@ -1,3 +1,4 @@
+import { chargerStatus, overrideModel, renderOverride, STATUS_STYLE } from './sigen-hybrid-status.js?v=0.2.6';
 /* SPDX-License-Identifier: GPL-3.0-only
  * Sigenergy TC dashboard components. Third-party artwork attribution is
  * retained in sigen-hybrid-photo.js and THIRD_PARTY_NOTICES.md.
@@ -20,20 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import { installNavigation, CARD_PRESETS, CARD_CHART_CHOICES } from './sigen-hybrid-navigation.js?v=0.2.5';
-import { installHostFit } from './sigen-hybrid-fit.js?v=0.2.5';
-import { WIDGET_ROUTES } from './sigen-hybrid-widgets.js?v=0.2.5';
-import { renderPhotoScene, PHOTO_STYLE } from './sigen-hybrid-photo.js?v=0.2.5';
-import { renderTodayEnergy, renderBatteryLevel, renderChargerControls, renderMobilePower, OVERVIEW_STYLE } from './sigen-hybrid-overview.js?v=0.2.5';
-import { energySankey as buildEnergySankey } from './sigen-hybrid-sankey.js?v=0.2.5';
-import { renderHouseScene, HOUSE_STYLE } from './sigen-hybrid-house.js?v=0.2.5';
-import { renderDeviceOverview, DEVICE_STYLE } from './sigen-hybrid-devices.js?v=0.2.5';
-import { gridConnectionStatus, connectionIndicators, selectReadingState } from './sigen-hybrid-energy.js?v=0.2.5';
+import { installNavigation, CARD_PRESETS, CARD_CHART_CHOICES } from './sigen-hybrid-navigation.js?v=0.2.6';
+import { installHostFit } from './sigen-hybrid-fit.js?v=0.2.6';
+import { WIDGET_ROUTES } from './sigen-hybrid-widgets.js?v=0.2.6';
+import { renderPhotoScene, PHOTO_STYLE } from './sigen-hybrid-photo.js?v=0.2.6';
+import { renderTodayEnergy, renderBatteryLevel, renderChargerControls, renderMobilePower, OVERVIEW_STYLE } from './sigen-hybrid-overview.js?v=0.2.6';
+import { energySankey as buildEnergySankey } from './sigen-hybrid-sankey.js?v=0.2.6';
+import { renderHouseScene, HOUSE_STYLE } from './sigen-hybrid-house.js?v=0.2.6';
+import { renderDeviceOverview, DEVICE_STYLE } from './sigen-hybrid-devices.js?v=0.2.6';
+import { gridConnectionStatus, connectionIndicators, selectReadingState } from './sigen-hybrid-energy.js?v=0.2.6';
 export const MAIN_DISPLAYS = Object.freeze({ house: 'House', flow: 'Flow', photo: 'Photo house' });
 const COLORS = { solar: '#efc900', battery: '#26c9c8', grid: '#6694ff', home: '#a45bf0', ac: '#b46767', dc: '#d29420' };
 const LABELS = { solar: 'Solar', battery: 'Battery', grid: 'Grid', home: 'Home', ac: 'AC charger', dc: 'DC charger' };
 const VIEWS = ['overview', 'charts', 'house', 'flow', 'statistics', 'power', 'battery', 'solar', 'grid', 'forecast', 'tariff', 'controls', 'optimizers', 'solar_chart', 'load_chart', 'battery_chart', 'grid_chart', 'dc_chart', 'dc_voltage_chart', 'dc_current_chart', 'dc_soc_chart', 'dc_metrics_chart', ...WIDGET_ROUTES,...CARD_PRESETS.map(([key])=>key)];
-const KEYS = { pv_kw: 'solar_power', home_kw: 'home_power', grid_kw: 'grid_power', battery_kw: 'battery_power', soc: 'battery_soc', capacity_kwh: 'battery_capacity', native_mode: 'native_mode', grid_status: 'grid_status', control_status: 'control_status', cloud_mode: 'cloud_mode', cloud_status: 'cloud_status', modbus_status: 'modbus_status', forecast_status: 'forecast_status', forecast_today: 'forecast_today', forecast_tomorrow: 'forecast_tomorrow', export_permitted: 'export_permitted', solar_today: 'solar_today', home_today: 'home_today', battery_charge_today: 'battery_charge_today', battery_discharge_today: 'battery_discharge_today', grid_import_today: 'grid_import_today', grid_export_today: 'grid_export_today', ac_today: 'ac_today', dc_today: 'dc_today', dc_discharge_today: 'dc_discharge_today', solar_lifetime: 'solar_lifetime', home_lifetime: 'home_lifetime', battery_charge_lifetime: 'battery_charge_lifetime', battery_discharge_lifetime: 'battery_discharge_lifetime', grid_import_lifetime: 'grid_import_lifetime', grid_export_lifetime: 'grid_export_lifetime', ac_plant_lifetime: 'ac_plant_lifetime', dc_plant_lifetime: 'dc_plant_lifetime', dc_discharge_lifetime: 'dc_discharge_lifetime' };
+const KEYS = { ac_state: 'ac_state', dc_state: 'dc_state', ac_power: 'ac_power', dc_power: 'dc_power', pv_kw: 'solar_power', home_kw: 'home_power', grid_kw: 'grid_power', battery_kw: 'battery_power', soc: 'battery_soc', capacity_kwh: 'battery_capacity', native_mode: 'native_mode', grid_status: 'grid_status', control_status: 'control_status', cloud_mode: 'cloud_mode', cloud_status: 'cloud_status', modbus_status: 'modbus_status', forecast_status: 'forecast_status', forecast_today: 'forecast_today', forecast_tomorrow: 'forecast_tomorrow', export_permitted: 'export_permitted', solar_today: 'solar_today', home_today: 'home_today', battery_charge_today: 'battery_charge_today', battery_discharge_today: 'battery_discharge_today', grid_import_today: 'grid_import_today', grid_export_today: 'grid_export_today', ac_today: 'ac_today', dc_today: 'dc_today', dc_discharge_today: 'dc_discharge_today', solar_lifetime: 'solar_lifetime', home_lifetime: 'home_lifetime', battery_charge_lifetime: 'battery_charge_lifetime', battery_discharge_lifetime: 'battery_discharge_lifetime', grid_import_lifetime: 'grid_import_lifetime', grid_export_lifetime: 'grid_export_lifetime', ac_plant_lifetime: 'ac_plant_lifetime', dc_plant_lifetime: 'dc_plant_lifetime', dc_discharge_lifetime: 'dc_discharge_lifetime' };
 const historyCache = new Map();
 const registryCache = new WeakMap();
 let sankeySerial = 0;
@@ -180,6 +181,7 @@ export class SigenHybridCard extends HTMLElement {
     this._hass = hass; if (!this._config) return;
     this._discover();
     this._syncManualOperation();
+    this._syncOverride();
     this._syncOwnerSetting?.();
     const ids = [...new Set([...Object.values(this._entities), ...Object.values(this._config.fallback_entities??{}).flat(), ...this._deviceIds(), this._config.weather_entity, this._config.sun_entity ?? 'sun.sun', ...this._moduleIds()])];
     const signature = JSON.stringify(ids.map(id => [id, hass.states[id]?.state, hass.states[id]?.last_updated, hass.states[id]?.attributes]));
@@ -187,8 +189,8 @@ export class SigenHybridCard extends HTMLElement {
     if (signature !== this._signature || dark !== this._dark || uiDark !== this._uiDark) { this._signature = signature; this._dark = dark;this._uiDark=uiDark; this._render(); }
     if (this.isConnected) this._loadHistory();
   }
-  connectedCallback() { if (this._hass) { this._discover(); this._loadHistory(); } }
-  disconnectedCallback() { this._historySerial = (this._historySerial ?? 0) + 1; this._loading = false; }
+  connectedCallback() { this._overrideTimer??=setInterval(()=>this._syncOverride(),1000);this._overrideTimer.unref?.(); if (this._hass) { this._discover(); this._loadHistory(); } }
+  disconnectedCallback() { clearInterval(this._overrideTimer);this._overrideTimer=null; this._historySerial = (this._historySerial ?? 0) + 1; this._loading = false; }
   getCardSize() { return this._view === 'overview' ? 12 : ['battery', 'solar', 'grid'].includes(this._view) ? 4 : 7; }
   getGridOptions() { return { columns: 12, rows: 'auto', min_columns: 6 }; }
   get _entities() { return { ...this._auto, ...this._config?.entities }; }
@@ -230,7 +232,7 @@ export class SigenHybridCard extends HTMLElement {
   _has(key) {
     if (Object.hasOwn(this._config?.entities ?? {}, key) && this._config.entities[key] === null) return false;
     if (this._entities[key]) return true;
-    const type = {ac_power:'ac',ac_state:'ac',dc_power:'dc'}[key];
+    const type = {ac_power:'ac',ac_state:'ac',dc_power:'dc',dc_state:'dc'}[key];
     return Boolean(type && this._deviceInventory().some(device => device.type === type && device.installed === true));
   }
   _readOnly() { const control=this._state('control_status')?.attributes;return this._config.cloud_paused === true || !this._config.config_entry || control?.live_writes_locked !== false || control?.control_api_version===1&&control?.capabilities?.manual_control?.available!==true; }
@@ -248,8 +250,10 @@ export class SigenHybridCard extends HTMLElement {
   }
   async _discover() {
     const id = this._config?.config_entry, conn = this._hass?.connection;
-    if (!id || !conn || this._discoveryKey === id) return;
-    this._discoveryKey = id;
+    const inventoryKey=JSON.stringify(this._deviceInventory().filter(row=>['ac','dc'].includes(row.type)&&row.installed===true).map(row=>row.type).sort());
+    const discoveryKey=`${id}:${inventoryKey}`;
+    if (!id || !conn || this._discoveryKey === discoveryKey) return;
+    this._discoveryKey = discoveryKey;
     try {
       if (!registryCache.has(conn)) registryCache.set(conn, this._hass.callWS({ type: 'config/entity_registry/list' }));
       const rows = await registryCache.get(conn);
@@ -318,7 +322,7 @@ export class SigenHybridCard extends HTMLElement {
     return `<div class="flow"><svg viewBox="0 0 760 500" role="img" aria-label="Measured power at each system connection">
       ${nodes.map(([k, key, x, y]) => { const a = flowActivity(this._state(key), k, this._now()); return `<path class="wire ${a.active && this._config.animations !== false ? 'active' : ''} ${(['home', 'ac', 'dc'].includes(k) ? a.value > 0 : a.reverse) ? 'reverse' : ''}" style="--tone:${COLORS[k]}" d="M${x},${y} Q${x},250 380,250"/>`; }).join('')}
       <circle cx="380" cy="250" r="36" class="bus"/><text x="380" y="255" text-anchor="middle" class="bus-label">SYSTEM</text>
-      ${nodes.map(([k, key, x, y]) => `<g><rect x="${x - 75}" y="${y - 41}" width="150" height="82" rx="22" class="node" style="stroke:${COLORS[k]}"/><text x="${x}" y="${y - 6}" text-anchor="middle" class="node-value">${esc(fmt(this._value(key)))}</text><text x="${x}" y="${y + 20}" text-anchor="middle" class="node-name">${LABELS[k]}</text></g>`).join('')}
+      ${nodes.map(([k, key, x, y]) => `<g><rect x="${x - 75}" y="${y - 41}" width="150" height="82" rx="22" class="node" style="stroke:${COLORS[k]}"/><text x="${x}" y="${y - 6}" text-anchor="middle" class="node-value">${esc(fmt(this._value(key)))}</text><text x="${x}" y="${y + 20}" text-anchor="middle" class="node-name">${LABELS[k]}</text>${['ac','dc'].includes(k)?`<text x="${x}" y="${y+36}" text-anchor="middle" class="node-name" style="font-size:11px">${esc(chargerStatus(this._detailContext(),k))}</text>`:''}</g>`).join('')}
       </svg></div>`;
   }
   _battery() {
@@ -364,7 +368,7 @@ export class SigenHybridCard extends HTMLElement {
     return `<section class="panel"><h2>Tariffs & strategy</h2><div class="price-pair"><div><small>Buying</small><strong>${this._priceValue('buy_price')}</strong></div><div><small>Selling</small><strong>${this._priceValue('sell_price')}</strong></div></div>${this._priceChart()}</section>`;
   }
   _controls({chargers=true}={}) {
-    return `<section class="panel instant-manual-panel"><div class="section-title"><h2>Instant manual control</h2></div><div class="control-buttons battery-control-buttons">${[['charge', 'Charge'], ['discharge', 'Discharge to Home'], ['battery_export', 'Discharge to Grid'], ['hold', 'Hold battery'], ['self_consumption', 'Self-consumption']].map(([mode, label]) => `<button type="button" data-preview="${mode}">${label}</button>`).join('')}</div>${chargers?renderChargerControls(this._detailContext()):''}<output aria-live="polite">${esc(this._result ?? '')}</output></section>`;
+    return `<section class="panel instant-manual-panel"><div class="section-title"><h2>Instant manual control</h2><div class="manual-override">${renderOverride(this._overrideOperation())}</div></div><div class="control-buttons battery-control-buttons">${[['charge', 'Charge'], ['discharge', 'Discharge to Home'], ['battery_export', 'Discharge to Grid'], ['hold', 'Hold battery'], ['self_consumption', 'Self-consumption']].map(([mode, label]) => `<button type="button" data-preview="${mode}"${overrideModel(this._overrideOperation())?.active&&overrideModel(this._overrideOperation())?.mode===mode?' class="is-active"':''}>${label}</button>`).join('')}</div>${chargers?renderChargerControls(this._detailContext()):''}<output aria-live="polite">${esc(this._result ?? '')}</output></section>`;
   }
   _today() {
     const tiles = [['solar_today', 'Solar', 'solar'], ['home_today', 'Home', 'home'], ['battery_discharge_today', 'Discharged', 'battery'], ['battery_charge_today', 'Charged', 'battery'], ['grid_import_today', 'Imported', 'grid'], ['grid_export_today', 'Exported', 'grid']].map(([key, label, color]) => this._tile(key, label, 'energy', color)).join('');
@@ -441,9 +445,10 @@ export class SigenHybridCard extends HTMLElement {
     if (this._dialogOpen) { this._renderPending = true; return; }
     const fonts = [['regular',400],['medium',500]].map(([key,weight]) => { const url=safeImageURL(this._config.fonts?.[key]); return url?`@font-face{font-family:SigenergyScene;src:url("${esc(url)}");font-weight:${weight};font-display:swap}`:''; }).join('');
     const night = this._uiNight(), background = dashboardBackgroundStyle(this._homepageBackground?.(), night);
-    this.shadowRoot.innerHTML = `<style>${fonts}${STYLE}${SCENE_STYLE}${RESPONSIVE_STYLE}${PHOTO_STYLE}${OVERVIEW_STYLE}${OVERVIEW_LAYOUT_STYLE}${HOUSE_STYLE}${DEVICE_STYLE}</style><ha-card class="${night ? 'night' : 'day'}${this._config.card_layout==='compact'?' standalone-card':''}${this._config.embed_mode==='shell'?' embedded-shell':this._config.embedded?' embedded-card':''}"${background ? ` style="${esc(background)}"` : ''}>${this._header()}<main data-view="${esc(this._view)}" data-controls-layout="${esc(this._config.controls_layout??'auto')}" data-density="${esc(this._config.density??'comfortable')}">${this._content()}</main></ha-card>`;
+    this.shadowRoot.innerHTML = `<style>${fonts}${STYLE}${SCENE_STYLE}${RESPONSIVE_STYLE}${PHOTO_STYLE}${OVERVIEW_STYLE}${STATUS_STYLE}${OVERVIEW_LAYOUT_STYLE}${HOUSE_STYLE}${DEVICE_STYLE}</style><ha-card class="${night ? 'night' : 'day'}${this._config.card_layout==='compact'?' standalone-card':''}${this._config.embed_mode==='shell'?' embedded-shell':this._config.embedded?' embedded-card':''}"${background ? ` style="${esc(background)}"` : ''}>${this._header()}<main data-view="${esc(this._view)}" data-controls-layout="${esc(this._config.controls_layout??'auto')}" data-density="${esc(this._config.density??'comfortable')}">${this._content()}</main></ha-card>`;
     this.shadowRoot.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { this._tab = b.dataset.tab; this._render(); }));
     this.shadowRoot.querySelectorAll('[data-entity]').forEach(b => b.addEventListener('click', () => { if (b.dataset.entity) this.dispatchEvent(new CustomEvent('hass-more-info', { detail: { entityId: b.dataset.entity }, bubbles: true, composed: true })); }));
+    this._syncOverride();
     this.shadowRoot.querySelectorAll('[data-preview]').forEach(b => b.addEventListener('click', () => this._openPreview(b.dataset.preview)));
     this.shadowRoot.querySelectorAll('img').forEach(img => img.addEventListener('error', () => { img.hidden = true; if (img.alt) { const note = document.createElement('p'); note.className = 'art-error'; note.textContent = 'House image unavailable · switch to Flow'; img.parentNode.appendChild(note); } }));
   }
@@ -520,13 +525,33 @@ export class SigenHybridCard extends HTMLElement {
         const next = JSON.stringify(data);
         if(next !== fingerprint){fingerprint = next;requestId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;}
         if(nativeApi){data.request_id = requestId;dialog._sigenRequestId = requestId;}
+        if(nativeApi){this._pendingOverride={request_id:requestId,mode:data.mode,export_requested:data.export_requested,submitted:false,phase:'queued',stage:'checking',requested_at:new Date().toISOString()};this._syncOverride();}
         const response = await this._hass.callWS({ type: 'call_service', domain: 'sigen_hybrid', service: 'manual_control', return_response: true, service_data: data });
+        if(nativeApi&&this._pendingOverride)this._pendingOverride={...this._pendingOverride,...response?.response,submitted:true};
         waiting = nativeApi && ['queued','cancelling'].includes(response?.response?.phase);
         dialog.querySelector('output').textContent = response?.response?.message ?? (nativeApi ? 'Command submitted; awaiting controller status.' : 'Preview returned; no device command sent.');
         this._syncManualOperation();
-      } catch { dialog.querySelector('output').textContent = nativeApi ? 'Command not confirmed. Check controller status before retrying.' : 'Preview rejected or unavailable. Check controller limits and fresh telemetry.'; }
-      finally { button.disabled = this._readOnly() || waiting; this._syncManualOperation(); }
+      } catch { if(this._pendingOverride)this._pendingOverride={...this._pendingOverride,phase:'uncertain'};dialog.querySelector('output').textContent = nativeApi ? 'Command not confirmed. Check controller status before retrying.' : 'Preview rejected or unavailable. Check controller limits and fresh telemetry.'; }
+      finally { this._syncOverride();button.disabled = this._readOnly() || waiting; this._syncManualOperation(); }
     });
+  }
+  _overrideOperation() { if(!this._config)return {};const actual=this._state('control_status')?.attributes?.operation??{};if(this._pendingOverride&&actual.request_id===this._pendingOverride.request_id)this._pendingOverride=null;return this._pendingOverride??actual; }
+  _syncOverride() {
+    if(!this._config)return;
+    const operation=this._overrideOperation(),model=overrideModel(operation);
+    this.shadowRoot.querySelectorAll('.manual-override').forEach(host=>{
+      const html=renderOverride(operation);if(host.innerHTML!==html)host.innerHTML=html;
+      const button=host.querySelector('[data-override-cancel]');if(button&&!button._sigenOverrideBound){button.addEventListener('click',()=>this._cancelOverride());button._sigenOverrideBound=true;}
+      if(button)button.disabled=this._readOnly();
+      if(button&&this._cancelUncertainRequest===operation.request_id){button.disabled=true;button.textContent='Check control status';}
+    });
+    this.shadowRoot.querySelectorAll('.battery-control-buttons [data-preview]').forEach(button=>button.classList.toggle('is-active',Boolean(model?.active&&model.mode===button.dataset.preview)));
+  }
+  async _cancelOverride() {
+    if(this._readOnly())return;
+    const button=this.shadowRoot.querySelector('[data-override-cancel]');if(button)button.disabled=true;
+    try { await this._hass.callWS({type:'call_service',domain:'sigen_hybrid',service:'cancel_manual_control',return_response:true,service_data:{config_entry:this._config.config_entry}}); }
+    catch { this._cancelUncertainRequest=this._overrideOperation().request_id;this._syncOverride(); }
   }
   _syncManualOperation() {
     const dialog = this._manualDialog, operation = this._state('control_status')?.attributes?.operation;

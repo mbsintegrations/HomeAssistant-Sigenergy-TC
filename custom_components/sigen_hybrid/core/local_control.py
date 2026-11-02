@@ -13,7 +13,7 @@ from .control_session import CloudControlSession
 from .errors import SafetyError
 from .models import CommandResult, Mode, Route, Source, utcnow
 from .native_settings import UNLIMITED, matches
-from .recovery import canonical
+from .recovery import ConfirmedReadback, canonical
 
 LOCAL_SETTINGS = frozenset({"battery_levels", "battery_power_limits", "pv_power_limit", "grid_export_limit", "grid_import_limit", "backup_reserve"})
 SCALARS = {"backup_soc", "charge_cutoff_soc", "discharge_cutoff_soc", "pv_limit_kw", "grid_export_limit_kw", "grid_import_limit_kw"}
@@ -41,6 +41,8 @@ class LocalControlSettings(ModbusControlSettings):
             super().validate(key, value)
 
     async def read(self, keys):
+        if all(key not in LOCAL_SETTINGS and key != "manual" for key in keys):
+            return await super().read(keys)
         result = {}
         for key in keys:
             if key == "manual":
@@ -144,7 +146,10 @@ class LocalControlSettings(ModbusControlSettings):
         if before_send:
             await before_send(value)
         await self.identity()
-        await self.transport.write_confirmed(key, int(value) if key == "remote_ems" else value)
+        observed = await self.transport.write_confirmed(key, int(value) if key == "remote_ems" else value)
+        # Legacy/test transports without a returned readback use the journal's
+        # separate fresh read. Actual ModbusTransport returns its checked reply.
+        return ConfirmedReadback(bool(observed) if key == "remote_ems" else observed) if observed is not None else None
 
     async def restore_checked(self, key, value, expected):
         # Restore remote EMS first (reverse journal order) before changing mode.

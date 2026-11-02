@@ -73,6 +73,7 @@ class Snapshot:
     total_load_kw: float | None = None
     source: str = "modbus"
     energy: dict[str, float] = field(default_factory=dict)
+    chargers: dict = field(default_factory=dict)
 
     def validate(self, now: datetime, max_age: float = 30) -> None:
         if now.tzinfo is None or self.observed_at.tzinfo is None:

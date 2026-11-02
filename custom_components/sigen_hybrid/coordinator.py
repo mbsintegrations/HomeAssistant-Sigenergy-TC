@@ -83,6 +83,7 @@ class SigenCoordinator(DataUpdateCoordinator):
         local_controls = LocalOwnerControls(self, Store(self.hass, 1, f"{DOMAIN}_local_control_{local_key}"), clock=utcnow)
         self.controls = HybridOwnerControls(cloud_controls, local_controls,
             Store(self.hass, 1, f"{DOMAIN}_source_binding_{self.entry.entry_id}"))
+        await self.controls.restore_status()
         if self.controls.enabled:
             self.controller.executor = self.controls
         from .strategies import StrategyRunner
@@ -120,7 +121,7 @@ class SigenCoordinator(DataUpdateCoordinator):
         return {
             "modbus": {
                 "observed_at": local.observed_at.isoformat() if local else None,
-                "values": {**vars(local), **local.energy, "grid_status": ("On Grid" if local.on_grid else "Off Grid")}
+                "values": {**vars(local), **local.energy, **local.chargers, "grid_status": ("On Grid" if local.on_grid else "Off Grid")}
                 if local
                 else {},
             },

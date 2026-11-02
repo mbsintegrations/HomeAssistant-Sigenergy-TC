@@ -578,11 +578,14 @@ class ModbusControlSettings:
                 raise SafetyError("Modbus power limit must be expressible in whole watts")
 
     async def read(self, keys):
+        if any(key not in self.KEYS for key in keys):
+            raise SafetyError("Unknown Modbus control setting")
+        grouped = await self.transport.read_many(keys) if hasattr(self.transport, "read_many") else None
         result = {}
         for key in keys:
             if key not in self.KEYS:
                 raise SafetyError("Unknown Modbus control setting")
-            value = await self.transport.read(key)
+            value = grouped[key] if grouped is not None else await self.transport.read(key)
             if key == "remote_ems":
                 if value not in (0, 1):
                     raise SafetyError("Remote EMS enable returned an invalid value")

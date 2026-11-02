@@ -1,3 +1,4 @@
+import { chargerStatus } from './sigen-hybrid-status.js?v=0.2.6';
 /* SPDX-License-Identifier: GPL-3.0-only
  * Owner-supplied original house artwork with independent, readable HTML labels.
  * The host supplies normalized readings and trusted cable SVG markup, and owns
@@ -57,10 +58,10 @@ export function renderHouseScene(ctx = {}) {
   const art = ctx.art ?? {}, night = ctx.night === true;
   const battery = has(ctx, 'battery_soc') || has(ctx, 'battery_power'), ac = has(ctx, 'ac_power') || has(ctx, 'ac_state'), dc = has(ctx, 'dc_power');
   const grid = value(ctx, 'grid_power'), batteryPower = value(ctx, 'battery_power'), soc = value(ctx, 'battery_soc', 'soc');
-  const acState = text(ctx, 'ac_state', 'Connection unknown'), acStatus = acState === 'Not Connected' ? 'Not plugged-in' : acState;
+  const acStatus = chargerStatus(ctx, 'ac');
   const house = safeImage(art.house);
   const top = (ac ? reading('ac', 'AC CHARGER', power(value(ctx, 'ac_power')), acStatus) : '') + (has(ctx, 'solar_power') ? reading('solar', 'SOLAR', power(value(ctx, 'solar_power'))) : '') + (has(ctx, 'home_power') ? reading('load', 'HOME', power(value(ctx, 'home_power'))) : '');
-  const bottom = (dc ? reading('dc', 'DC CHARGER', power(value(ctx, 'dc_power'))) : '') + (battery ? reading('battery', `SigenStor · ${soc === null ? '—' : `${number(soc, 1)}%`}`, power(batteryPower), direction(batteryPower, 'Charging', 'Discharging')) : '') + (has(ctx, 'grid_power') ? reading('grid', 'GRID', power(grid), grid === null ? 'Unavailable' : Math.abs(grid) < .03 ? 'Balanced' : grid > 0 ? 'Importing' : 'Exporting') : '');
+  const bottom = (dc ? reading('dc', 'DC CHARGER', power(value(ctx, 'dc_power')), chargerStatus(ctx, 'dc')) : '') + (battery ? reading('battery', `SigenStor · ${soc === null ? '—' : `${number(soc, 1)}%`}`, power(batteryPower), direction(batteryPower, 'Charging', 'Discharging')) : '') + (has(ctx, 'grid_power') ? reading('grid', 'GRID', power(grid), grid === null ? 'Unavailable' : Math.abs(grid) < .03 ? 'Balanced' : grid > 0 ? 'Importing' : 'Exporting') : '');
   return `<div class="scene-wrap">${renderWeatherEffects(ctx)}<div class="house-layout${night ? ' is-night' : ''}"><div class="house-header">${renderSceneWeather(ctx, art)}</div>${top ? `<div class="house-power-row">${top}</div>` : ''}<div class="house-canvas"><svg class="portal-scene" viewBox="110 170 800 670" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Original house with solar, battery, gateway and charger equipment">${house ? `<image href="${esc(house)}" x="134" y="179" width="738" height="643" preserveAspectRatio="xMidYMid meet"/>` : ''}${typeof ctx.wires === 'string' ? ctx.wires : ''}${has(ctx, 'home_power') ? '<path d="M610 490 L840 410 V670 L678 789 L610 760 Z" fill="transparent" data-detail="load" role="button" tabindex="0" aria-label="Home consumption details"/>' : ''}${battery ? sprite(art, 'battery', 380, 563, 83, 157, '476 553 127 268', [1170, 1013]) : ''}${sprite(art, 'gateway', 515, 600, 59, 91, '659 619 79 119', [1170, 1013])}${ac ? sprite(art, 'ac', 185, 495, 25, 49, night ? '55 482 53 88' : '50 489 42 84', [1170, 1011]) : ''}${dc ? sprite(art, 'dc', 305, 543, 32, 73, night ? '251 594 44 129' : '254 599 61 144', night ? [1125, 960] : [1149, 984]) : ''}</svg></div>${!house ? '<p class="house-art-missing">House artwork unavailable</p>' : ''}${bottom ? `<div class="house-bottom-row">${bottom}</div>` : ''}</div></div>`;
 }
 

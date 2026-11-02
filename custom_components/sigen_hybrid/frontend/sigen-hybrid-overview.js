@@ -1,3 +1,4 @@
+import { chargerStatus } from './sigen-hybrid-status.js?v=0.2.6';
 /* SPDX-License-Identifier: GPL-3.0-only
  * Pure compact overview panels. The host supplies normalized readings and
  * handles detail navigation; these renderers never access a provider or HA.
@@ -10,7 +11,7 @@ export function renderMobilePower(ctx = {}) {
   return `<div class="mobile-power-grid" aria-label="Live power readings">${definitions.filter(([key])=>ctx.entities?.[key]||ctx.has?.(key)).map(([key,label,route])=>{
     let value=null;try{const reading=ctx.value?.(key,'power');if(typeof reading==='number'&&Number.isFinite(reading))value=reading;}catch{}
     const formatted=value===null?'—':`${Math.abs(value).toLocaleString(ctx.haLocale?.language,{maximumFractionDigits:2})} kW`;
-    let detail='';
+    let detail=key==='ac_power'?chargerStatus(ctx,'ac'):key==='dc_power'?chargerStatus(ctx,'dc'):'';
     if(value!==null&&key==='battery_power'){const soc=ctx.value?.('battery_soc','soc');detail=[typeof soc==='number'&&Number.isFinite(soc)?`${soc.toLocaleString(undefined,{maximumFractionDigits:1})}%`:'',Math.abs(value)<.05?'Idle':value>0?'Charging':'Discharging'].filter(Boolean).join(' · ');}
     if(value!==null&&key==='grid_power')detail=Math.abs(value)<.05?'Idle':value>0?'Importing':'Exporting';
     return `<button type="button" data-detail="${route}" aria-label="${esc(`${label}: ${formatted}${detail?', '+detail:''}. Open details`)}"><span>${label}</span><strong>${esc(formatted)}</strong>${detail?`<small>${esc(detail)}</small>`:''}</button>`;

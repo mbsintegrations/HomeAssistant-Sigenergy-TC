@@ -67,7 +67,7 @@ async function run() {
       for (const display of ['photo','house','flow']) {
         const context = await browser.newContext({viewport:{width,height}});
         const page = await context.newPage();
-        await page.goto(`http://127.0.0.1:${server.address().port}/tools/gallery.html?shell=1&inventory_only=1&display=${display}${sidebar?'&sidebar=1':''}${tallHeader?'&tall_header=1':''}`);
+        await page.goto(`http://127.0.0.1:${server.address().port}/tools/gallery.html?shell=1&inventory_only=1&override=hold&display=${display}${sidebar?'&sidebar=1':''}${tallHeader?'&tall_header=1':''}`);
         await page.waitForFunction(() => window.galleryReady);
         await page.evaluate(() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
         const check = async () => page.evaluate(() => {
@@ -83,13 +83,14 @@ async function run() {
           return {top:b.top,bottom:b.bottom,viewport:innerHeight,overflow:box.scrollWidth>box.clientWidth+1,wide:[...r.querySelectorAll('main,.compact-overview,.hero,.overview-sidebar,.main-display-stage,.overview-summary-stack,.overview-side-module,.panel,.primary-navigation')].filter(n=>n.getBoundingClientRect().right>b.right+1).map(n=>[n.className,n.getBoundingClientRect().width,n.getBoundingClientRect().right]),
             controlsReachable:panel.getBoundingClientRect().bottom<=box.getBoundingClientRect().bottom+1,
             compact:card.hasAttribute('data-sigen-compact-fit'),allFits:box.scrollHeight<=box.clientHeight+2,scrollHeight:box.scrollHeight,clientHeight:box.clientHeight,controlHeight:panel.getBoundingClientRect().height,overviewHeight:r.querySelector('.compact-overview').getBoundingClientRect().height,rows:getComputedStyle(r.querySelector('.compact-overview')).gridTemplateRows,summary:[...r.querySelectorAll('.overview-summary-stack .panel,.overview-energy-metric,.overview-circle-label,.overview-circle-storage')].map(n=>({cls:n.className,h:n.getBoundingClientRect().height,scroll:n.scrollHeight,min:getComputedStyle(n).minHeight,padding:getComputedStyle(n).padding})),photoHeight:f?.height,sceneHeight:r.querySelector('.sigen-photo-scene')?.getBoundingClientRect().height,blurred:r.querySelector('.sigen-photo-scene')?getComputedStyle(r.querySelector('.sigen-photo-scene'),'::before').content!=='none':false,
-            labelsInside,panelOverlap,tilesContained,photoRatio:f?f.width/f.height:null,artFitsFrame:!f||r.querySelector('.sigen-photo-plane').getBoundingClientRect().height<=f.height+1,hasAc:Boolean(r.querySelector('.sigen-photo-node [data-detail=ac],.mobile-power-grid [data-detail=ac],.flow [data-detail=ac],.house-reading [data-detail=ac]')),hasDc:Boolean(r.querySelector('.sigen-photo-node [data-detail=dc],.mobile-power-grid [data-detail=dc],.flow [data-detail=dc],.house-reading [data-detail=dc]'))};
+            overrideVisible:Boolean(r.querySelector('.manual-override')?.textContent.includes('Hold battery')),overrideInside:[...r.querySelectorAll('.manual-override')].every(n=>{const a=n.getBoundingClientRect(),p=n.closest('.panel').getBoundingClientRect();return a.left>=p.left-1&&a.right<=p.right+1&&a.top>=p.top-1&&a.bottom<=p.bottom+1&&n.scrollWidth<=n.clientWidth+1;}),labelsInside,panelOverlap,tilesContained,photoRatio:f?f.width/f.height:null,artFitsFrame:!f||r.querySelector('.sigen-photo-plane').getBoundingClientRect().height<=f.height+1,hasAc:Boolean(r.querySelector('.sigen-photo-node [data-detail=ac],.mobile-power-grid [data-detail=ac],.flow [data-detail=ac],.house-reading [data-detail=ac]')),hasDc:Boolean(r.querySelector('.sigen-photo-node [data-detail=dc],.mobile-power-grid [data-detail=dc],.flow [data-detail=dc],.house-reading [data-detail=dc]'))};
         });
         let result=await check();
         const initialResult=result,resizes=[];
         assert.ok(result.top>=100&&result.bottom<=height-12,`${width} ${display}: ignores host header/bounds ${JSON.stringify(result)}`);
         assert.equal(result.overflow,false,`${width} ${display}: horizontal overflow ${JSON.stringify(result)}`);
         assert.equal(result.controlsReachable,true,`${width} ${display}: unreachable controls`);
+        assert.equal(result.overrideVisible&&result.overrideInside,true,`${width} ${display}: active override hidden or clipped`);
         assert.equal(result.panelOverlap,false,`${width} ${height} ${sidebar} ${display}: summary panels overlap ${JSON.stringify(result)}`);
         assert.equal(result.tilesContained,true,`${width} ${height} ${display}: energy tiles escape their panel ${JSON.stringify(result)}`);
         if(result.compact)assert.equal(result.allFits,true,`${width} ${height} ${display}: landscape controls cut off ${JSON.stringify(result)}`);
@@ -106,12 +107,14 @@ async function run() {
           result=await check();
           assert.ok(result.bottom<=688&&!result.overflow&&result.controlsReachable,'Live resize left clipped controls');
           assert.equal(result.panelOverlap,false,'Live resize made summary panels overlap');
+          assert.equal(result.overrideVisible&&result.overrideInside,true,'Live resize clipped active override');
           assert.equal(result.tilesContained,true,'Live resize moved energy tiles outside their panel');
           resizes.push({width:900,height:700,...result});
           await page.setViewportSize({width,height});
           await page.evaluate(() => new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
           result=await check();
           assert.equal(result.panelOverlap,false,'Returning to the original size left summary panels overlapping');
+          assert.equal(result.overrideVisible&&result.overrideInside,true,'Returning size clipped active override');
           assert.equal(result.tilesContained,true,'Returning to the original size left energy tiles outside their panel');
           assert.equal(result.overflow,false,'Returning to the original size left horizontal overflow');
           resizes.push({width,height,...result});

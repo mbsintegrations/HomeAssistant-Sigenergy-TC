@@ -38,9 +38,8 @@ class LocalOwnerControls(OwnerControls):
         snapshot = self.runtime.data
         if (snapshot is not None and not self.runtime.local_error
                 and (self.clock()-snapshot.observed_at).total_seconds() > self.runtime.controller.limits.telemetry_max_age
-                and hasattr(self.runtime, "async_request_refresh")):
-            await self.runtime.async_request_refresh()
-            snapshot = self.runtime.data
+                and hasattr(self.runtime.local, "snapshot")):
+            snapshot = await self.runtime.local.snapshot(essential_only=True)
         if self.runtime.local_error or snapshot is None:
             raise CapabilityError("Fresh local readings are required for local control")
         snapshot.validate(self.clock(), self.runtime.controller.limits.telemetry_max_age)
@@ -75,7 +74,33 @@ class LocalOwnerControls(OwnerControls):
         provider = LocalControlSettings(transport, identity_reader, max_charge_kw=snapshot.max_charge_kw,
                                         max_discharge_kw=snapshot.max_discharge_kw, clock=self.clock)
         self._session = LocalControlSession(RecoveryJournal(self.store, provider, plant_identity=identity, clock=self.clock), clock=self.clock)
+        self._session.journal.progress = self._stage
         return self._session
+
+    async def _run(self, intent):
+        transport = self.runtime.local
+        if hasattr(transport, "command"):
+            async with transport.command():
+                await super()._run(intent)
+        else:
+            await super()._run(intent)
+        self._notify()
+        if self.operation.get("phase") == "confirmed" and hasattr(self.runtime, "async_request_refresh"):
+            await self.runtime.async_request_refresh()
+
+    async def _reconcile(self):
+        transport = self.runtime.local
+        if hasattr(transport, "command"):
+            async with transport.command():
+                return await super()._reconcile()
+        return await super()._reconcile()
+
+    async def _release(self):
+        transport = self.runtime.local
+        if hasattr(transport, "command"):
+            async with transport.command():
+                return await super()._release()
+        return await super()._release()
 
     async def _prepare_setting(self, request):
         key = request["key"]
@@ -265,6 +290,12 @@ class HybridOwnerControls:
     async def close(self):
         await self.cloud.close()
         await self.local.close()
+
+    async def restore_status(self):
+        for actor in (self.cloud, self.local):
+            await actor.restore_status()
+            if actor.operation.get("phase") == "recovery_pending":
+                self._active = actor
 
     def diagnostics(self):
         return {**self._active.diagnostics(), "live_writes_locked": not self.enabled,

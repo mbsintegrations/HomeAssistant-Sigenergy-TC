@@ -214,7 +214,10 @@ async def async_setup_entry(hass, entry):
     competing = any(e.state is ConfigEntryState.LOADED for e in hass.config_entries.async_entries("sigen"))
     if enabled["modbus"] and (not competing or entry.data.get("shared_read_only") or entry.data.get("allow_shared_writes")) and entry.data.get("host"):
         client = AsyncModbusTcpClient(entry.data["host"], port=entry.data["port"], timeout=5, retries=0)
-        local = ModbusTransport(client, read_only=entry.data.get("shared_read_only", False))
+        from .core.chargers import configured_units
+        peers = [e.data for e in hass.config_entries.async_entries("sigen") if e.disabled_by is None]
+        local = ModbusTransport(client, read_only=entry.data.get("shared_read_only", False),
+                                charger_units=configured_units(entry.data, peers))
         try:
             await client.connect()
         except Exception:

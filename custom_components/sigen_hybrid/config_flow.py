@@ -52,11 +52,15 @@ def number_box(low, high, *, step="any", unit=None):
 
 def modbus_form_data(data):
     result = dict(data)
-    if "inverter_unit_id" in result:
-        value = result["inverter_unit_id"]
+    for key in ("inverter_unit_id", "ac_charger_unit_id", "dc_charger_unit_id"):
+        if key not in result:
+            continue
+        value = result[key]
+        if value is None and key != "inverter_unit_id":
+            continue
         if type(value) not in (int, float) or not float(value).is_integer() or not 1 <= value <= 246:
-            raise ValueError("A whole inverter unit ID is required")
-        result["inverter_unit_id"] = int(value)
+            raise ValueError("A whole device unit ID is required")
+        result[key] = int(value)
     return result
 
 
@@ -240,6 +244,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required("port", default=502): vol.All(vol.Coerce(int), vol.Range(min=1, max=65535)),
                     vol.Required("sole_modbus_client", default=False): bool,
                     vol.Optional("inverter_unit_id"): number_box(1, 246, step=1),
+                    vol.Optional("ac_charger_unit_id"): number_box(1, 246, step=1),
+                    vol.Optional("dc_charger_unit_id"): number_box(1, 246, step=1),
                     vol.Optional("allow_shared_writes", default=False): bool,
                     vol.Optional(
                         "shared_read_only",
@@ -637,6 +643,7 @@ class OptionsFlow(config_entries.OptionsFlow):
                     ),
                     vol.Required("sole_modbus_client", default=False): bool,
                     vol.Optional("inverter_unit_id", **({"default": self.config_entry.data["inverter_unit_id"]} if self.config_entry.data.get("inverter_unit_id") else {})): number_box(1, 246, step=1),
+                    **{vol.Optional(key, **({"default": self.config_entry.data[key]} if self.config_entry.data.get(key) else {})): number_box(1, 246, step=1) for key in ("ac_charger_unit_id", "dc_charger_unit_id")},
                     vol.Optional("allow_shared_writes", default=self.config_entry.data.get("allow_shared_writes", False)): bool,
                     vol.Optional(
                         "shared_read_only",

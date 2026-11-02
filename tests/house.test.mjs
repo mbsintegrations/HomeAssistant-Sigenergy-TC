@@ -51,7 +51,7 @@ test('all expected detail routes remain real accessible buttons or equipment hit
   for(const route of ['solar','load','battery','grid','dc','ac','weather'])assert.ok(html.includes(`data-detail="${route}"`),route);
   assert.ok(html.includes('aria-label="Home consumption details"'));
   assert.ok(HOUSE_STYLE.includes('min-height:44px'));
-  assert.ok(html.includes('Not plugged-in'));
+  assert.ok(html.includes('Not connected'));
   assert.ok(!html.includes('data-service=')&&!html.includes('data-action='));
 });
 
@@ -109,7 +109,7 @@ test('house rendering is deterministic and has no network, storage, timer, hardw
   const source=await readFile(new URL('../custom_components/sigen_hybrid/frontend/sigen-hybrid-house.js',import.meta.url),'utf8');
   assert.doesNotMatch(source,/\b(?:fetch|XMLHttpRequest|WebSocket|setInterval|setTimeout|requestAnimationFrame|callService|callWS)\s*\(/);
   assert.doesNotMatch(source,/\b(?:localStorage|sessionStorage|customElements|window|document)\b/);
-  assert.doesNotMatch(source,/^import\s/m);
+  assert.deepEqual([...source.matchAll(/^import .* from ['"]([^'"]+)/gm)].map(match=>match[1].split('?')[0]),['./sigen-hybrid-status.js']);
   const input=Object.freeze(ctx(Object.freeze({...readings})));
   assert.equal(renderHouseScene(input),renderHouseScene(input));
 });

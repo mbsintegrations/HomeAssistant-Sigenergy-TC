@@ -20,11 +20,15 @@
           "shared_read_only": "Additional read-only connection alongside an existing client",
           "poll_seconds": "Polling interval (seconds)",
           "inverter_unit_id": "Primary inverter Modbus unit ID",
-          "allow_shared_writes": "Allow TC writes while other Modbus clients monitor"
+          "allow_shared_writes": "Allow TC writes while other Modbus clients monitor",
+          "ac_charger_unit_id": "AC charger Modbus unit ID (optional)",
+          "dc_charger_unit_id": "DC charger inverter Modbus unit ID (optional)"
         },
         "data_description": {
           "inverter_unit_id": "Use the actual inverter unit ID, not the plant address 247. Required for serial-bound local controls.",
-          "allow_shared_writes": "TC must be the only writer. Other clients may monitor; disable their dispatch automations. Shared read-only mode must be off to write."
+          "allow_shared_writes": "TC must be the only writer. Other clients may monitor; disable their dispatch automations. Shared read-only mode must be off to write.",
+          "ac_charger_unit_id": "Use the installed charger unit. If omitted, an unambiguous existing Sigen Local Modbus configuration on the same endpoint can supply it. No device scan is performed.",
+          "dc_charger_unit_id": "Use the inverter unit hosting the DC charger. Existing matching Sigen Local Modbus configuration can supply it; no unit is guessed."
         }
       },
       "features": {
@@ -220,11 +224,15 @@
           "shared_read_only": "Additional read-only connection alongside an existing client",
           "poll_seconds": "Polling interval (seconds)",
           "inverter_unit_id": "Primary inverter Modbus unit ID",
-          "allow_shared_writes": "Allow TC writes while other Modbus clients monitor"
+          "allow_shared_writes": "Allow TC writes while other Modbus clients monitor",
+          "ac_charger_unit_id": "AC charger Modbus unit ID (optional)",
+          "dc_charger_unit_id": "DC charger inverter Modbus unit ID (optional)"
         },
         "data_description": {
           "inverter_unit_id": "Use the actual inverter unit ID, not the plant address 247. Required for serial-bound local controls.",
-          "allow_shared_writes": "TC must be the only writer. Other clients may monitor; disable their dispatch automations. Shared read-only mode must be off to write."
+          "allow_shared_writes": "TC must be the only writer. Other clients may monitor; disable their dispatch automations. Shared read-only mode must be off to write.",
+          "ac_charger_unit_id": "Use the installed charger unit. If omitted, an unambiguous existing Sigen Local Modbus configuration on the same endpoint can supply it. No device scan is performed.",
+          "dc_charger_unit_id": "Use the inverter unit hosting the DC charger. Existing matching Sigen Local Modbus configuration can supply it; no unit is guessed."
         }
       },
       "power_limits": {

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.6
+
+- Read AC/DC connection states and instantaneous charging power from configured local devices. Reuse unambiguous Sigen Local Modbus unit configuration only on the same endpoint; otherwise accept explicit optional charger unit IDs. No unit scanning, assumed addresses or extra TCP client is added.
+- Show charger connection/charging/fault states consistently in Photo House, House, Flow and phone tiles. Zero watts does not mean disconnected; unsupported or missing state remains unknown.
+- Add the temporary override action, remaining duration and Cancel to the existing Instant manual control header, with the active action highlighted. Show checking/applying/releasing/recovery states independently of the normal operating mode.
+- Recover override metadata from its durable journal after restart, showing verification pending until identity/readback reconciliation confirms it. A confirmed Hold distinguishes fresh near-zero battery power from an old reading or continued battery movement.
+- Prioritize local commands and restoration between existing paced requests. Group adjacent allowlisted reads and reuse a checked write's immediate fresh readback. Preserve serial checks before writes, write-ahead recovery, owner-change checks, one-second pacing and no blind retry.
+- Refresh monitoring after a confirmed local command. Reduce synthetic Hold transaction traffic from 62 requests to 49 with the same five writes; this is a software comparison, not a live timing guarantee.
+- Extend backend, frontend and active-override resize coverage; update documentation and synthetic screenshots. Existing plant settings, permissions and dashboards are preserved.
+
 ## 0.2.5
 
 - Publish essential Cloud readings and discovered AC/DC presence before slower optional battery-module reads. Collect daily history before those optional reads, and preserve completed observations when a later request fails.

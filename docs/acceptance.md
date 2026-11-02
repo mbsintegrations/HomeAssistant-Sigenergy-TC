@@ -14,3 +14,9 @@ HA Test validation keeps plant writes locked and checks native setup, service re
 - Owner-command contract and failure/recovery tests run against synthetic transports. No plant control commands were sent in this read-only validation. Actual command acceptance remains an invited Alpha hardware test, including cancel/expiry and native mySigen recovery.
 
 See [chart source requirements](chart-catalogue.md) for electrical charts that need mapped Recorder sensors. The checks above do not imply that every chart is automatically populated on every installation, or that every firmware accepts every owner setting.
+
+## 0.2.6 status and command-path checks
+
+Backend tests cover charger unit isolation, AC waiting at zero power, optional unsupported values, command-priority release after cancellation, per-request pacing, grouped reads, identity checks immediately before writes, fresh readback reuse, restart recovery and cancellation. A synthetic Hold transaction uses 49 requests instead of 62 on 0.2.5, with the same five writes. Live timing depends on device response and the required checks.
+
+Frontend checks cover connection labels across scenes, countdowns, pending/recovery/expiry states and active action labels. Browser geometry checks include an active Hold in 39 embedded cases plus 24 shrink/restore checks, alongside the five standard documentation layouts. Synthetic fixtures contain no credentials or plant-control client.
