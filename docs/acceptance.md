@@ -1,5 +1,9 @@
 # Release validation
 
+## 0.2.8 native strategy candidate
+
+590 backend and 443 frontend tests pass, with Ruff. Six browser cases exercise native strategy creation, editing, rename, delete, cancellation and proposal confirmation at desktop, tablet and phone sizes. The actual Cloud account returned saved native conversations and an informational assistant response using the ordinary configured account; fresh before/after reads showed unchanged plant strategies. Inert HA Test startup served the new strategy module and rejected native writes with control disabled. Supervised acceptance of real native strategy writes is still pending; this candidate is not yet a published release.
+
 The validation workflow runs synthetic backend/frontend tests and official Hassfest/HACS checks. See the [live checks](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/actions/workflows/validate.yml), [alpha test guide](alpha-testing.md), and [capability matrix](compatibility.md).
 
 Backend tests exercise transport errors, rate limits, partial acceptance/lost responses, restart recovery, immutable identities, owner priority, SOC/power bounds, expiry, export restrictions, DST/overnight scheduling, conflict detection and competing TC writers. Frontend tests exercise cards, charts, navigation, data normalization, availability, forms and control bindings. Browser examples check desktop, tablet and phone rendering without horizontal overflow or JavaScript errors.

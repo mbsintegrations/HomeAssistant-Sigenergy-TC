@@ -1,10 +1,11 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Native presets are observations, never implicitly imported HA automations.
  */
+import { STRATEGY_ROUTES, strategyActions, newStrategyButton, renderStrategyAction } from './sigen-hybrid-strategies.js?v=0.2.8';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 const object=value=>value&&typeof value==='object'&&!Array.isArray(value)?value:{};
 const row=(title,route,id,detail='')=>`<button type="button" class="settings-row native-preset-row" data-detail="${esc(route)}"${id==null?'':` data-id="${esc(id)}"`}><span>${esc(title)}</span><span class="settings-row-value">${esc(detail)}</span></button>`;
-export const PRESET_STYLE='.native-preset-row{flex-wrap:wrap;gap:8px 16px}.native-preset-row>span{min-width:0;overflow-wrap:anywhere}.native-preset-row .settings-row-value{white-space:normal;flex:1 1 55%;text-align:right}.native-preset-document{min-width:0}.native-preset-document .detail-meta{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}.native-preset-document .detail-meta>dd{min-width:0}.native-preset-document .detail-meta .detail-meta{grid-template-columns:minmax(0,1fr);margin:0;border-radius:8px}.native-preset-document .detail-meta .detail-meta>dt{padding-bottom:3px}.native-preset-document .detail-meta .detail-meta>dd{padding-top:3px}';
+export const PRESET_STYLE='.native-strategy-message{white-space:pre-wrap;overflow-wrap:anywhere;padding:12px 16px}.native-preset-row{flex-wrap:wrap;gap:8px 16px}.native-preset-row>span{min-width:0;overflow-wrap:anywhere}.native-preset-row .settings-row-value{white-space:normal;flex:1 1 55%;text-align:right}.native-preset-document{min-width:0}.native-preset-document .detail-meta{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}.native-preset-document .detail-meta>dd{min-width:0}.native-preset-document .detail-meta .detail-meta{grid-template-columns:minmax(0,1fr);margin:0;border-radius:8px}.native-preset-document .detail-meta .detail-meta>dt{padding-bottom:3px}.native-preset-document .detail-meta .detail-meta>dd{padding-top:3px}';
 const group=body=>`<section class="settings-group">${body}</section>`;
 const note=value=>`<p class="settings-note">${esc(value)}</p>`;
 const titles={strategies:'Personal strategies',profiles:'Operating profiles',profile:'Plant operating profile',tariffs:'Plant tariff plan',charger_schedules:'Plant charging schedules',charger_records:'Charging records',network:'Network',preheating:'Preheating schedule',indicators:'Indicator lights',energy_profile:'Plant configuration'};
@@ -13,7 +14,7 @@ const acOnly=new Set(['charger_options','charger_load_management','charger_outpu
 const chargerSections=new Set(['charger_schedules','charger_records','charger_ocpp','charger_cards','charger_auth','charger_mode',...acOnly]);
 function device(ctx){return (ctx.inventory??[]).find(item=>[item.id,item.serial,item.serial_number,item.serialNumber].some(value=>value!=null&&String(value)===String(ctx.id)));}
 export function presetTarget(route,ctx={}){
-  const section=PRESET_ROUTES[route];if(!section)return null;
+  const section=STRATEGY_ROUTES.has(route)?'strategies':PRESET_ROUTES[route];if(!section)return null;
   // Editable native settings use their normal revision-checked reader. If a
   // new provider schema cannot be edited, retain a bounded read-only view.
   if(['solar_source_priority','surplus_pv_priority','charging_mode'].includes(route)&&!ctx.ownerConfiguration?.error)return null;
@@ -85,16 +86,17 @@ export function renderPreset(route,ctx={},base){
   const target=presetTarget(route,ctx);if(!target)return null;
   const state=source({...ctx,route},target),value=state.value;
   const empty=state.loading?note('Reading plant configuration…'):state.error?note(state.error):value===undefined?note('Plant configuration could not be read.'):null;
+  if(STRATEGY_ROUTES.has(route))return renderStrategyAction(route,ctx,state,nativeFields);
   if(route==='strategies'){
     const rules=Array.isArray(value?.rules)?value.rules:null;
     const native=empty??(rules?.length?group(rules.map((item,index)=>row(item.customDisplayName||item.personalizationRuleName||`Preference ${index+1}`,'plant_strategy',String(item.personalizationRuleId),[item.ruleCondition,item.ruleEffect].filter(Boolean).join(' · '))).join('')):rules?note('No personal strategies in this operating mode.'):note('The plant strategy list could not be read.'));
     const tc=base?.body??'';
-    return {title:'Personal strategies',body:heading('Sigenergy plant strategies')+native+heading('Home Assistant schedules')+tc};
+    return {title:'Personal strategies',body:heading('Sigenergy plant strategies')+native+newStrategyButton(state.writable===true&&ctx.controlPermission)+heading('Home Assistant schedules')+tc};
   }
   if(route==='plant_strategy'){
     const item=value?.rules?.find(item=>String(item.personalizationRuleId)===String(ctx.id));
     const details=item?{name:item.customDisplayName||item.personalizationRuleName,ruleCondition:item.ruleCondition,ruleEffect:item.ruleEffect,priority:item.priority}:null;
-    return {title:item?.customDisplayName||item?.personalizationRuleName||'Plant personal strategy',body:empty??(details?nativeFields(details):note('This plant strategy is no longer available.'))};
+    return {title:item?.customDisplayName||item?.personalizationRuleName||'Plant personal strategy',body:empty??(details?nativeFields(details)+strategyActions(item,state.writable===true&&ctx.controlPermission):note('This plant strategy is no longer available.'))};
   }
   if(route==='plant_profiles')return {title:titles.profiles,body:empty??(value?.profiles?.length?group(value.profiles.map(item=>row(item.name||'Operating profile','plant_profile',item.profileId)).join('')):note('No custom operating profiles configured.'))};
   if(route==='charger_schedules'){

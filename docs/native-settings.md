@@ -8,7 +8,7 @@ Open the relevant setting to retrieve its current plant values. These optional r
 
 | Configuration | Location | Behaviour |
 | --- | --- | --- |
-| mySigen Personal Strategies | Personal strategies → Sigenergy plant strategies | Lists the native rule name, condition and action for the current operating mode; opens its details. |
+| mySigen Personal Strategies | Personal strategies → Sigenergy plant strategies | Lists native rules; New/Change use the native assistant, Rename/Delete use direct native requests. See [native strategies](native-strategies.md). |
 | TC schedules | Personal strategies → Home Assistant schedules | Existing HA schedule editor and explicit master enable. Native rules are never copied into this runner. |
 | Native operating profiles | My Energy Profile → Plant operating profiles | Lists advertised custom profiles and their settings. An empty custom-profile list does not imply that the plant has no Personal Strategies. |
 | Native buying/selling tariffs | Buying & selling tariffs → Sigenergy tariff plan | Reads the supplier, plan, effective periods, time bands, currency and provider price unit, plus taxes/fees. |
@@ -24,7 +24,7 @@ Open the relevant setting to retrieve its current plant values. These optional r
 | Energy saving and aggregator allocation | My Energy Profile | Reads the native configuration without enrolling in a VPP or changing allocation. |
 | Service provider | Settings → System → System information | Shows the plant's returned service-provider records. No installer contact is invented when the service returns none. |
 
-The new collections above are observations. Native rule/profile editing, native tariff synchronization, native charger-schedule editing, OCPP/RFID administration, preheating, indicator, energy-saving and aggregator writes are **not implemented by this reader**. This is an integration coverage boundary, not a claim that Sigenergy forbids those operations. TC's existing journalled control settings remain available as described in [owner settings](owner-settings.md).
+Other preset collections above remain observations. Custom operating-profile editing, native tariff synchronization, native charger-schedule editing, OCPP/RFID administration, preheating, indicator, energy-saving and aggregator writes are **not implemented by this reader**. Native Personal Strategy actions have their own [owner-confirmed controller](native-strategies.md). These are integration coverage boundaries, not claims that Sigenergy forbids an operation. TC's existing journalled control settings remain available as described in [owner settings](owner-settings.md).
 
 Grouped solar priorities returned by the current profile are displayed without flattening them into the older priority writer. TC does not send an unverified flat payload over grouped settings. Existing DC V2X mode is readable and remains selected in the charging-mode screen; it is not silently displayed as Fast charging. Vehicle-discharge dispatch remains a separate unsupported workflow.
 
@@ -34,7 +34,7 @@ Grouped solar priorities returned by the current profile are displayed without f
 - Reading does not enable controls, claim a Cloud override, activate a schedule or change plant configuration. It works with TC writes disabled.
 - Editable settings still use fresh readback, revisions, identity checks, the existing safety checks and durable recovery. A cached preset never authorizes a command.
 - Disabled grid limits may have an unset owner value. TC preserves that distinction from an explicit zero-watt limit.
-- Native Personal Strategies use a fixed POST list query. This reader has no generic endpoint proxy or native rule-save/delete operation.
+- Native Personal Strategies use a fixed POST list query. The separate native strategy controller accepts only its supported owner actions, not a generic endpoint proxy.
 
 ## Validation scope
 

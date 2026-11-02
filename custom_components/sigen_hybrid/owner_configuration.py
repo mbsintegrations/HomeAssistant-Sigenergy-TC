@@ -27,6 +27,7 @@ def async_register_owner_configuration(hass):
         websocket_api.async_register_command(hass, websocket_owner_configuration)
         websocket_api.async_register_command(hass, websocket_connection_identity)
         websocket_api.async_register_command(hass, websocket_plant_configuration)
+        websocket_api.async_register_command(hass, websocket_plant_strategy)
         state["owner_configuration_registered"] = True
 
 
@@ -67,9 +68,85 @@ async def websocket_plant_configuration(hass, connection, message):
                     inventory=lambda: runtime.cloud_data.get("device_inventory", []))
                 runtime._plant_configuration = reader
             result = await reader.read(message["section"], serial=message.get("serial"), profile_id=message.get("profile_id"), page=message.get("page", 1))
+        if message["section"] == "strategies":
+            owner = getattr(getattr(runtime, "controls", None), "cloud", None)
+            result["writable"] = owner is not None and owner.enabled and not owner._closing
         connection.send_result(message["id"], result)
     except Exception:
         connection.send_error(message["id"], "configuration_unavailable", "The current plant configuration could not be read")
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "sigen_hybrid/plant_strategy",
+    vol.Required("config_entry"): str,
+    vol.Required("operation"): vol.In(("preview", "apply", "read", "answer")),
+    vol.Optional("action"): vol.In(("create", "edit", "rename", "delete")),
+    vol.Optional("rule_id"): vol.All(int, vol.Range(min=1)),
+    vol.Optional("name"): vol.All(str, vol.Length(min=1, max=60)),
+    vol.Optional("instruction"): vol.All(str, vol.Length(min=1, max=2000)),
+    vol.Optional("preview"): vol.All(str, vol.Length(min=36, max=36)),
+    vol.Optional("conversation"): vol.All(str, vol.Length(min=36, max=36)),
+    vol.Optional("button"): vol.All(int, vol.Range(min=0, max=20)),
+})
+@websocket_api.async_response
+async def websocket_plant_strategy(hass, connection, message):
+    """One owner-confirmed native operation; no arbitrary API action payloads."""
+    from homeassistant.helpers.storage import Store
+
+    from .core.errors import SafetyError
+    from .core.plant_strategies import PlantStrategies
+
+    if not connection.user.is_admin:
+        connection.send_error(message["id"], "unauthorized", "An administrator is required")
+        return
+    entry = hass.config_entries.async_get_entry(message["config_entry"])
+    if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
+        connection.send_error(message["id"], "invalid_entry", "Select a loaded Sigenergy TC system")
+        return
+    runtime = entry.runtime_data
+    owner = getattr(getattr(runtime, "controls", None), "cloud", None)
+    if (entry.data.get("demo") or entry.options.get("control", {}).get("enabled") is not True
+            or owner is None or not owner.enabled or owner._closing
+            or runtime.cloud is None or not runtime.cloud._connected):
+        connection.send_error(message["id"], "control_unavailable", "Enable Cloud plant control before managing native strategies")
+        return
+    try:
+        selected = str(entry.options.get("cloud", {}).get("station_id"))
+        if str(runtime.cloud.station_id) != selected or str(runtime.cloud.client.station_id) != selected:
+            raise SafetyError("The connected plant changed; reopen its strategies")
+        lock = getattr(runtime, "_native_strategy_lock", None)
+        if lock is None:
+            lock = runtime._native_strategy_lock = asyncio.Lock()
+        async with owner.operation_lock, owner._lock, lock:
+            session = await owner._bind()  # Shared ownership and live identity guards.
+            if await session.journal.pending() or owner._job is not None and not owner._job.done():
+                raise SafetyError("Finish the current plant control before changing its strategies")
+            local = getattr(runtime.controls, "local", None)
+            if local is not None and local.enabled and local.operation.get("phase") not in (None, "idle", "restored", "confirmed", "superseded"):
+                raise SafetyError("Finish the current local control before changing plant strategies")
+            backend = getattr(runtime, "_native_strategies", None)
+            if backend is None or backend.reader.client is not runtime.cloud.client or backend.reader.station_id != selected:
+                reader = PlantConfiguration(runtime.cloud.client, selected)
+                store = Store(hass, 1, f"{DOMAIN}_native_strategy_{entry.entry_id}")
+                backend = runtime._native_strategies = PlantStrategies(reader, store.async_save)
+            user = connection.user.id
+            operation = message["operation"]
+            if operation == "preview":
+                result = await backend.preview(user, message.get("action"), rule_id=message.get("rule_id"), name=message.get("name"), instruction=message.get("instruction"))
+            elif operation == "apply":
+                result = await backend.apply(user, message.get("preview"))
+            elif operation == "read":
+                result = await backend.read_conversation(user, message.get("conversation"))
+            else:
+                result = await backend.answer(user, message.get("conversation"), instruction=message.get("instruction"), button=message.get("button"))
+            cached = getattr(runtime, "_plant_configuration", None)
+            if cached is not None and operation != "preview":
+                cached.cache.pop(("strategies", None, None, 1), None)
+        connection.send_result(message["id"], result)
+    except SigenError as error:
+        connection.send_error(message["id"], "strategy_unavailable", str(error))
+    except Exception:
+        connection.send_error(message["id"], "strategy_unconfirmed", "The strategy request was not confirmed. Refresh the plant before trying again.")
 
 
 @websocket_api.websocket_command({

@@ -1,4 +1,4 @@
-import { chargerStatus } from './sigen-hybrid-status.js?v=0.2.7';
+import { chargerStatus } from './sigen-hybrid-status.js?v=0.2.8';
 /* SPDX-License-Identifier: GPL-3.0-only
  * Owner-supplied original house artwork with independent, readable HTML labels.
  * The host supplies normalized readings and trusted cable SVG markup, and owns

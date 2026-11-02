@@ -1,5 +1,5 @@
-import { chargerStatus } from './sigen-hybrid-status.js?v=0.2.7';
-import { renderSceneWeather, renderWeatherEffects } from './sigen-hybrid-house.js?v=0.2.7';
+import { chargerStatus } from './sigen-hybrid-status.js?v=0.2.8';
+import { renderSceneWeather, renderWeatherEffects } from './sigen-hybrid-house.js?v=0.2.8';
 /*
  * Copyright 2025-2026 Jean-Yves Avenard
  *
