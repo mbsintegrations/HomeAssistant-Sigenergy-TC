@@ -12,7 +12,7 @@ Add `https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC` under HACS c
 
 ## Manual installation
 
-Download `sigenergy-tc-0.2.4.zip` and `SHA256SUMS.txt` from the matching release. Verify the SHA-256 before extraction. Merge the ZIP's `custom_components/sigen_hybrid` into HA's `config/custom_components/sigen_hybrid`; avoid an extra nested folder. Restart HA and use the native setup dialog. Do not copy the whole repository into `custom_components`.
+Download `sigenergy-tc-0.2.7.zip` and `SHA256SUMS.txt` from the matching release. Verify the SHA-256 before extraction. Merge the ZIP's `custom_components/sigen_hybrid` into HA's `config/custom_components/sigen_hybrid`; avoid an extra nested folder. Restart HA and use the native setup dialog. Do not copy the whole repository into `custom_components`.
 
 ## Connections
 
@@ -50,4 +50,4 @@ Under **Configure → Modbus**, optional **AC charger Modbus unit ID** and **DC 
 
 The reads use AC registers 32000/32003 and DC registers 31513/31502, with the register definitions and attribution retained in the source. Unsupported charger reads do not disable aggregate plant measurements. Charger telemetry entities are added for configured/discovered devices; absent devices are not invented. Cloud inventory may establish installed presence without supplying a connection-state measurement. Such a state remains Unknown; map an existing state sensor explicitly if needed.
 
-Upgrade to **0.2.6** through HACS, restart HA, and fully reload the tablet/browser or Companion App. Keep the existing integration entry and dashboard. Verify both charger labels and the override header; plant-command acceptance remains supervised owner testing.
+Upgrade to **0.2.7** through HACS, restart HA, and fully reload the tablet/browser or Companion App. Keep the existing integration entry and dashboard. Verify both charger labels, the override header and existing native presets under Personal strategies / My Energy Profile; plant-command acceptance remains supervised owner testing.

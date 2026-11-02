@@ -1,5 +1,7 @@
 # Personal strategies, tariffs and forecasts
 
+Existing mySigen presets and their read/write coverage are documented in [native settings](native-settings.md). Native Personal Strategies and TC HA schedules remain separate.
+
 ## Rule scheduling
 
 Open **Personal Strategies → Scheduling**. Save the master switch off while editing. Add named rules with weekdays, start/end time, optional battery SOC condition, action, priority and optional battery power limit. An enabled solar-export rule requires an explicit export power limit and site export approval. Then deliberately enable **Run personal strategies**.
@@ -22,7 +24,7 @@ Saved tariffs drive displayed price history and planning inputs. They are local 
 
 ## Advisory planner
 
-`preview_plan` combines an explicit 24-hour demand estimate, configured tariffs and complete forecast coverage to produce a charging recommendation. It does not execute an autonomous financial optimizer. Missing/stale/incomplete forecast data makes the recommendation unavailable instead of assuming zero solar. AI provider execution is not implemented in 0.2.0.
+`preview_plan` combines an explicit 24-hour demand estimate, configured tariffs and complete forecast coverage to produce a charging recommendation. It does not execute an autonomous financial optimizer. Missing/stale/incomplete forecast data makes the recommendation unavailable instead of assuming zero solar. AI provider execution is not implemented.
 
 ## Forecasts
 

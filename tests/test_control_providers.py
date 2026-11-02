@@ -66,6 +66,43 @@ async def test_readback_is_fresh_and_does_not_use_mutable_station_formatting():
     assert all(call[1].endswith("/42") for call in cloud.calls)
 
 
+async def test_disabled_unset_grid_limit_is_not_coerced_to_a_zero_export_limit():
+    cloud = Cloud()
+    original = cloud._data
+    async def read(method, path, **kwargs):
+        if "/grid/limitation/" in path:
+            return {"enable": False, "maxLimitationOwner": "", "maxLimitation": "", "maxLimitationInstaller": "5"}
+        return await original(method, path, **kwargs)
+    cloud._data = read
+    settings = provider(cloud)
+    before = (await settings.read(["grid_export_limit"]))["grid_export_limit"]
+    assert before == {"enabled": False, "limit_kw": None}
+    assert settings.matches("grid_export_limit", before, before)
+    assert not settings.matches("grid_export_limit", before, {"enabled": False, "limit_kw": 0})
+    with pytest.raises(SafetyError):
+        settings.validate("grid_export_limit", {"enabled": True, "limit_kw": None})
+    await settings.write("grid_export_limit", before)
+    assert cloud.calls[-1][2]["json"] == {"stationId": 42, "enable": False, "maxLimitationOwner": "", "maxLimitationInstaller": None}
+
+
+async def test_existing_dc_v2x_mode_can_be_read_without_enabling_vehicle_dispatch():
+    cloud = Cloud()
+    async def read(method, path, **kwargs):
+        assert method == "GET" and path == "device/charge/mode/dc"
+        return {"chargeMode": 2, "enableFromPack": True, "cutoffSocFromPack": 20,
+                "allowsDischargePower": 25, "vehicleDischargeCutoffSoc": 20,
+                "minimumDischargeCutoffSoc": 20, "maximumDischargeCutoffSoc": 99}
+    cloud._data = read
+    settings = provider(cloud)
+    settings.devices["dc_charging"] = "DC-TEST"
+    value = (await settings.read(["dc_charge_mode"]))["dc_charge_mode"]
+    assert value["mode"] == 2 and value["battery_boost"] is True
+    assert value["discharge_power_kw"] == 25
+    with pytest.raises(SafetyError):
+        await settings.write("dc_charge_mode", value)
+    assert cloud.calls == []
+
+
 @pytest.mark.parametrize("duration", [1, 30, 180, 1440])
 async def test_manual_duration_payload_supports_whole_minutes_without_sdk_unlimited_power(duration):
     cloud = Cloud()

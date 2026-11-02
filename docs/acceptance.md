@@ -20,3 +20,9 @@ See [chart source requirements](chart-catalogue.md) for electrical charts that n
 Backend tests cover charger unit isolation, AC waiting at zero power, optional unsupported values, command-priority release after cancellation, per-request pacing, grouped reads, identity checks immediately before writes, fresh readback reuse, restart recovery and cancellation. A synthetic Hold transaction uses 49 requests instead of 62 on 0.2.5, with the same five writes. Live timing depends on device response and the required checks.
 
 Frontend checks cover connection labels across scenes, countdowns, pending/recovery/expiry states and active action labels. Browser geometry checks include an active Hold in 39 embedded cases plus 24 shrink/restore checks, alongside the five standard documentation layouts. Synthetic fixtures contain no credentials or plant-control client.
+
+## 0.2.7 native configuration
+
+566 backend and 437 frontend tests pass, with Ruff and the official GitHub validation jobs required before publication. Browser checks cover 44 existing overview/embedded layouts, 24 resize transitions and 15 native-preset dialogs across desktop, tablet and phone viewports. The preset checks include scrolling, horizontal containment, source distinctions and preserving an observed DC V2X selection.
+
+Direct read-only testing in isolated HA Test used the configured EU owner account, rather than a browser session. It distinguished a real native Personal Strategy from an empty custom operating-profile catalogue and empty native charging-schedule lists, and verified the saved configuration described in [native settings](native-settings.md). Existing write settings were preserved; new reader coverage is not a physical command-acceptance claim.

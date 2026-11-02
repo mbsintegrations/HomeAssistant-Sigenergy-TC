@@ -1,4 +1,6 @@
-# Owner settings in Alpha 0.2.0
+# Owner settings in Alpha
+
+Existing mySigen presets and their read/write coverage are documented in [native settings](native-settings.md). Native Personal Strategies and TC HA schedules remain separate.
 
 These are real write handlers. The setup wizard enables supported control by the owner's choice; no plant command is sent during setup. Existing entries retain their previous write setting. Every write is checked against the actual connection, identity, owner bounds and firmware response. Missing hardware or incomplete native metadata prevents a command; it is not simulated.
 
