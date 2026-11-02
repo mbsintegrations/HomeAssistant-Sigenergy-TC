@@ -1,6 +1,8 @@
 # Changelog
 
-## 0.2.8 (unreleased)
+## 0.2.8
+
+Released 2 November 2026. Invitation-only Alpha. [Release and upgrade notes](docs/release-0.2.8.md).
 
 - Add New, Change, Rename and Delete actions for native mySigen Personal Strategies, separate from TC-owned HA schedules.
 - Use the native personalization assistant for rule creation/changes, including explicit reviews, returned proposal confirmation and bounded response polling. Rename/delete use direct native requests with fresh readback.

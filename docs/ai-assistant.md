@@ -44,3 +44,7 @@ The example discussed during design uses 02:00–05:00 charging, 08:00–01:00 t
 - [Gemini CLI authentication](https://geminicli.com/docs/get-started/authentication/)
 - [Claude Code authentication](https://code.claude.com/docs/en/iam) and [credential/product boundaries](https://code.claude.com/docs/en/legal-and-compliance)
 - [HA OpenAI](https://www.home-assistant.io/integrations/openai_conversation/), [HA Gemini](https://www.home-assistant.io/integrations/google_generative_ai_conversation/) and [HA conversation API](https://contributors.home-assistant.io/core/internals/conversation-api/)
+
+## Native Sigen personalization is separate
+
+The released [native Personal Strategy controls](native-strategies.md) use Sigenergy’s own assistant through the configured mySigen Cloud account. They do not require an OpenAI, Claude, Gemini or NBI key. External AI execution remains outside this release.

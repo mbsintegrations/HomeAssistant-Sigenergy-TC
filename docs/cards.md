@@ -20,7 +20,7 @@ These preferences are saved with the configuration and can be changed later. The
 YAML resource users can add the following JavaScript module resource. Storage-mode registration is automatic when no TC resource already exists:
 
 ```text
-/sigen_hybrid/sigen-hybrid-card.js?v=0.2.7
+/sigen_hybrid/sigen-hybrid-card.js?v=0.2.8
 ```
 
 Then add **Sigenergy TC** from the dashboard card picker. Choose the integration configuration in its visual editor. Discovery maps enabled entities belonging to that exact `sigen_hybrid` entry, using entity registry identity rather than guessing entity names. Explicit mappings override discovery, and `null` disables a discovered item.
@@ -254,22 +254,15 @@ Environmental Benefits retain the configured Today/Lifetime solar source and
 show explicit conversion factors. Calculated equivalents are labelled estimates;
 missing factors or energy remain unavailable.
 
-Settings pages cover energy/system/app settings, modes, seasonal tariffs,
-priorities, charger modes/schedules/records, vehicles, PV metadata, indicators,
-safety, forecasts, connection capabilities and AI planning. Their saved drafts
-live in this browser, scoped to the integration entry. Display preferences apply
-locally; the other drafts do not alter Sigenergy settings, change backend safety
-limits or execute an automation. Plant Apply/Start controls remain locked.
-The mode draft offers the five observed choices: Self-Consumption, Sigen AI
-Mode, Time-based Control, Fully Feed-into Grid and Remote EMS Mode. Vendor mode
-activation and Add/Import workflows are not implemented.
+Settings group plant controls, connection configuration and local display/planning preferences. Implemented [owner settings](owner-settings.md), mode selection and charger start/stop use the guarded backend when the selected connection supports them and the owner has enabled control. Unsupported settings and native charger scheduling remain read-only. Local drafts are scoped to this browser and entry; saving a draft does not apply a plant setting.
+
+[Native Personal Strategies](native-strategies.md) have separate New, Change, Rename and Delete controls in 0.2.8. New/Change use Sigenergy’s own personalization assistant through the configured Cloud account; Rename/Delete use native rule handlers. This does not enable unsupported Add/Import workflows for other collections.
 **My Energy Profile** is accessible from the Home energy-settings gear, battery
 summary and Settings. It groups the observed grid import/export and connection
 limits, peak shaving, battery levels/preheating/power, solar priorities/limits,
 backup, energy-saving and aggregator pages, plus charger shortcuts. Values use
-explicit supplied profile data; the new plant-setting pages are read-only, with
-no inferred enabled state, default limit or provider command.
-The manual form sends dry-run previews only, offers 30/60/90/120/180-minute presets
+fresh returned plant data; supported writes and their availability are described in the [owner-setting guide](owner-settings.md). No enabled state or limit is inferred from a missing value.
+The manual form reviews the command before applying it through the enabled control connection, offers 30/60/90/120/180-minute presets
 and a custom duration up to the controller's validated bound (at most 1440 whole
 minutes), and enforces verified power limits. Visible durations do not establish
 device/API acceptance.

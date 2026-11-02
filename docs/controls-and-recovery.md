@@ -64,3 +64,7 @@ Checking and Applying are pending states, not confirmation that the battery is a
 Reloading a dashboard keeps the status through HA's control sensor. Restarting HA restores the journal metadata as Checking previous override until device identity/readback reconciliation succeeds. Expiry displays Ending override until restoration is confirmed. Cancel remains available from the dashboard after closing the popup. An uncertain cancellation does not enable blind repeat requests.
 
 Local command and recovery traffic take priority between requests on the existing connection. Protocol pacing and safeguards remain in place, so local commands are not instantaneous. Cloud-only commands still follow the shared Cloud gate and provider cooldowns. This update does not bypass either transport's limits.
+
+## Native Personal Strategy recovery
+
+Before a native rule mutation, TC saves a private snapshot and checks the current plant identity and rule list. Rename/Delete require an explicit confirmation; New/Change use the native personalization conversation. Read the proposal before confirming. Sending a request is a plant operation and is not guaranteed to be a dry run. A timeout does not mean nothing changed: inspect the refreshed native list and mySigen before retrying. A deleted strategy cannot be restored automatically from the snapshot; recreate it through mySigen or the native assistant if necessary. Native strategy writes in 0.2.8 still require supervised hardware acceptance. See the [full workflow](native-strategies.md).

@@ -11,6 +11,7 @@
 | Grid power/current limits | May tighten the existing power cap; no installer-cap increase | Verified native installer ceiling required | Cloud for explicit grid-limit changes |
 | Energy priorities and peak shaving | No | Native owner handlers when this firmware returns complete settings | Cloud route |
 | AC/DC modes and DC charging limits | No | Exact discovered charger; V2X settings preserved | Cloud route |
+| Native Personal Strategy New/Change/Rename/Delete | No | Administrator with Cloud control; New/Change use native Sigen AI | Cloud route; physical CRUD acceptance pending |
 | HA Recorder history | From recorded local sensors | From recorded cloud sensors | Merged where identity/units agree |
 | Optional forecasts, tariffs and dashboard | Yes | Yes | Yes |
 
