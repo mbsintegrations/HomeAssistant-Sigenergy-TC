@@ -132,7 +132,8 @@ export function renderOwnerSetting(route,ctx={}) {
     content+=`<div data-native-peak-list>${v.slots.map((slot,i)=>peakWindow(i,slot)).join('')}</div><button type="button" class="settings-secondary" data-native-add-window>Add window</button>`;
   }else if(key.endsWith('_charge_mode')){
     const dc=key.startsWith('dc_');
-    content=nativeSelect('mode','Charging mode',v.mode,[[0,'Fast charging'],[1,'PV surplus'],[dc?3:2,'Sigen AI']]);
+    content=nativeSelect('mode','Charging mode',v.mode,[[0,'Fast charging'],[1,'PV surplus'],...(dc&&v.mode===2?[[2,'Bi-directional V2X (current mode)']]:[]),[dc?3:2,'Sigen AI']]);
+    if(dc&&v.mode===2)content+=note('V2X is currently selected. Choose another charging mode here to leave V2X; vehicle discharge commands use the separate V2X operation.');
     if(v.battery_boost!==null)content+=nativeCheck('battery_boost','Charge from home battery',v.battery_boost);
     if(v.grid_charging!==null)content+=nativeCheck('grid_charging','Allow grid charging',v.grid_charging);
     if(v.cutoff_soc!==null)content+=nativeNumber('cutoff_soc','Home battery cut-off SOC (%)',v.cutoff_soc,metadata.socUpperLimit??100);
@@ -149,7 +150,7 @@ export function collectOwnerSetting(form,state) {
     if(value===undefined||value===''||!Number.isFinite(Number(value)))throw new Error('Enter a valid number');
     return Number(value);
   };
-  if(['grid_export_limit','grid_import_limit','grid_connection_current'].includes(key)){const field=key==='grid_connection_current'?'limit_a':'limit_kw';return {enabled:get('enabled').checked,[field]:num(field)};}
+  if(['grid_export_limit','grid_import_limit','grid_connection_current'].includes(key)){const field=key==='grid_connection_current'?'limit_a':'limit_kw';return {enabled:get('enabled').checked,[field]:num(field,!get('enabled').checked&&field==='limit_kw')};}
   if(key==='battery_export_block')return get('enabled').checked;
   if(key==='battery_power_limits')return {charge_kw:num('charge_kw',true),discharge_kw:num('discharge_kw',true)};
   if(key==='pv_power_limit')return {limit_kw:num('limit_kw',true)};

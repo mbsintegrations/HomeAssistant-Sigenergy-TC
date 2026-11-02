@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.7
+
+- Read existing mySigen Personal Strategies through the configured Cloud account, separately from TC's HA schedules. Display native names, conditions and actions without activating or duplicating rules.
+- Add on-demand, plant/device-bound reads for saved tariff periods, operating profiles, preheating, indicator channels, inverter/AC networking, charger schedules/records/additional settings, OCPP/cards, backup history/events, energy saving, aggregator allocation and service-provider information. Preserve the accepted overview layout and working connection diagnostics.
+- Reuse the account session, request pacing and cooldowns; cache optional configuration for five minutes. Give interactive settings reads independent locks so they do not wait for an entire optional device-refresh burst.
+- Preserve unset disabled grid limits as unset instead of rejecting them or replacing them with zero. Read local settings even when local writes are disabled, without claiming control ownership.
+- Read an existing DC V2X charging mode and keep it selected in the interface. Do not enable V2X dispatch through the ordinary charging-mode writer. Display grouped solar priorities without sending an unverified flat update.
+- Retain charger-history date filters and add native history pagination. Distinguish unknown, failed, disabled and empty settings. Keep native preset collections read-only where a writer has not been implemented; document the exact coverage in the native-settings guide.
+- Add regression tests, desktop/tablet/phone preset-dialog checks and synthetic screenshots. Existing write/export permissions and dashboards are preserved; no new browser or API-key setup is required.
+
 ## 0.2.6
 
 - Read AC/DC connection states and instantaneous charging power from configured local devices. Reuse unambiguous Sigen Local Modbus unit configuration only on the same endpoint; otherwise accept explicit optional charger unit IDs. No unit scanning, assumed addresses or extra TCP client is added.

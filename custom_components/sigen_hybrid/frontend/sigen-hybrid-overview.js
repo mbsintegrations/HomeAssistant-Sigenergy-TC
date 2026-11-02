@@ -1,4 +1,4 @@
-import { chargerStatus } from './sigen-hybrid-status.js?v=0.2.6';
+import { chargerStatus } from './sigen-hybrid-status.js?v=0.2.7';
 /* SPDX-License-Identifier: GPL-3.0-only
  * Pure compact overview panels. The host supplies normalized readings and
  * handles detail navigation; these renderers never access a provider or HA.

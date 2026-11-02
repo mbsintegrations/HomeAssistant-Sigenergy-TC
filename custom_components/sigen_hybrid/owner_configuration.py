@@ -1,5 +1,6 @@
 """Lazy, authenticated owner-setting reads; never another cloud login."""
 
+import asyncio
 import json
 from hashlib import sha256
 
@@ -13,6 +14,7 @@ from .core.control_telemetry import validate_owner_station
 from .core.errors import SigenError
 from .core.native_settings import charger_key
 from .core.owner_settings import SETTINGS, prepare_setting
+from .core.plant_configuration import SECTIONS, PlantConfiguration
 
 
 def setting_revision(value):
@@ -24,7 +26,50 @@ def async_register_owner_configuration(hass):
     if not state.get("owner_configuration_registered"):
         websocket_api.async_register_command(hass, websocket_owner_configuration)
         websocket_api.async_register_command(hass, websocket_connection_identity)
+        websocket_api.async_register_command(hass, websocket_plant_configuration)
         state["owner_configuration_registered"] = True
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "sigen_hybrid/plant_configuration",
+    vol.Required("config_entry"): str,
+    vol.Required("section"): vol.In(SECTIONS),
+    vol.Optional("serial"): vol.All(str, vol.Length(min=1, max=80)),
+    vol.Optional("profile_id"): vol.All(int, vol.Range(min=1)),
+    vol.Optional("page", default=1): vol.All(int, vol.Range(min=1, max=100000)),
+})
+@websocket_api.async_response
+async def websocket_plant_configuration(hass, connection, message):
+    """Read presets through the existing Cloud session, independently of writes."""
+    entry = hass.config_entries.async_get_entry(message["config_entry"])
+    if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
+        connection.send_error(message["id"], "invalid_entry", "Select a loaded Sigenergy TC system")
+        return
+    runtime = entry.runtime_data
+    if runtime.cloud is None or not runtime.cloud._connected:
+        connection.send_error(message["id"], "cloud_unavailable", "Cloud configuration is temporarily unavailable")
+        return
+    try:
+        options = entry.options.get("cloud", {})
+        selected = str(options.get("station_id"))
+        if str(runtime.cloud.station_id) != selected or str(runtime.cloud.client.station_id) != selected:
+            raise ValueError
+        # The SDK already serializes authenticated operations and the account
+        # gate paces every HTTP request. Do not queue an on-demand preset behind
+        # the entire optional device-refresh burst (which can take minutes).
+        lock = getattr(runtime, "_plant_configuration_lock", None)
+        if lock is None:
+            lock = runtime._plant_configuration_lock = asyncio.Lock()
+        async with lock:
+            reader = getattr(runtime, "_plant_configuration", None)
+            if reader is None or reader.client is not runtime.cloud.client or reader.station_id != selected:
+                reader = PlantConfiguration(runtime.cloud.client, selected,
+                    inventory=lambda: runtime.cloud_data.get("device_inventory", []))
+                runtime._plant_configuration = reader
+            result = await reader.read(message["section"], serial=message.get("serial"), profile_id=message.get("profile_id"), page=message.get("page", 1))
+        connection.send_result(message["id"], result)
+    except Exception:
+        connection.send_error(message["id"], "configuration_unavailable", "The current plant configuration could not be read")
 
 
 @websocket_api.websocket_command({
@@ -77,13 +122,24 @@ async def websocket_owner_configuration(hass, connection, message):
     try:
         local = getattr(getattr(runtime, "controls", None), "local", None)
         from .core.local_control import LOCAL_SETTINGS
-        cloud_controls = getattr(getattr(runtime, "controls", None), "cloud", None)
-        use_cloud_grid = cloud_controls is not None and cloud_controls.enabled and message["setting"] in ("grid_export_limit", "grid_import_limit")
-        if local is not None and local.enabled and message["setting"] in LOCAL_SETTINGS and not use_cloud_grid:
+        cloud_ready = runtime.cloud is not None and runtime.cloud._connected
+        use_cloud_grid = cloud_ready and message["setting"] in ("grid_export_limit", "grid_import_limit")
+        use_local = getattr(runtime, "local", None) is not None and message["setting"] in LOCAL_SETTINGS and not use_cloud_grid
+        if use_local:
             from .local_controls import setting_revision as local_revision
-            async with local.operation_lock, local._lock:
-                session = await local._bind()
-                provider = session.journal.provider
+            if local is not None and local.enabled:
+                async with local.operation_lock, local._lock:
+                    session = await local._bind()
+                    provider = session.journal.provider
+                    value = (await provider.read([message["setting"]]))[message["setting"]]
+                    identity = await provider.identity()
+            else:
+                # Monitoring permission is independent of write ownership. Do
+                # not claim a control lease or enable remote EMS just to read.
+                from .core.local_control import LocalControlSettings
+                async def identity_reader():
+                    return "read-only:"+entry.entry_id
+                provider = LocalControlSettings(runtime.local, identity_reader, max_charge_kw=None, max_discharge_kw=None)
                 value = (await provider.read([message["setting"]]))[message["setting"]]
                 identity = await provider.identity()
             connection.send_result(message["id"], {"setting": message["setting"], "value": value,
@@ -98,7 +154,10 @@ async def websocket_owner_configuration(hass, connection, message):
         if str(runtime.cloud.station_id) != selected or str(runtime.cloud.client.station_id) != selected:
             connection.send_error(message["id"], "identity_changed", "The connected plant does not match this entry")
             return
-        async with runtime._cloud_update_lock:
+        lock = getattr(runtime, "_owner_configuration_lock", None)
+        if lock is None:
+            lock = runtime._owner_configuration_lock = asyncio.Lock()
+        async with lock:
             provider = CloudControlSettings(runtime.cloud.client, selected, region=options.get("region", "eu"))
             if charger_key(key) or key in ("ac_charging", "dc_charging", "grid_connection"):
                 station = validate_owner_station(

@@ -1,11 +1,12 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-import { renderDeviceDetail, solarStringSeries, DETAIL_STYLE } from './sigen-hybrid-details.js?v=0.2.6';
-import { renderSettingsDetail, collectSettings, SETTINGS_STYLE, SETTINGS_ROUTES, CHART_CHOICES, DEFAULT_CHART_SELECTION, DISPLAY_MODULES, DISPLAY_PRESETS, HOMEPAGE_APPEARANCES, HOMEPAGE_BACKGROUNDS, homepageBackground, displayDefaults, encodeChargerScheduleId, decodeChargerScheduleId, bindTariffEditor, bindStrategyEditor, OPERATING_MODES, observedOperatingMode, renderOverviewModeControl, strategyExportEligibility } from './sigen-hybrid-settings.js?v=0.2.6';
-import { periodRange, dateAt, shiftDate, toCSV, preserveChartScroll } from './sigen-hybrid-charts.js?v=0.2.6';
-import { renderSummaryWidget, renderSummaryDetail, WIDGET_ROUTES, WIDGET_STYLE } from './sigen-hybrid-widgets.js?v=0.2.6';
-import { ENERGY_ROUTES, renderEnergyProfile, ENERGY_STYLE, ownerSettingTarget, renderOwnerSetting, collectOwnerSetting, bindOwnerSettingForm } from './sigen-hybrid-energy.js?v=0.2.6';
-import { renderChargingEnergy, renderTodayEnergy, renderBatteryLevel, renderMobilePower, renderChargerControls } from './sigen-hybrid-overview.js?v=0.2.6';
-import { modeChoices, selectedMode, nativeModeChoices } from './sigen-hybrid-settings.js?v=0.2.6';
+import { renderDeviceDetail, solarStringSeries, DETAIL_STYLE } from './sigen-hybrid-details.js?v=0.2.7';
+import { presetTarget, renderPreset, PRESET_STYLE } from './sigen-hybrid-presets.js?v=0.2.7';
+import { renderSettingsDetail, collectSettings, SETTINGS_STYLE, SETTINGS_ROUTES, CHART_CHOICES, DEFAULT_CHART_SELECTION, DISPLAY_MODULES, DISPLAY_PRESETS, HOMEPAGE_APPEARANCES, HOMEPAGE_BACKGROUNDS, homepageBackground, displayDefaults, encodeChargerScheduleId, decodeChargerScheduleId, bindTariffEditor, bindStrategyEditor, OPERATING_MODES, observedOperatingMode, renderOverviewModeControl, strategyExportEligibility } from './sigen-hybrid-settings.js?v=0.2.7';
+import { periodRange, dateAt, shiftDate, toCSV, preserveChartScroll } from './sigen-hybrid-charts.js?v=0.2.7';
+import { renderSummaryWidget, renderSummaryDetail, WIDGET_ROUTES, WIDGET_STYLE } from './sigen-hybrid-widgets.js?v=0.2.7';
+import { ENERGY_ROUTES, renderEnergyProfile, ENERGY_STYLE, ownerSettingTarget, renderOwnerSetting, collectOwnerSetting, bindOwnerSettingForm } from './sigen-hybrid-energy.js?v=0.2.7';
+import { renderChargingEnergy, renderTodayEnergy, renderBatteryLevel, renderMobilePower, renderChargerControls } from './sigen-hybrid-overview.js?v=0.2.7';
+import { modeChoices, selectedMode, nativeModeChoices } from './sigen-hybrid-settings.js?v=0.2.7';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
 
@@ -241,7 +242,7 @@ export function historySeries(card, kind, rows=card._history) {
 }
 const link = (route,label,id='') => `<button type="button" class="detail-link" data-detail="${escape(route)}"${id?` data-id="${escape(id)}"`:''}><span>${escape(label)}</span><span aria-hidden="true">›</span></button>`;
 const totals = card => [['Solar','solar_today','solar'],['Consumption','home_today','load'],['Battery charged','battery_charge_today','battery'],['Battery discharged','battery_discharge_today','battery'],['Imported','grid_import_today','grid'],['Exported','grid_export_today','grid']].filter(([,key])=>card._has(key)).map(([label,key,route])=>`<button class="detail-total" data-detail="${route}"><small>${label}</small><strong>${card._value(key,'energy')===null?'—':escape(card._value(key,'energy').toLocaleString(undefined,{maximumFractionDigits:2})+' kWh')}</strong></button>`).join('');
-const NAV_STYLE=`
+const NAV_STYLE=PRESET_STYLE+`
 .chart-catalog{display:block!important;overflow-anchor:none}.chart-category{margin:22px 0}.chart-category>h2{margin:0 0 13px;font-size:20px}.chart-category-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.chart-category-panels>.panel{margin:0;min-width:0}.chart-category-panels>.chart-catalog-panel:last-child:nth-child(odd){grid-column:1/-1}.chart-catalog sigen-history-chart{--sigen-chart-legend-height:64px}.chart-catalog-panel>h3{min-height:38px;margin:0 0 10px;font-size:15px}@container(max-width:800px){.chart-category-panels{grid-template-columns:minmax(0,1fr)}}.overview-preview-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:9px 18px;margin:0 0 16px;padding:1px 0}.overview-preview-group{display:flex;align-items:center;flex-wrap:wrap;gap:5px;min-width:0}.overview-preview-group>span{color:var(--muted,#657a99);font-size:11px;margin-right:3px}.overview-preview-group button,.overview-preview-reset{border:1px solid var(--line,#dbe5ef);border-radius:999px;background:var(--surface,#fff);color:inherit;min-height:32px;padding:6px 11px;font:inherit;font-size:11px;white-space:nowrap;cursor:pointer}.overview-preview-group button[aria-pressed=true]{background:#25bfc526;border-color:#25bfc5;color:var(--ink,#1e2b43)}.overview-preview-reset{color:var(--muted,#657a99)}.overview-preview-group button:focus-visible,.overview-preview-reset:focus-visible{outline:2px solid #25bfc5;outline-offset:2px}@container(max-width:500px){.overview-preview-toolbar{gap:8px;margin-bottom:13px}.overview-preview-group{flex:1 1 100%;gap:4px}.overview-preview-group>span{min-width:70px}.overview-preview-group button,.overview-preview-reset{min-height:36px;padding:7px 10px}.overview-preview-reset{margin-left:77px}}
 .sigen-detail .detail-toolbar{align-items:center}@media(max-width:650px){:host .detail-toolbar{display:grid;grid-template-columns:38px minmax(0,1fr) 38px;gap:8px}:host .detail-toolbar input{min-width:0;width:100%}:host .detail-toolbar select{grid-column:1/-1;width:100%}}
 .portal-equipment{pointer-events:none}.portal-equipment image{pointer-events:none!important}.portal-equipment-hit[data-detail]{pointer-events:all;fill:transparent;cursor:pointer}.sigen-detail{--ink:#1e2b43;--muted:#657a99;--surface:#fff;--line:#dce7ee;container-type:inline-size}.sigen-detail.night{--ink:#edf4ff}.portal-scene [data-detail]{cursor:pointer}.navigation-actions{flex-shrink:0}header:has(>.navigation-actions){flex-wrap:wrap}
@@ -698,7 +699,7 @@ export function installNavigation(Card) {
     if(current.route==='search')this._updateSearchResults();
   };
   Card.prototype._navigationClick=function(event){
-    const el=event.composedPath().find(node=>node?.matches?.('[data-configure-connections],[data-options-menu],[data-options-submit],[data-detail],[data-detail-back],[data-detail-close],[data-entity],[data-save-settings],[data-manual],[data-discard-detail],[data-keep-editing],[data-statistics-step],[data-flow-source],[data-home-menu],[data-search-category],[data-download-records],[data-preview-display],[data-preview-appearance],[data-preview-layout],[data-preview-reset],[data-owner-setting],[data-charger-action],a[href]'));
+    const el=event.composedPath().find(node=>node?.matches?.('[data-configure-connections],[data-options-menu],[data-options-submit],[data-detail],[data-detail-back],[data-detail-close],[data-entity],[data-save-settings],[data-manual],[data-discard-detail],[data-keep-editing],[data-statistics-step],[data-flow-source],[data-home-menu],[data-search-category],[data-download-records],[data-native-config-page],[data-preview-display],[data-preview-appearance],[data-preview-layout],[data-preview-reset],[data-owner-setting],[data-charger-action],a[href]'));
     if(!el){this._closeHomeMenu();return;}
     if(el.hasAttribute('data-card-detail')){const input=event.composedPath().find(node=>node?.matches?.('input,select,textarea,button,a[href]'));if(input&&input!==el)return;}
     if(el.tagName?.toLowerCase()==='a'&&el.hasAttribute('href')){
@@ -718,6 +719,7 @@ export function installNavigation(Card) {
     if(el.hasAttribute('data-configure-connections'))return this._startOptionsFlow();
     if(el.hasAttribute('data-options-menu'))return this._submitOptionsFlow({next_step_id:el.dataset.optionsMenu});
     if(el.hasAttribute('data-options-submit'))return this._submitOptionsFlow(this._optionsFlowData??{});
+    if(el.hasAttribute('data-native-config-page')){const current=this._detailStack?.at(-1),page=Number(el.dataset.nativeConfigPage);if(current&&Number.isSafeInteger(page)&&page>0){el.disabled=true;return this._loadPlantConfiguration(current.route,current.id,page);}return;}
     if(el.hasAttribute('data-download-records'))return this._downloadRecords(el);
     if(el.hasAttribute('data-flow-source')){this._detailFlowInfo={source:el.dataset.flowSource,target:el.dataset.flowTarget,kwh:numeric(el.dataset.flowKwh)};return this._openDetail('flow_detail');}
     if(el.hasAttribute('data-statistics-step'))return this._changeStatistics(el);
@@ -752,8 +754,8 @@ export function installNavigation(Card) {
   Card.prototype._detailContext=function(id){
     let options={};try{options=JSON.parse(localStorage.getItem(`sigen-hybrid:interface:${this._config.config_entry??this._config.title??'default'}`)??'{}');}catch{}
     options=mergeInterfacePreferences(options,this._sharedInterfaceOptions);
-    const forecastConfiguration=this._forecastConfiguration,ownerConfiguration=this._ownerConfiguration;
-    return {id,forecastConfiguration,ownerConfiguration,connections:this._connectionOverview?.(),entities:this._entities,optimizers:this._config.optimizers??[],inventory:this._deviceInventory?.()??this._config.devices??[],history:this._history,now:this._now(),timezone:this._config.timezone??this._hass?.config?.time_zone??'UTC',currency:this._hass?.config?.currency??this._config.currency,haLocale:this._hass?.locale,haUnitSystem:this._hass?.config?.unit_system,haDarkMode:this._hass?.themes?.darkMode,night:this._night(),config:this._config,interfaceOptions:options,alertFilters:this._alertFilters??{},chargerRecordFilters:this._chargerRecordFilters??{},controlPermission:this._config.cloud_paused!==true&&this._state('control_status')?.attributes?.live_writes_locked===false&&this._state('control_status')?.attributes?.control_api_version===1&&this._state('control_status')?.attributes?.config_entry_id===this._config.config_entry,capabilities:this._state('control_status')?.attributes?.capabilities??{},state:key=>this._entities[key]?typeof this._state==='function'?this._state(key):this._hass?.states[this._entities[key]]:this._hass?.states[key],rawState:key=>this._hass?.states[this._entities[key]??key],value:(key,quantity='power')=>this._entities[key]?this._value(key,quantity):null,entity:key=>this._entities[key]??key};
+    const forecastConfiguration=this._forecastConfiguration,ownerConfiguration=this._ownerConfiguration,plantConfiguration=this._plantConfiguration;
+    return {id,forecastConfiguration,ownerConfiguration,plantConfiguration,connections:this._connectionOverview?.(),entities:this._entities,optimizers:this._config.optimizers??[],inventory:this._deviceInventory?.()??this._config.devices??[],history:this._history,now:this._now(),timezone:this._config.timezone??this._hass?.config?.time_zone??'UTC',currency:this._hass?.config?.currency??this._config.currency,haLocale:this._hass?.locale,haUnitSystem:this._hass?.config?.unit_system,haDarkMode:this._hass?.themes?.darkMode,night:this._night(),config:this._config,interfaceOptions:options,alertFilters:this._alertFilters??{},chargerRecordFilters:this._chargerRecordFilters??{},controlPermission:this._config.cloud_paused!==true&&this._state('control_status')?.attributes?.live_writes_locked===false&&this._state('control_status')?.attributes?.control_api_version===1&&this._state('control_status')?.attributes?.config_entry_id===this._config.config_entry,capabilities:this._state('control_status')?.attributes?.capabilities??{},state:key=>this._entities[key]?typeof this._state==='function'?this._state(key):this._hass?.states[this._entities[key]]:this._hass?.states[key],rawState:key=>this._hass?.states[this._entities[key]??key],value:(key,quantity='power')=>this._entities[key]?this._value(key,quantity):null,entity:key=>this._entities[key]??key};
   };
   Card.prototype._loadForecastConfiguration=async function(){
     const entry=this._config.config_entry;if(!entry||this._forecastConfigurationLoading)return;
@@ -768,9 +770,8 @@ export function installNavigation(Card) {
     const limits=()=>{const inputs=[...form.querySelectorAll('input[name="sources"]')],count=inputs.filter(input=>input.checked).length,average=form.querySelector('input[name="average"]')?.checked;for(const input of inputs){input.disabled=average&&count>=2&&!input.checked;input.title=input.disabled?'Select at most two sources for averaging':'';}};
     form.addEventListener('change',event=>{if(event.target?.name==='sources')refresh();limits();});limits();
   };
-  Card.prototype._detailModel=function(route,id){
+  Card.prototype._detailModel=function(route,id,ctx=this._detailContext(id)){
     if(route==='connection_setup')return this._optionsFlowPage();
-    const ctx=this._detailContext(id);
     if(route==='energy_totals')return {title:'Energy totals',body:`<div class="chart-summary-grid">${['production','consumption','energy_produced'].map(kind=>renderSummaryWidget(kind,ctx)).join('')}</div>`};
     if(route==='charging_energy')return renderChargingEnergy(ctx);
     if(route==='search')return searchPage(ctx,this._searchSelection);
@@ -790,6 +791,18 @@ export function installNavigation(Card) {
     if(['statistics','energy'].includes(route))return {title:'Energy Statistics',body:`${this._statistics()}<div class="detail-total-grid">${totals(this._statisticsCard())}</div>${link('production','PV Production')}${link('consumption','Consumption')}${link('energy_produced','Energy Produced')}`};
     const key=id??'',state=this._hass?.states[this._entities[key]??key];
     return {title:state?.attributes?.friendly_name??'Measurement details',body:`<dl class="detail-meta"><dt>Value</dt><dd>${escape(state?.state??'—')} ${escape(state?.attributes?.unit_of_measurement??'')}</dd><dt>Entity</dt><dd>${escape(this._entities[key]??key)}</dd><dt>Last updated</dt><dd>${escape(state?.last_updated??'—')}</dd></dl>${link('devices','Devices')}`};
+  };
+  const originalDetailModel=Card.prototype._detailModel;
+  Card.prototype._detailModel=function(route,id){const ctx=this._detailContext(id),base=originalDetailModel.call(this,route,id,ctx),native=renderPreset(route,{...ctx,renderBase:next=>originalDetailModel.call(this,route,id,next)},base);return native?{...native,body:`<div class="native-preset-document">${native.body}</div>`}:base;};
+  Card.prototype._loadPlantConfiguration=async function(route,id,page=1){
+    const entry=this._config.config_entry,target=presetTarget(route,this._detailContext(id));if(!entry||!target)return;
+    const token={entry,route,id};this._plantConfigurationToken=token;
+    try{
+      const result=await this._hass.callWS({type:'sigen_hybrid/plant_configuration',config_entry:entry,...target,page});
+      if(this._plantConfigurationToken===token&&this._config.config_entry===entry)this._plantConfiguration={...result,route,id};
+    }catch{if(this._plantConfigurationToken===token)this._plantConfiguration={...target,route,id,error:'Plant configuration is temporarily unavailable.'};}
+    const current=this._detailStack?.at(-1);
+    if(this._plantConfigurationToken===token&&this._config.config_entry===entry&&current?.route===route&&String(current.id??'')===String(id??'')&&!this._detailDirty)this._openDetail(route,id,true);
   };
   Card.prototype._downloadRecords=async function(button){
     const root=this._detailDialog;if(!root)return;
@@ -814,7 +827,7 @@ export function installNavigation(Card) {
     if(route==='safety'&&control?.control_api_version===1&&control.config_entry_id===this._config.config_entry)return this._startOptionsFlow('safety');
     if(this._detailDirty){this._detailPending=()=>this._openDetail(route,id,replace);return this._confirmDiscard();}
     if(route==='forecast_settings'&&!replace)this._forecastConfiguration=null;
-    if(!replace)this._ownerConfiguration=null;
+    if(!replace){this._ownerConfiguration=null;this._plantConfiguration=null;}
     const seasonPrefix=route==='tariff_season'&&/^(import|export):new$/.test(id??'')?id.split(':')[0]+':':'';
     if(id==='new'&&['strategy','vehicle'].includes(route)||seasonPrefix){
       const saved=this._detailContext().interfaceOptions?.[route]??{};
@@ -837,6 +850,7 @@ export function installNavigation(Card) {
     for(const form of this._detailDialog.querySelectorAll('[data-native-owner-form]'))bindOwnerSettingForm(form);
     this._bindForecastForm();if(route==='forecast_settings'&&!replace)this._loadForecastConfiguration();
     if(ownerSettingTarget(route,this._detailContext(id))&&(!this._ownerConfiguration||this._ownerConfiguration.route!==route||String(this._ownerConfiguration.id??'')!==String(id??'')))this._loadOwnerConfiguration(route,id);
+    if(presetTarget(route,this._detailContext(id))&&(!this._plantConfiguration||this._plantConfiguration.route!==route||String(this._plantConfiguration.id??'')!==String(id??'')))this._loadPlantConfiguration(route,id);
     for(const form of this._detailDialog.querySelectorAll('[data-settings-form="tariff_edit"],[data-settings-form="tariff_season"]'))bindTariffEditor(form,this._detailContext(),()=>{this._detailDirty=true;});
     for(const form of this._detailDialog.querySelectorAll('[data-settings-form="strategy"]'))bindStrategyEditor(form,this._detailContext());
     this._bindAlertFilters();

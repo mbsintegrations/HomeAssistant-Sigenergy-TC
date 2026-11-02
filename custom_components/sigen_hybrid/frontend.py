@@ -20,6 +20,7 @@ async def async_register_frontend(hass):
                 "sigen-hybrid-card.js",
                 "sigen-hybrid-fit.js",
                 "sigen-hybrid-status.js",
+                "sigen-hybrid-presets.js",
                 "sigen-hybrid-navigation.js",
                 "sigen-hybrid-details.js",
                 "sigen-hybrid-charts.js",

@@ -113,6 +113,8 @@ class CloudControlSettings:
             if not isinstance(value, dict) or set(value) != {"enabled", "limit_kw"}:
                 raise SafetyError("An enabled flag and finite grid power limit are required")
             boolean(value["enabled"])
+            if value["limit_kw"] is None and not value["enabled"]:
+                return  # Native disabled limits can have no saved owner value.
             if not 0 <= number(value["limit_kw"]) <= 4_294_967.295:
                 raise SafetyError("Grid power limit is outside the protocol range")
             if abs(value["limit_kw"]*1000-round(value["limit_kw"]*1000)) > 1e-6:
@@ -269,11 +271,15 @@ class CloudControlSettings:
                 raw = data.get("maxLimitationOwner")
                 if raw in (None, ""):
                     raw = data.get("maxLimitation")
+                enabled = boolean(data["enable"])
+                if raw in (None, "") and not enabled:
+                    result[key] = {"enabled": False, "limit_kw": None}
+                    continue
                 try:
                     limit = float(raw)
                 except (TypeError, ValueError):
                     raise SafetyError("The current owner grid limit is unknown") from None
-                result[key] = {"enabled": boolean(data["enable"]), "limit_kw": number(limit)}
+                result[key] = {"enabled": enabled, "limit_kw": number(limit)}
                 self.validate(key, result[key])
             elif key == "native_mode":
                 data = await self._request("GET", f"device/energy-profile/mode/current/{self.station_id}")
@@ -391,7 +397,7 @@ class CloudControlSettings:
             direction = "export" if key == "grid_export_limit" else "import"
             await self._request("PUT", f"device/energy-profile/grid/limitation/{direction}", json={
                 "stationId": station, "enable": value["enabled"],
-                "maxLimitationOwner": f"{value['limit_kw']:.3f}", "maxLimitationInstaller": None,
+                "maxLimitationOwner": "" if value["limit_kw"] is None else f"{value['limit_kw']:.3f}", "maxLimitationInstaller": None,
             })
         elif key == "native_mode":
             await self._request(

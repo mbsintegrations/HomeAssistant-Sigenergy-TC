@@ -1,4 +1,4 @@
-import { chargerStatus, overrideModel, renderOverride, STATUS_STYLE } from './sigen-hybrid-status.js?v=0.2.6';
+import { chargerStatus, overrideModel, renderOverride, STATUS_STYLE } from './sigen-hybrid-status.js?v=0.2.7';
 /* SPDX-License-Identifier: GPL-3.0-only
  * Sigenergy TC dashboard components. Third-party artwork attribution is
  * retained in sigen-hybrid-photo.js and THIRD_PARTY_NOTICES.md.
@@ -21,15 +21,15 @@ import { chargerStatus, overrideModel, renderOverride, STATUS_STYLE } from './si
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import { installNavigation, CARD_PRESETS, CARD_CHART_CHOICES } from './sigen-hybrid-navigation.js?v=0.2.6';
-import { installHostFit } from './sigen-hybrid-fit.js?v=0.2.6';
-import { WIDGET_ROUTES } from './sigen-hybrid-widgets.js?v=0.2.6';
-import { renderPhotoScene, PHOTO_STYLE } from './sigen-hybrid-photo.js?v=0.2.6';
-import { renderTodayEnergy, renderBatteryLevel, renderChargerControls, renderMobilePower, OVERVIEW_STYLE } from './sigen-hybrid-overview.js?v=0.2.6';
-import { energySankey as buildEnergySankey } from './sigen-hybrid-sankey.js?v=0.2.6';
-import { renderHouseScene, HOUSE_STYLE } from './sigen-hybrid-house.js?v=0.2.6';
-import { renderDeviceOverview, DEVICE_STYLE } from './sigen-hybrid-devices.js?v=0.2.6';
-import { gridConnectionStatus, connectionIndicators, selectReadingState } from './sigen-hybrid-energy.js?v=0.2.6';
+import { installNavigation, CARD_PRESETS, CARD_CHART_CHOICES } from './sigen-hybrid-navigation.js?v=0.2.7';
+import { installHostFit } from './sigen-hybrid-fit.js?v=0.2.7';
+import { WIDGET_ROUTES } from './sigen-hybrid-widgets.js?v=0.2.7';
+import { renderPhotoScene, PHOTO_STYLE } from './sigen-hybrid-photo.js?v=0.2.7';
+import { renderTodayEnergy, renderBatteryLevel, renderChargerControls, renderMobilePower, OVERVIEW_STYLE } from './sigen-hybrid-overview.js?v=0.2.7';
+import { energySankey as buildEnergySankey } from './sigen-hybrid-sankey.js?v=0.2.7';
+import { renderHouseScene, HOUSE_STYLE } from './sigen-hybrid-house.js?v=0.2.7';
+import { renderDeviceOverview, DEVICE_STYLE } from './sigen-hybrid-devices.js?v=0.2.7';
+import { gridConnectionStatus, connectionIndicators, selectReadingState } from './sigen-hybrid-energy.js?v=0.2.7';
 export const MAIN_DISPLAYS = Object.freeze({ house: 'House', flow: 'Flow', photo: 'Photo house' });
 const COLORS = { solar: '#efc900', battery: '#26c9c8', grid: '#6694ff', home: '#a45bf0', ac: '#b46767', dc: '#d29420' };
 const LABELS = { solar: 'Solar', battery: 'Battery', grid: 'Grid', home: 'Home', ac: 'AC charger', dc: 'DC charger' };

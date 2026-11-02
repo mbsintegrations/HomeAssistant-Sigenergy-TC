@@ -391,6 +391,9 @@ class OwnerControls:
     def _update_setting_cache(self, record):
         if self._session is None or record.get("phase") not in ("committed", "restored"):
             return
+        presets = getattr(self.runtime, "_plant_configuration", None)
+        if presets is not None:
+            presets.cache.clear()
         for step in record.get("steps", []):
             if step["key"] != "native_mode":
                 continue

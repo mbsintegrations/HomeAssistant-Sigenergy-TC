@@ -64,7 +64,7 @@ def fields(value, required):
         raise SafetyError("Complete, recognized native settings are required")
 
 
-def validate(key, value):
+def validate(key, value, *, observed=False):
     if key not in EXTENDED_SETTINGS:
         raise CapabilityError("Unknown native owner setting")
     if key == "grid_connection_current":
@@ -112,7 +112,9 @@ def validate(key, value):
             numeric(slot["power_kw"])
     elif key.endswith("_charge_mode"):
         fields(value, CHARGER_FIELDS)
-        modes = (0, 1, 2) if key.startswith("ac_") else (0, 1, 3)
+        # V2X (2) is observable on DC chargers. Reading it must not erase the
+        # configured mode; dispatching V2X still requires its separate workflow.
+        modes = (0, 1, 2) if key.startswith("ac_") else (0, 1, 2, 3) if observed else (0, 1, 3)
         if type(value["mode"]) is not int or value["mode"] not in modes:
             raise SafetyError("Select fast, PV surplus or Sigen AI charging")
         for field in ("battery_boost", "grid_charging"):
@@ -211,7 +213,7 @@ async def read(provider, key):
             )
     else:
         value = {"power_kw": numeric(data["allowedChargePower"], read=True), "cutoff_soc": numeric(data["vehicleChargingCutoffSoc"], high=100, read=True)}
-    validate(key, value)
+    validate(key, value, observed=True)
     return value
 
 

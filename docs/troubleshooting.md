@@ -26,12 +26,20 @@ Local-only installations need a continuous midnight crossing or an explicitly ve
 
 ## Tablet headers or house labels are cut off
 
-Update the integration and reload the dashboard to obtain the 0.2.3 frontend imports. The full drop-in measures the host area, and Photo House preserves the artwork/label ratio. On smaller spaces, scroll inside the drop-in to reach all controls. The supported custom shell should pass its content height using `--sigen-embedded-height`; an old shell that does not render embedded cards needs its own adapter update.
+Update the integration and reload the dashboard to obtain the current frontend imports. The full drop-in measures the host area, and Photo House preserves the artwork/label ratio. On smaller spaces, scroll inside the drop-in to reach all controls. The supported custom shell should pass its content height using `--sigen-embedded-height`; an old shell that does not render embedded cards needs its own adapter update.
 
 ## Backend updated but the old interface remains
 
-Earlier versions retained the unversioned registered TC resource, allowing an open tablet or browser to keep the previous module graph. Version 0.2.4 and later upgrade their own resource URL automatically. Restart HA after HACS updates, then fully reload the web view. In HA dashboard Resources, the TC URL should match the installed version, for example `?v=0.2.5`. Do not add a second copy of the same module.
+Earlier versions retained the unversioned registered TC resource, allowing an open tablet or browser to keep the previous module graph. Version 0.2.4 and later upgrade their own resource URL automatically. Restart HA after HACS updates, then fully reload the web view. In HA dashboard Resources, the TC URL should match the installed version, for example `?v=0.2.7`. Do not add a second copy of the same module.
 
 ## Installed chargers missing from Photo House
 
 Version 0.2.3 hid charger labels when no instantaneous power entity was discovered, even when the Cloud inventory listed the device. Version 0.2.4 separates installed status from telemetry availability. AC/DC labels and cables use actual inventory; missing power stays unknown. Check the discovered inventory and any explicit null/exclusion mapping if a charger remains absent.
+
+## A strategy exists in mySigen but not in TC
+
+Update to 0.2.7 or later, restart HA and reload the dashboard. Open Personal strategies and check **Sigenergy plant strategies**, which is separate from **Home Assistant schedules**. Native Personal Strategies are a different Cloud collection from custom operating profiles. TC reads them with the configured Cloud login; no browser session is required. Failed reads remain errors, and an empty list applies only to the active operating mode.
+
+## A DC charger uses V2X but the charging-mode popup is blank
+
+Version 0.2.7 reads an existing native DC mode 2 as V2X and keeps it selected instead of silently selecting Fast charging. V2X dispatch is not implemented by the ordinary charging-mode writer.
