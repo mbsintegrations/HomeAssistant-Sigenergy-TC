@@ -2,6 +2,8 @@
 
 ## 0.2.8
 
+Documentation follow-up: explicit HACS setup, optional dual-forecast setup, existing-page placement, separate dashboard creation, compatible custom-menu drop-in and individual-card instructions.
+
 Released 2 November 2026. Invitation-only Alpha. [Release and upgrade notes](docs/release-0.2.8.md).
 
 - Add New, Change, Rename and Delete actions for native mySigen Personal Strategies, separate from TC-owned HA schedules.

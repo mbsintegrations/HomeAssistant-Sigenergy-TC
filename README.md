@@ -41,7 +41,7 @@ Use **Settings → Devices & services → Sigenergy TC → Configure → Add to 
 2. In **HACS → menu → Custom repositories**, add `https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC` with category **Integration**.
 3. Download **Sigenergy TC**, restart Home Assistant, then use **Settings → Devices & services → Add integration → Sigenergy TC**.
 4. Choose Modbus, Cloud, or both. Cloud login discovers the plant; no station ID is entered. Configure safety limits and deliberately choose whether to enable control.
-5. Add **Sigenergy TC** in a dashboard's card picker. The bundled module registers automatically in storage-mode dashboards; select the integration entry in the visual editor if more than one is installed.
+5. Open **Settings → Devices & services → Sigenergy TC → Configure → Add to dashboard**. Choose your existing dashboard and page, or a supported custom-menu destination. For a separate dashboard, new page or individual cards, follow the [illustrated dashboard guide](docs/dashboard-embedding.md#choose-where-to-put-it). No YAML or third-party cards are required for a normal editable HA dashboard.
 
 Requires **Home Assistant 2026.10.1 or later**. This repository is public for HACS testing, but is **not submitted to the HACS default catalogue**. The invitation notice describes supported alpha participation; it does not add license restrictions or technical access control.
 

@@ -8,11 +8,20 @@ Create a restorable HA backup. Record current mySigen mode, SOC charge/discharge
 
 ## HACS
 
-Add `https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC` under HACS custom repositories, category Integration. Download the release, restart HA and add **Sigenergy TC** in Devices & services. A GitHub account/HACS login is separate from the plant's mySigen login. There is no NBI application step.
+1. Check that HA is **2026.10.1 or later** and [HACS is installed](https://www.hacs.xyz/docs/use/download/download/).
+2. Open **HACS → menu (three dots) → Custom repositories**.
+3. Enter `https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC`, select **Integration**, then **Add**.
+4. Find **Sigenergy TC** in HACS and download **0.2.8**. It is an invitation-only Alpha, distributed as a normal version number.
+5. **Restart Home Assistant**. A browser refresh alone does not load an integration update.
+6. Open **Settings → Devices & services → Add integration**, search for **Sigenergy TC**, and complete its wizard.
+7. Choose Modbus, Cloud, or both; enter your own connection details. Select any already configured forecast sources, then review control permissions before finishing.
+8. Add the interface using the [dashboard/drop-in steps](dashboard-embedding.md#choose-where-to-put-it). Installing the integration does not replace your existing dashboards.
+
+A GitHub/HACS login is separate from the plant's mySigen login. There is no NBI application, shared developer key or external AI subscription step. Existing users should follow **Updates** below rather than creating a second integration entry.
 
 ## Manual installation
 
-Download `sigenergy-tc-0.2.8.zip` and `SHA256SUMS.txt` from the matching release. Verify the SHA-256 before extraction. Merge the ZIP's `custom_components/sigen_hybrid` into HA's `config/custom_components/sigen_hybrid`; avoid an extra nested folder. Restart HA and use the native setup dialog. Do not copy the whole repository into `custom_components`.
+Download `sigenergy-tc-0.2.8.zip` and `SHA256SUMS.txt` from the [0.2.8 release](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/releases/tag/0.2.8). Verify the SHA-256 before extraction. Merge the ZIP's `custom_components/sigen_hybrid` into HA's `config/custom_components/sigen_hybrid`; avoid an extra nested folder. Restart HA and use the native setup dialog. Do not copy the whole repository into `custom_components`.
 
 ## Connections
 
@@ -28,9 +37,20 @@ The wizard also exposes owner control enablement and SOC limits. Existing instal
 
 Install/configure a provider integration first: built-in [Forecast.Solar](https://www.home-assistant.io/integrations/forecast_solar/), [Open-Meteo Solar Forecast](https://github.com/rany2/ha-open-meteo-solar-forecast), [Solcast](https://github.com/BJReplay/ha-solcast-solar), or [Volcast](https://github.com/volter-labs/volcast-ha-integration). Provider account/pricing eligibility is the provider's responsibility.
 
+To use Forecast.Solar and Open-Meteo together:
+
+1. Add **Forecast.Solar** through **Settings → Devices & services → Add integration**. Enter your own location, panel capacity in **kWp**, tilt and orientation using that provider's field conventions.
+2. Add the linked Open-Meteo Solar Forecast repository through HACS as an **Integration**, download it, restart HA, then add **Open-Meteo Solar Forecast** in Devices & services. Configure the same installation; neither provider should describe only half the panels when averaging whole-system predictions.
+3. Verify that both providers have loaded forecast entities in HA. A downloaded HACS repository alone is not a configured forecast source.
+4. During Sigenergy TC setup, select both sources and tick **Average selected forecasts**. If TC is already installed, use **Sigenergy TC → Configure → Forecast** or the forecast tile's preferences.
+
+Forecast providers are optional and are not installed automatically by TC. Follow each provider's current installation instructions, plan eligibility and orientation conventions; do not reuse another site's location or panel values.
+
 Select up to two loaded forecast sources and **Average selected forecasts** directly during setup. Choose the main provider there if averaging is off. The same choices remain available afterward through the forecast popup or Configure > Forecast. Average at most two forecasts describing the same panel installation. Missing source values are excluded, not replaced with zero. With only one valid source the result is that source and its badge; the provider settings retain the selected sources. The integration consumes cached forecast data rather than forcing extra provider refreshes.
 
 ## Dashboard
+
+Choose **full interface on an existing page**, **separate HA dashboard**, **supported custom-menu drop-in**, or **individual cards/charts** in the [step-by-step placement guide](dashboard-embedding.md#choose-where-to-put-it). These are placement choices for the same installed integration.
 
 Storage-mode Lovelace receives `/sigen_hybrid/sigen-hybrid-card.js` automatically if no existing Sigenergy TC card resource is registered. Existing resource URLs are preserved. If using YAML resources, add that path as `type: module` yourself. Do not register both a copied `/local/` module and the bundled module. Refresh the browser after an upgrade.
 
