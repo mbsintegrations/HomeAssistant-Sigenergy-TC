@@ -1,5 +1,62 @@
 # Dashboard placement and interface settings
 
+## Choose where to put it
+
+**First install Sigenergy TC, restart HA and finish its setup.** Then sign in as an HA administrator. Use an editable dashboard stored by HA; built-in automatically generated pages and YAML dashboards are not changed by the placement wizard. See [installation](installation.md).
+
+| What you want | Use this route |
+| --- | --- |
+| Full interface inside an existing HA page | **A** below; no starter card or YAML |
+| A separate Solar dashboard in HA's sidebar | **B** below; create the dashboard yourself, then place TC |
+| Full interface inside a custom shell's Solar menu | **C** below; a compatible shell is required |
+| Only a few tiles, controls or charts | **D** below; use the normal HA card picker |
+
+### A. Full interface on an existing HA page
+
+1. Open **Settings → Devices & services → Sigenergy TC → Configure → Add to dashboard**.
+2. Select the dashboard you already use, then submit.
+3. In **Page or menu**, select **Page · [your page name]**. Submit again.
+4. Open that dashboard/page. TC contains its own Overview, Energy, Charts, Devices and Settings tabs. No new HA dashboard is created, and existing page cards are retained.
+
+For the full interface to use the whole page, choose a dedicated empty page rather than adding it beside many existing cards. Sections views receive a full-width card. A panel view containing only TC gives it the available page width.
+
+### B. Separate dashboard or a new page
+
+For a separate sidebar entry, open **HA Settings → Dashboards → Add dashboard**, choose a blank user dashboard, name it **Solar** (or your preferred name), and enable its sidebar entry. Open it and ensure it has an editable page. Then follow **A**, selecting that new dashboard and page. TC's placement wizard does not itself create an HA dashboard.
+
+To add a new page to a dashboard from an already placed TC card, open **TC Settings → Add to dashboard**, leave **Card content** on **Dashboard · Full dashboard**, select your destination dashboard and choose **New Home Assistant page**. Enter the page name and select **Add Sigenergy TC**. This creates a page inside the selected dashboard; it does not create another dashboard.
+
+HA's own [dashboard guide](https://www.home-assistant.io/dashboards/dashboards/) explains creation and editing of user dashboards.
+
+### C. Drop into a custom Solar menu
+
+1. Confirm that your shell supports embedded HA cards. TC includes an adapter for the **extended Tab A7 shell**; it does not bundle or automatically modify that personal shell. An arbitrary sidebar or kiosk plugin is not automatically a compatible shell.
+2. Open **HA Settings → Devices & services → Sigenergy TC → Configure → Add to dashboard** and choose the dashboard containing the shell.
+3. In **Page or menu**, select the destination labelled **Custom menu · [page] / Solar**. Select the custom-menu destination, not the surrounding ordinary HA page.
+4. Tick **My custom menu supports embedded Home Assistant cards** only if verified. If the Solar slot already contains a card and you want to replace it, also tick **Replace the existing card in this menu**. Submit.
+5. Open the shell's **Solar** menu. Its own sidebar/header remain; TC runs inside the selected slot. Placement does not disable kiosk mode or replace other menus.
+
+If your shell is unsupported, use **A** or **B**. Do not confirm compatibility simply because a custom-menu destination is listed. Technical requirements are below.
+
+### D. Individual cards and charts
+
+1. Open your editable HA dashboard, enter **Edit dashboard**, then **Add card** and search for **Sigenergy TC**.
+2. Select the integration entry in the visual editor. Choose the required view, such as **Today's energy**, **Compact battery controls**, **Solar forecast summary** or **Individual history chart**. For a chart, choose its chart kind as well. Save the card and exit editing.
+3. Repeat for any additional cards. Each uses the same integration connection and cached data; you do not enter the Cloud password for each card.
+
+Alternatively, from an existing TC card use **TC Settings → Add to dashboard → Card content** to choose a tile, control or chart before its destination. See [card options](cards.md) and the [chart catalogue](chart-catalogue.md).
+
+### If it does not appear or looks outdated
+
+- If TC is missing from the card picker, restart HA after the HACS installation, verify that the integration entry is loaded, then fully reload the client.
+- If **Add to dashboard** has no destinations, use an administrator account and an editable user dashboard. YAML/automatic dashboards require their normal editing method.
+- After an update, keep the existing entry and dashboard. Restart HA and fully reload each browser/tablet/Companion App; do not add duplicate resources or another TC card just to refresh it.
+- No `card-mod`, separate chart library or third-party house card is required. Short/narrow containers keep controls readable and may scroll; the parent shell must not clip its child.
+
+![Full interface inside a tablet dashboard](images/embedded-tablet.png)
+
+## Placement details
+
 ## Add to an existing dashboard without a starter card
 
 Open **Settings → Devices & services → Sigenergy TC → Configure → Add to dashboard** as an HA administrator. Choose the existing dashboard, then its existing page or supported custom-menu destination. Submit adds only that card. No new dashboard is created. Existing native page content remains intact. To replace an occupied custom-menu card, tick the replacement confirmation. For a custom menu, also confirm that its shell supports embedded HA cards.
@@ -14,11 +71,11 @@ Choose a storage dashboard and one of these destinations:
 - **Existing page** adds the card without removing existing content. Sections dashboards receive a full-width card; existing panel content is retained in a vertical stack.
 - **Custom menu** places the interface inside a supported shell menu entry. The current adapter supports the extended Tab A7 shell. Unsupported shells still support a separate native HA page; their internal menus require a shell-specific adapter.
 
-Before saving, the installer checks the dashboard has not changed. It keeps the last five before/after configurations in the administrator's native HA frontend user storage (`sigen_hybrid_dashboard_backups`) and verifies the saved configuration. This is a frontend concurrency check, not an atomic server transaction. YAML and automatically generated dashboards should be edited through their owning configuration.
+The in-card installer separately keeps its last five before/after configurations in the administrator's native HA frontend user storage (`sigen_hybrid_dashboard_backups`) and verifies the saved configuration. Its concurrency check is not an atomic server transaction. The native Configure wizard uses the backend snapshot storage described above. YAML and automatically generated dashboards should be edited through their owning configuration.
 
 ## Custom shell contract
 
-The Tab A7 adapter discovers `custom:taba7-dashboard-shell` cards with a `pages` array. The extended shell must advertise `static supportsEmbeddedCards = true`, render `page.card` using HA's `loadCardHelpers().createCardElement`, forward `hass`, and size the embedded slot. The installer sets `embedded: true` and `embed_mode: shell`. The host sets `--sigen-embedded-height` to its available height and `--sigen-sticky-offset: 0px` when it owns scrolling. The Test copy of Tab A7 has this extension; production shell code is unchanged. The personal shell/configuration is not bundled in this repository.
+The Tab A7 adapter discovers `custom:taba7-dashboard-shell` cards with a `pages` array. The extended shell must advertise `static supportsEmbeddedCards = true`, render `page.card` using HA's `loadCardHelpers().createCardElement`, forward `hass`, and size the embedded slot. The installer sets `embedded: true` and `embed_mode: shell`. The host sets `--sigen-embedded-height` to its available height and `--sigen-sticky-offset: 0px` when it owns scrolling. This shell extension is a prerequisite, not part of the integration package. The personal shell/configuration is not bundled in this repository.
 
 The installer never assumes an arbitrary third-party shell can display a card. Add a reviewed adapter to `dashboardEmbedTargets` and `embedDashboardCard` when supporting another shell.
 
