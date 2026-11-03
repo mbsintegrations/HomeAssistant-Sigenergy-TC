@@ -6,7 +6,7 @@ Record HA/integration version, plant firmware/region, connection choices and sta
 
 The release must pass synthetic backend/frontend tests and official validation before publication. Isolated HA Test checks installation, services, source availability, assets and safety locks without sending plant commands. Those results do not certify the invited owner's hardware. Report uncovered combinations so this document and capability matrix can be updated.
 
-Use GitHub issues for sanitized functional/UI reports. Include reproducible steps, source choice, date/time zone and relevant versions. Keep secrets and private plant data out of issues and screenshots. Do not post the release to public groups or invite additional testers on behalf of MBS without agreement.
+Use [GitHub Issues only](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/issues) for bug reports and feature requests; do not send them by email, Facebook, Messenger or private message. Include reproducible steps, source choice, date/time zone and relevant versions. Keep secrets and private plant data out of issues and screenshots. See [reporting requirements](../SUPPORT.md). Do not post the release to public groups or invite additional testers on behalf of MBS without agreement.
 
 ## Expanded control tests in 0.2.0
 

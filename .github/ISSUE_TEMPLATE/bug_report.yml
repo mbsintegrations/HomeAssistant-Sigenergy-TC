@@ -1,0 +1,52 @@
+name: Bug report
+description: Report a reproducible problem with Sigenergy TC.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: "Invitation-only Alpha. Search existing issues first. Remove credentials and private plant identifiers from all text and attachments."
+  - type: input
+    id: integration_version
+    attributes:
+      label: Sigenergy TC version
+    validations:
+      required: true
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant version
+    validations:
+      required: true
+  - type: dropdown
+    id: connections
+    attributes:
+      label: Configured connections
+      options:
+        - Modbus only
+        - Cloud only
+        - Modbus and Cloud
+    validations:
+      required: true
+  - type: input
+    id: hardware
+    attributes:
+      label: Relevant device model and firmware
+      description: "Do not include serial numbers or plant identifiers."
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: "For layout issues, include browser/app, screen orientation and dashboard placement."
+    validations:
+      required: true
+  - type: textarea
+    id: expected_actual
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized screenshots or diagnostics
+      description: "Review attachments for private data before uploading."

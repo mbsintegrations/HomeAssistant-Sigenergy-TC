@@ -57,6 +57,8 @@ Screenshots use illustrative, non-private example readings. They demonstrate the
 
 ## Development and support
 
+**Bug reports and feature requests: [GitHub Issues only](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/issues).** Please do not send them by email, Facebook, Messenger or private message. See [what to include](SUPPORT.md).
+
 Run `python -m pytest -q`, `ruff check custom_components tests tools`, and `npm test`. GitHub Actions runs those tests plus official Hassfest and HACS validation, without ignored checks. Software tests use synthetic transports; they do not prove real-world plant behavior. See [contributing](CONTRIBUTING.md), [security](SECURITY.md), and [alpha testing](docs/alpha-testing.md).
 
 Code and original artwork: **GPL-3.0-only**. Third-party adaptations retain their notices in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Sigenergy and other product names remain their owners' trademarks. No affiliation or endorsement is claimed.
