@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest an improvement to Sigenergy TC.
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: "Search existing issues first. Keep private plant data and credentials out of your request."
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like to achieve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Suggested behavior
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Relevant devices, connections or examples
+      description: "Include model names where helpful, without serial numbers or private identifiers."
