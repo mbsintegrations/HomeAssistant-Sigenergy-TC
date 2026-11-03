@@ -39,8 +39,8 @@ Install/configure a provider integration first: built-in [Forecast.Solar](https:
 
 To use Forecast.Solar and Open-Meteo together:
 
-1. Add **Forecast.Solar** through **Settings → Devices & services → Add integration**. Enter your own location, panel capacity in **kWp**, tilt and orientation using that provider's field conventions.
-2. Add the linked Open-Meteo Solar Forecast repository through HACS as an **Integration**, download it, restart HA, then add **Open-Meteo Solar Forecast** in Devices & services. Configure the same installation; neither provider should describe only half the panels when averaging whole-system predictions.
+1. Add **Forecast.Solar** through **Settings → Devices & services → Add integration**. Enter your own location, panel capacity, tilt and orientation using that provider's field conventions. HA's Forecast.Solar setup asks for **Watt peak (Wp)**: 1 kWp = 1,000 Wp. Use the unit displayed by each provider, rather than copying the same number into differently labelled fields.
+2. Search HACS for **Open-Meteo Solar Forecast** with the **Integrations** filter enabled, download it, restart HA, then add **Open-Meteo Solar Forecast** in Devices & services. If it is not listed, follow the linked provider repository's installation instructions. Configure the same installation; neither provider should describe only half the panels when averaging whole-system predictions.
 3. Verify that both providers have loaded forecast entities in HA. A downloaded HACS repository alone is not a configured forecast source.
 4. During Sigenergy TC setup, select both sources and tick **Average selected forecasts**. If TC is already installed, use **Sigenergy TC → Configure → Forecast** or the forecast tile's preferences.
 
