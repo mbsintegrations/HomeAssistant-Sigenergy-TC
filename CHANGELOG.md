@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Offer a temporary Fast Charging confirmation when starting an AC charger configured for PV Surplus. Wait for solar and Cancel leave it untouched.
+- Restore the previous Surplus settings after the observed session ends, preserving the owner's limits and newer mySigen changes. Persist recovery across HA restarts without replaying charger commands.
+- Show waiting, charging and restoration status beside AC controls. Automatic restoration requires HA and Cloud online; the lease is managed by HA, not a hardware timer. See [next-release testing](docs/NEXT_RELEASE.md) and [issue #16](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/issues/16).
+
 ## 0.2.8
 
 Documentation follow-up: explicit HACS setup, optional dual-forecast setup, existing-page placement, separate dashboard creation, compatible custom-menu drop-in and individual-card instructions.
