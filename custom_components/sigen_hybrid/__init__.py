@@ -247,6 +247,8 @@ async def async_setup_entry(hass, entry):
         entry.async_on_unload(async_track_time_interval(hass, runtime.async_cloud_update, timedelta(seconds=60)))
         if runtime.controls is not None:
             entry.async_on_unload(async_track_time_interval(hass, runtime.controls.reconcile, timedelta(seconds=30)))
+        if getattr(runtime, "ac_session", None) is not None:
+            entry.async_on_unload(async_track_time_interval(hass, runtime.ac_session.poll, timedelta(seconds=60)))
         if runtime.strategies is not None:
             entry.async_on_unload(async_track_time_interval(hass, runtime.strategies.tick, timedelta(seconds=30)))
         if cloud is not None:

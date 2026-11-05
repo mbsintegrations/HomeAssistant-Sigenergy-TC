@@ -28,6 +28,8 @@ def async_register_owner_configuration(hass):
         websocket_api.async_register_command(hass, websocket_connection_identity)
         websocket_api.async_register_command(hass, websocket_plant_configuration)
         websocket_api.async_register_command(hass, websocket_plant_strategy)
+        from .ac_charge_session import websocket_ac_charge_session
+        websocket_api.async_register_command(hass, websocket_ac_charge_session)
         state["owner_configuration_registered"] = True
 
 
