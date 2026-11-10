@@ -1,6 +1,6 @@
 # Sigenergy TC — Total Control for Home Assistant
 
-> **Public Beta · 0.2.9**
+> **Public Beta · 0.2.10**
 >
 > Sigenergy TC can change battery operation, EV charging and grid connection. Review the [control and recovery guide](docs/controls-and-recovery.md) before enabling writes.
 
@@ -19,7 +19,7 @@ A local-first Home Assistant integration and responsive energy dashboard for Sig
 
 ![Full Sigenergy TC dashboard overview showing the house, live power, forecasts, daily energy, battery SOC and controls](docs/images/desktop-overview.png)
 
-[0.2.9 Beta release notes](docs/release-0.2.9.md) · [Installation and setup](docs/installation.md) · [Manual ZIP installation](docs/installation.md#manual-installation) · [User guide](docs/user-guide.md) · [Validation and acceptance scope](docs/acceptance.md)
+[0.2.10 Beta release notes](docs/release-0.2.10.md) · [Installation and setup](docs/installation.md) · [Manual ZIP installation](docs/installation.md#manual-installation) · [User guide](docs/user-guide.md) · [Validation and acceptance scope](docs/acceptance.md)
 
 ## Features
 
@@ -43,7 +43,7 @@ Use **Settings → Devices & services → Sigenergy TC → Configure → Add to 
 
 1. Back up Home Assistant and record the plant's existing mySigen settings. Keep the existing integration and automations intact until conflicts have been reviewed.
 2. In **HACS → menu → Custom repositories**, add `https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC` with category **Integration**.
-3. Download **Sigenergy TC (Total Control)** version **0.2.9**, restart Home Assistant, then use **Settings → Devices & services → Add integration → Sigenergy TC**.
+3. Download **Sigenergy TC (Total Control)** version **0.2.10**, restart Home Assistant, then use **Settings → Devices & services → Add integration → Sigenergy TC**.
 4. Choose Modbus, Cloud, or both. Cloud login discovers the plant; no station ID is entered. Configure safety limits and deliberately choose whether to enable control.
 5. Open **Settings → Devices & services → Sigenergy TC → Configure → Add to dashboard**. Choose your existing dashboard and page, or a supported custom-menu destination. For a separate dashboard, new page or individual cards, follow the [illustrated dashboard guide](docs/dashboard-embedding.md#choose-where-to-put-it). No YAML or third-party cards are required for a normal editable HA dashboard.
 

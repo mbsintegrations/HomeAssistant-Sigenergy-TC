@@ -28,9 +28,9 @@ A dash means the value is unavailable. A zero can be a valid measurement. Modbus
 
 ## AC and DC charging
 
-Open an installed charger on the Overview or Devices tab. Check that the vehicle is connected and review the charger’s status before using **Start charging** or **Stop charging**.
+Open an installed charger on the Overview or Devices tab. Fresh charger status disables **Start charging** while charging and **Stop charging** while idle. You can still stop a waiting session that TC started.
 
-For an AC charger in PV Surplus mode, choose **Wait for solar** to keep that mode, **Temporary Fast Charging** to allow a single fast session, or **Cancel** to exit. Watch for charging and restoration status. TC needs HA and Cloud to reconcile and restore the previous settings. Verify the original mode in mySigen if a session is interrupted. [AC session behavior](release-0.2.9.md#changes)
+For an AC or DC charger in PV Surplus mode, choose **Wait for solar** to keep that mode, **Temporary Fast Charging** to allow a single fast session, or **Cancel** to exit. Watch for charging and restoration status. TC needs HA and Cloud to reconcile and restore the previous settings. Verify the original mode in mySigen if a session is interrupted. [Charger session behavior](release-0.2.10.md#changes)
 
 ## Tariffs, strategies and automations
 

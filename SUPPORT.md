@@ -6,4 +6,4 @@ Search existing issues first, then choose **Bug report** or **Feature request**.
 
 Never attach passwords, tokens, device serials, plant addresses or unredacted Cloud responses/recovery journals. Review screenshots and diagnostics before uploading. Do not use a public bug report to disclose a security vulnerability; follow [SECURITY.md](SECURITY.md).
 
-Sigenergy TC is in public Beta. See [installation](docs/installation.md), [dashboard/drop-in placement](docs/dashboard-embedding.md#choose-where-to-put-it) and [release notes](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/releases/tag/0.2.9) before reporting a setup problem.
+Sigenergy TC is in public Beta. See [installation](docs/installation.md), [dashboard/drop-in placement](docs/dashboard-embedding.md#choose-where-to-put-it) and [release notes](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/releases/tag/0.2.10) before reporting a setup problem.
