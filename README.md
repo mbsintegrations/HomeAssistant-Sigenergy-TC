@@ -4,10 +4,12 @@
 >
 > Sigenergy TC can change battery operation, EV charging and grid connection. Review the [control and recovery guide](docs/controls-and-recovery.md) before enabling writes.
 
+<p>
+  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=mbsintegrations&amp;repository=HomeAssistant-Sigenergy-TC&amp;category=integration"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open Sigenergy TC in HACS" height="28"></a>
+  <a href="https://my.home-assistant.io/redirect/config_flow_start/?domain=sigen_hybrid"><img src="https://my.home-assistant.io/badges/config_flow_start.svg" alt="Add Sigenergy TC to Home Assistant" height="28"></a>
+</p>
+
 [![Validation](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/actions/workflows/validate.yml/badge.svg)](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/actions/workflows/validate.yml)
-[![Open HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=mbsintegrations&repository=HomeAssistant-Sigenergy-TC&category=integration)
-[![Manual Installation](https://img.shields.io/badge/Manual-Installation-0078D4?style=for-the-badge)](docs/installation.md#manual-installation)
-[![Add Integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=sigen_hybrid)
 [![Release](https://img.shields.io/github/v/release/mbsintegrations/HomeAssistant-Sigenergy-TC)](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/releases)
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![MBS Integrations](https://img.shields.io/badge/Website-mbsintegrations.ie-0078D4?style=flat)](https://mbsintegrations.ie)
@@ -17,7 +19,7 @@ A local-first Home Assistant integration and responsive energy dashboard for Sig
 
 ![Full Sigenergy TC dashboard overview showing the house, live power, forecasts, daily energy, battery SOC and controls](docs/images/desktop-overview.png)
 
-[0.2.9 Beta release notes](docs/release-0.2.9.md) · [Installation and setup](docs/installation.md) · [User guide](docs/user-guide.md) · [Validation and acceptance scope](docs/acceptance.md)
+[0.2.9 Beta release notes](docs/release-0.2.9.md) · [Installation and setup](docs/installation.md) · [Manual ZIP installation](docs/installation.md#manual-installation) · [User guide](docs/user-guide.md) · [Validation and acceptance scope](docs/acceptance.md)
 
 ## Features
 
