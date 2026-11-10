@@ -4,7 +4,7 @@ title: "[Bug]: "
 body:
   - type: markdown
     attributes:
-      value: "Invitation-only Alpha. Search existing issues first. Remove credentials and private plant identifiers from all text and attachments."
+      value: "Public Beta. Search existing issues first. Remove credentials and private plant identifiers from all text and attachments."
   - type: input
     id: integration_version
     attributes:

@@ -175,6 +175,16 @@ test('discovery is limited to chosen config entry and enabled own-platform senso
     { ...row, unique_id: 'synthetic_forecast_tomorrow', entity_id: 'sensor.forecast_tomorrow' },
   ], 'chosen'), { cloud_mode: 'sensor.cloud_mode', cloud_status: 'sensor.cloud_status', forecast_today: 'sensor.forecast_today', forecast_tomorrow: 'sensor.forecast_tomorrow' });
 });
+test('plant SOC discovery cannot be overwritten by a battery module on the same entry', () => {
+  const row = { platform: 'sigen_hybrid', config_entry_id: 'chosen' };
+  const plant = { ...row, unique_id: 'plant_soc', entity_id: 'sensor.plant_soc' };
+  const module = { ...row, unique_id: 'plant_battery_MODULE_soc', entity_id: 'sensor.module_soc' };
+  const control = { ...row, unique_id: 'plant_control_status', entity_id: 'sensor.plant_control_status' };
+  assert.equal(discoverEntities([plant, control, module], 'chosen').battery_soc, plant.entity_id);
+  assert.equal(discoverEntities([module, control, plant], 'chosen').battery_soc, plant.entity_id);
+  assert.equal(discoverEntities([module, plant], 'chosen').battery_soc, plant.entity_id);
+  assert.equal(discoverEntities([module], 'chosen').battery_soc, undefined);
+});
 test('component configuration, sections sizing, and device presence', () => {
   const card = new SigenHybridCard();
   card.setConfig({ view: 'flow', entities: { solar_power: 'sensor.test_solar', battery_soc: 'sensor.test_soc' } });

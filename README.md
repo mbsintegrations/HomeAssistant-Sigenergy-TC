@@ -1,13 +1,13 @@
-![Sigenergy TC — Total Control](docs/images/header.png)
-
 # Sigenergy TC — Total Control for Home Assistant
 
-> **INVITATION-ONLY ALPHA — DO NOT INSTALL unless you have been invited by MBS Integrations.**
+> **Public Beta · 0.2.9**
 >
-> Version **0.2.8** is an experimental, owner-supervised control release. It is not a stable release or a Sigenergy product. Real commands can change battery operation, charging and grid connection. Read the [control and recovery guide](docs/controls-and-recovery.md) before enabling control.
+> Sigenergy TC can change battery operation, EV charging and grid connection. Review the [control and recovery guide](docs/controls-and-recovery.md) before enabling writes.
 
 [![Validation](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/actions/workflows/validate.yml/badge.svg)](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/actions/workflows/validate.yml)
-[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://www.hacs.xyz/docs/faq/custom_repositories/)
+[![Open HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=mbsintegrations&repository=HomeAssistant-Sigenergy-TC&category=integration)
+[![Manual Installation](https://img.shields.io/badge/Manual-Installation-0078D4?style=for-the-badge)](docs/installation.md#manual-installation)
+[![Add Integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=sigen_hybrid)
 [![Release](https://img.shields.io/github/v/release/mbsintegrations/HomeAssistant-Sigenergy-TC)](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/releases)
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![MBS Integrations](https://img.shields.io/badge/Website-mbsintegrations.ie-0078D4?style=flat)](https://mbsintegrations.ie)
@@ -15,12 +15,14 @@
 
 A local-first Home Assistant integration and responsive energy dashboard for SigenStor systems. Use **Modbus**, **mySigen Cloud**, or **both**. Each owner supplies their own cloud credentials. No developer application, NBI key, hosted MBS backend or VPP registration is needed.
 
-[0.2.8 release notes](docs/release-0.2.8.md) · [Validation and acceptance scope](docs/acceptance.md)
+![Full Sigenergy TC dashboard overview showing the house, live power, forecasts, daily energy, battery SOC and controls](docs/images/desktop-overview.png)
+
+[0.2.9 Beta release notes](docs/release-0.2.9.md) · [Installation and setup](docs/installation.md) · [User guide](docs/user-guide.md) · [Validation and acceptance scope](docs/acceptance.md)
 
 ## Features
 
 - Local power, battery SOC, native energy counters and persistent daily baselines, with cached measured Cloud daily buckets covering the first installation day. Independent cloud availability lets Modbus continue during internet failures.
-- Optional cached cloud telemetry, history, supported operating modes, discovered battery modules, gateway and charger information. Existing mySigen Personal Strategies, tariffs and device configuration are read through your configured Cloud login; see [native settings and coverage](docs/native-settings.md). Native Personal Strategies also have [New, Change, Rename and Delete controls](docs/native-strategies.md), subject to the documented Alpha acceptance scope.
+- Optional cached cloud telemetry, history, supported operating modes, discovered battery modules, gateway and charger information. Existing mySigen Personal Strategies, tariffs and device configuration are read through your configured Cloud login; see [native settings and coverage](docs/native-settings.md). Native Personal Strategies also have [New, Change, Rename and Delete controls](docs/native-strategies.md), subject to the documented hardware acceptance scope.
 - Real local/cloud battery charge, discharge to home, discharge to grid, hold and self-consumption commands; native cloud mode selection, gateway switching and AC/DC charger start/stop.
 - Owner SOC, battery/PV power, backup reserve, grid power/current, energy priorities, peak-shaving and AC/DC charging-mode settings. Popups read actual settings and reject stale edits. [Setting formats and availability](docs/owner-settings.md).
 - Durable command journal, fresh identity/permission checks, finite power/SOC bounds and compare-before-restore recovery. Cloud manual commands use native expiry; explicitly enabled local commands use HA-managed timing and native SOC thresholds. Owner changes take priority.
@@ -35,15 +37,15 @@ A local-first Home Assistant integration and responsive energy dashboard for Sig
 
 Use **Settings → Devices & services → Sigenergy TC → Configure → Add to dashboard** to place the full interface on an existing editable page or supported custom-shell menu. Embedded layouts measure their available space below dashboard headers. See [dashboard placement and sizing](docs/dashboard-embedding.md).
 
-## Invited testers: install with HACS
+## Install with HACS as a custom repository
 
 1. Back up Home Assistant and record the plant's existing mySigen settings. Keep the existing integration and automations intact until conflicts have been reviewed.
 2. In **HACS → menu → Custom repositories**, add `https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC` with category **Integration**.
-3. Download **Sigenergy TC**, restart Home Assistant, then use **Settings → Devices & services → Add integration → Sigenergy TC**.
+3. Download **Sigenergy TC (Total Control)** version **0.2.9**, restart Home Assistant, then use **Settings → Devices & services → Add integration → Sigenergy TC**.
 4. Choose Modbus, Cloud, or both. Cloud login discovers the plant; no station ID is entered. Configure safety limits and deliberately choose whether to enable control.
 5. Open **Settings → Devices & services → Sigenergy TC → Configure → Add to dashboard**. Choose your existing dashboard and page, or a supported custom-menu destination. For a separate dashboard, new page or individual cards, follow the [illustrated dashboard guide](docs/dashboard-embedding.md#choose-where-to-put-it). No YAML or third-party cards are required for a normal editable HA dashboard.
 
-Requires **Home Assistant 2026.10.1 or later**. This repository is public for HACS testing, but is **not submitted to the HACS default catalogue**. The invitation notice describes supported alpha participation; it does not add license restrictions or technical access control.
+Requires **Home Assistant 2026.10.1 or later**. Use the custom repository steps while the project is outside the default HACS catalogue. **Open HACS** opens the repository in your Home Assistant instance. **Add Integration** opens the setup wizard after installation and restart.
 
 [Installation and upgrades](docs/installation.md) · [Controls and recovery](docs/controls-and-recovery.md) · [Strategies and tariffs](docs/strategies.md) · [Existing mySigen settings](docs/native-settings.md) · [Cards](docs/cards.md) · [Embedding](docs/dashboard-embedding.md) · [Charts](docs/chart-catalogue.md) · [Troubleshooting](docs/troubleshooting.md) · [Screenshots](docs/screenshots.md) · [Changes](CHANGELOG.md)
 
@@ -51,14 +53,12 @@ Requires **Home Assistant 2026.10.1 or later**. This repository is public for HA
 
 Screenshots use illustrative, non-private example readings. They demonstrate the interface, not physical command acceptance.
 
-![Desktop overview](docs/images/desktop-overview.png)
-
 <img alt="Phone overview" src="docs/images/phone-overview.png" width="310"> <img alt="Tablet overview" src="docs/images/tablet-overview.png" width="620">
 
 ## Development and support
 
 **Bug reports and feature requests: [GitHub Issues only](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/issues).** Please do not send them by email, Facebook, Messenger or private message. See [what to include](SUPPORT.md).
 
-Run `python -m pytest -q`, `ruff check custom_components tests tools`, and `npm test`. GitHub Actions runs those tests plus official Hassfest and HACS validation, without ignored checks. Software tests use synthetic transports; they do not prove real-world plant behavior. See [contributing](CONTRIBUTING.md), [security](SECURITY.md), and [alpha testing](docs/alpha-testing.md).
+Run `python -m pytest -q`, `ruff check custom_components tests tools`, and `npm test`. GitHub Actions runs those tests plus official Hassfest and HACS validation, without ignored checks. Software tests use synthetic transports; they do not prove real-world plant behavior. See [contributing](CONTRIBUTING.md), [security](SECURITY.md), and [Beta testing](docs/alpha-testing.md).
 
 Code and original artwork: **GPL-3.0-only**. Third-party adaptations retain their notices in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Sigenergy and other product names remain their owners' trademarks. No affiliation or endorsement is claimed.

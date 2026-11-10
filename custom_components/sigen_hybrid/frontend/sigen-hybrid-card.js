@@ -1,4 +1,4 @@
-import { chargerStatus, overrideModel, renderOverride, STATUS_STYLE } from './sigen-hybrid-status.js?v=0.2.8';
+import { chargerStatus, overrideModel, renderOverride, STATUS_STYLE } from './sigen-hybrid-status.js?v=0.2.9-release';
 /* SPDX-License-Identifier: GPL-3.0-only
  * Sigenergy TC dashboard components. Third-party artwork attribution is
  * retained in sigen-hybrid-photo.js and THIRD_PARTY_NOTICES.md.
@@ -21,15 +21,15 @@ import { chargerStatus, overrideModel, renderOverride, STATUS_STYLE } from './si
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import { installNavigation, CARD_PRESETS, CARD_CHART_CHOICES } from './sigen-hybrid-navigation.js?v=0.2.8';
-import { installHostFit } from './sigen-hybrid-fit.js?v=0.2.8';
-import { WIDGET_ROUTES } from './sigen-hybrid-widgets.js?v=0.2.8';
-import { renderPhotoScene, PHOTO_STYLE } from './sigen-hybrid-photo.js?v=0.2.8';
-import { renderTodayEnergy, renderBatteryLevel, renderChargerControls, renderMobilePower, OVERVIEW_STYLE } from './sigen-hybrid-overview.js?v=0.2.8';
-import { energySankey as buildEnergySankey } from './sigen-hybrid-sankey.js?v=0.2.8';
-import { renderHouseScene, HOUSE_STYLE } from './sigen-hybrid-house.js?v=0.2.8';
-import { renderDeviceOverview, DEVICE_STYLE } from './sigen-hybrid-devices.js?v=0.2.8';
-import { gridConnectionStatus, connectionIndicators, selectReadingState } from './sigen-hybrid-energy.js?v=0.2.8';
+import { installNavigation, CARD_PRESETS, CARD_CHART_CHOICES } from './sigen-hybrid-navigation.js?v=0.2.9-release';
+import { installHostFit } from './sigen-hybrid-fit.js?v=0.2.9-release';
+import { WIDGET_ROUTES } from './sigen-hybrid-widgets.js?v=0.2.9-release';
+import { renderPhotoScene, PHOTO_STYLE } from './sigen-hybrid-photo.js?v=0.2.9-release';
+import { renderTodayEnergy, renderBatteryLevel, renderChargerControls, renderMobilePower, OVERVIEW_STYLE } from './sigen-hybrid-overview.js?v=0.2.9-release';
+import { energySankey as buildEnergySankey } from './sigen-hybrid-sankey.js?v=0.2.9-release';
+import { renderHouseScene, HOUSE_STYLE } from './sigen-hybrid-house.js?v=0.2.9-release';
+import { renderDeviceOverview, DEVICE_STYLE } from './sigen-hybrid-devices.js?v=0.2.9-release';
+import { gridConnectionStatus, connectionIndicators, selectReadingState } from './sigen-hybrid-energy.js?v=0.2.9-release';
 export const MAIN_DISPLAYS = Object.freeze({ house: 'House', flow: 'Flow', photo: 'Photo house' });
 const COLORS = { solar: '#efc900', battery: '#26c9c8', grid: '#6694ff', home: '#a45bf0', ac: '#b46767', dc: '#d29420' };
 const LABELS = { solar: 'Solar', battery: 'Battery', grid: 'Grid', home: 'Home', ac: 'AC charger', dc: 'DC charger' };
@@ -105,10 +105,17 @@ export function flowActivity(state, kind, now = Date.now(), maxAge) {
 export const energySankey = buildEnergySankey;
 export function discoverEntities(rows, entryId) {
   if (!entryId) return {};
+  const sensors = rows.filter(row => row.platform === 'sigen_hybrid' && row.config_entry_id === entryId && !row.disabled_by);
+  const controlId = sensors.find(row => row.unique_id?.endsWith('_control_status'))?.unique_id;
+  const plantId = controlId?.slice(0, -'_control_status'.length);
   const found = {};
-  for (const row of rows) {
-    if (row.platform !== 'sigen_hybrid' || row.config_entry_id !== entryId || row.disabled_by) continue;
-    for (const [suffix, key] of Object.entries(KEYS)) if (row.unique_id?.endsWith(`_${suffix}`)) found[key] = row.entity_id;
+  for (const row of sensors) {
+    for (const [suffix, key] of Object.entries(KEYS)) {
+      const matches = plantId
+        ? row.unique_id === `${plantId}_${suffix}`
+        : row.unique_id?.endsWith(`_${suffix}`) && !/_battery_.+_soc$/.test(row.unique_id);
+      if (matches) found[key] = row.entity_id;
+    }
   }
   return found;
 }

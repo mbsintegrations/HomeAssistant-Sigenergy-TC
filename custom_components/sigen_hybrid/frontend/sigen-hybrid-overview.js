@@ -1,4 +1,4 @@
-import { chargerStatus } from './sigen-hybrid-status.js?v=0.2.8';
+import { chargerStatus } from './sigen-hybrid-status.js?v=0.2.9-release';
 /* SPDX-License-Identifier: GPL-3.0-only
  * Pure compact overview panels. The host supplies normalized readings and
  * handles detail navigation; these renderers never access a provider or HA.
@@ -78,7 +78,8 @@ export function renderChargerButtons(ctx = {}, type, id = '') {
   const device=(ctx.inventory??[]).find(device=>itemIdentity(device)===id),own=[device?.serial,device?.serial_number,device?.serialNumber].find(serial=>serials.includes(serial));
   const serial=own??(serials.length===1?serials[0]:null),enabled=ctx.controlPermission===true&&ctx.capabilities?.[`${type}_charging`]?.available===true&&typeof serial==='string';
   const label=type==='ac'?'AC charger':'DC charger';
-  return `<div class="control-buttons">${[['start','Start charging'],['stop','Stop charging']].map(([action,title])=>`<button type="button" data-charger-action="${action}" data-charger-type="${type}"${serial?` data-serial="${esc(serial)}"`:''}${enabled?'':' disabled aria-disabled="true"'} aria-label="${action==='start'?'Start':'Stop'} ${label} charging">${title}</button>`).join('')}</div>`;
+  const session=type==='ac'&&control.ac_session?.serial===serial?control.ac_session:null;
+  return `<div class="control-buttons">${[['start','Start charging'],['stop','Stop charging']].map(([action,title])=>`<button type="button" data-charger-action="${action}" data-charger-type="${type}"${serial?` data-serial="${esc(serial)}"`:''}${enabled&&!(action==='start'&&session?.active)?'':' disabled aria-disabled="true"'} aria-label="${action==='start'?'Start':'Stop'} ${label} charging">${title}</button>`).join('')}</div>${session?.message?`<p class="settings-note" role="status">${esc(session.message)}</p>`:''}`;
 }
 export function renderChargerControls(ctx = {}, onlyType) {
   const items=chargerEnergyModel(ctx).items.filter(item=>!onlyType||item.type===onlyType);

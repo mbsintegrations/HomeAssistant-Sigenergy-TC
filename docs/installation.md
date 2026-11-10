@@ -1,6 +1,6 @@
 # Installation, setup, upgrades and removal
 
-**Invitation-only Alpha. Do not install unless invited by MBS Integrations.** Minimum Home Assistant: 2026.10.1.
+**Public Beta.** Minimum Home Assistant: 2026.10.1. Start here for a fresh install or upgrade. For day-to-day use, see the [dashboard and controls guide](user-guide.md).
 
 ## Before installation
 
@@ -8,10 +8,11 @@ Create a restorable HA backup. Record current mySigen mode, SOC charge/discharge
 
 ## HACS
 
+Until the integration is included in the default catalogue, register it as a custom repository once per HA instance. HACS handles subsequent downloads and updates.
 1. Check that HA is **2026.10.1 or later** and [HACS is installed](https://www.hacs.xyz/docs/use/download/download/).
 2. Open **HACS → menu (three dots) → Custom repositories**.
 3. Enter `https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC`, select **Integration**, then **Add**.
-4. Find **Sigenergy TC** in HACS and download **0.2.8**. It is an invitation-only Alpha, distributed as a normal version number.
+4. Open **Sigenergy TC (Total Control)** in HACS, choose **Download**, select **0.2.9**, and confirm.
 5. **Restart Home Assistant**. A browser refresh alone does not load an integration update.
 6. Open **Settings → Devices & services → Add integration**, search for **Sigenergy TC**, and complete its wizard.
 7. Choose Modbus, Cloud, or both; enter your own connection details. Select any already configured forecast sources, then review control permissions before finishing.
@@ -21,7 +22,10 @@ A GitHub/HACS login is separate from the plant's mySigen login. There is no NBI 
 
 ## Manual installation
 
-Download `sigenergy-tc-0.2.8.zip` and `SHA256SUMS.txt` from the [0.2.8 release](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/releases/tag/0.2.8). Verify the SHA-256 before extraction. Merge the ZIP's `custom_components/sigen_hybrid` into HA's `config/custom_components/sigen_hybrid`; avoid an extra nested folder. Restart HA and use the native setup dialog. Do not copy the whole repository into `custom_components`.
+1. Download `sigenergy-tc-0.2.9.zip` and `SHA256SUMS.txt` from the [0.2.9 Beta release](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/releases/tag/0.2.9).
+2. Check the download with `sha256sum -c SHA256SUMS.txt` from the download directory. On Windows, use `Get-FileHash -Algorithm SHA256 .\sigenergy-tc-0.2.9.zip` and compare it with the value in `SHA256SUMS.txt`.
+3. Extract the archive. Copy its `custom_components/sigen_hybrid` directory into Home Assistant's configuration directory so that `config/custom_components/sigen_hybrid/manifest.json` exists. For an upgrade, back up the old component folder and replace it as a unit to avoid stale files.
+4. Restart HA. On a fresh install, open **Settings → Devices & services → Add integration → Sigenergy TC**. For an upgrade, keep the existing entry and reopen the dashboard.
 
 ## Connections
 
@@ -52,13 +56,15 @@ Select up to two loaded forecast sources and **Average selected forecasts** dire
 
 Choose **full interface on an existing page**, **separate HA dashboard**, **supported custom-menu drop-in**, or **individual cards/charts** in the [step-by-step placement guide](dashboard-embedding.md#choose-where-to-put-it). These are placement choices for the same installed integration.
 
-Storage-mode Lovelace receives `/sigen_hybrid/sigen-hybrid-card.js` automatically if no existing Sigenergy TC card resource is registered. Existing resource URLs are preserved. If using YAML resources, add that path as `type: module` yourself. Do not register both a copied `/local/` module and the bundled module. Refresh the browser after an upgrade.
+Storage-mode Lovelace receives `/sigen_hybrid/sigen-hybrid-card.js` automatically if no existing Sigenergy TC card resource is registered. TC refreshes the cache version of its bundled storage resource and leaves separately hosted resources alone. If using YAML resources, add that path as `type: module` yourself. Do not register both a copied `/local/` module and the bundled module. Refresh the browser after an upgrade.
 
 To add it to an existing dashboard without YAML, open **Configure → Add to dashboard**, choose the existing dashboard and destination, then submit. An updated Tab A7 custom shell can receive the full interface in its Solar menu. Alternatively, add a panel view or use an ordinary Sections view. Pick the integration in the card editor. A single detected entry is selected automatically by the card stub; multiple plants require an explicit choice. Configure weather and appearance there. The default main scene is Photo House. No card-mod or third-party chart library is required. See [cards](cards.md) and [embedding](dashboard-embedding.md).
 
 ## Updates
 
-Read the release notes; take a backup; release active commands before restarting or updating; download in HACS; restart HA; refresh clients. Keep previous releases and backups available. The domain remains `sigen_hybrid` to preserve entity identities despite the product rename. Update this repository's documentation and screenshot gallery when behavior changes.
+Read the release notes and take a backup. Finish or release any active TC command and let any temporary charging session restore its original mode. In HACS, open the installed repository and use **Update** or **Redownload** to select the desired version. Restart HA, then reload each browser or Companion App. Confirm the existing entry, Modbus/Cloud status, battery SOC and your saved chart selection.
+
+To roll back, resolve active commands first, redownload the previous version or restore the backed-up component and configuration, then restart HA. Check plant settings in mySigen after rollback. The domain remains `sigen_hybrid` to preserve entity and dashboard references.
 
 ## Removal
 
@@ -69,5 +75,3 @@ Disable scheduled strategies and release any active TC command while Cloud is av
 Under **Configure → Modbus**, optional **AC charger Modbus unit ID** and **DC charger inverter Modbus unit ID** fields identify the actual devices on the configured endpoint. Use the inverter unit hosting the DC charger, not plant unit 247. Leaving a field empty permits unambiguous reuse of a currently configured Sigen Local Modbus device on that same host/port. Conflicting or foreign-endpoint configurations are never guessed or scanned.
 
 The reads use AC registers 32000/32003 and DC registers 31513/31502, with the register definitions and attribution retained in the source. Unsupported charger reads do not disable aggregate plant measurements. Charger telemetry entities are added for configured/discovered devices; absent devices are not invented. Cloud inventory may establish installed presence without supplying a connection-state measurement. Such a state remains Unknown; map an existing state sensor explicitly if needed.
-
-Upgrade to **0.2.8** through HACS, restart HA, and fully reload the tablet/browser or Companion App. Keep the existing integration entry and dashboard. Verify both charger labels, the override header and existing native presets under Personal strategies / My Energy Profile. Native Personal Strategies now expose New, Change, Rename and Delete to administrators with Cloud control enabled. Existing control permissions are preserved; no new key or dashboard is needed. Read the [0.2.8 release notes](release-0.2.8.md) before testing; physical native strategy write acceptance remains pending.

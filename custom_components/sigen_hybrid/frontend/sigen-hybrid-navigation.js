@@ -1,13 +1,13 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-import { renderDeviceDetail, solarStringSeries, DETAIL_STYLE } from './sigen-hybrid-details.js?v=0.2.8';
-import { presetTarget, renderPreset, PRESET_STYLE } from './sigen-hybrid-presets.js?v=0.2.8';
-import { bindNativeStrategies } from './sigen-hybrid-strategies.js?v=0.2.8';
-import { renderSettingsDetail, collectSettings, SETTINGS_STYLE, SETTINGS_ROUTES, CHART_CHOICES, DEFAULT_CHART_SELECTION, DISPLAY_MODULES, DISPLAY_PRESETS, HOMEPAGE_APPEARANCES, HOMEPAGE_BACKGROUNDS, homepageBackground, displayDefaults, encodeChargerScheduleId, decodeChargerScheduleId, bindTariffEditor, bindStrategyEditor, OPERATING_MODES, observedOperatingMode, renderOverviewModeControl, strategyExportEligibility } from './sigen-hybrid-settings.js?v=0.2.8';
-import { periodRange, dateAt, shiftDate, toCSV, preserveChartScroll } from './sigen-hybrid-charts.js?v=0.2.8';
-import { renderSummaryWidget, renderSummaryDetail, WIDGET_ROUTES, WIDGET_STYLE } from './sigen-hybrid-widgets.js?v=0.2.8';
-import { ENERGY_ROUTES, renderEnergyProfile, ENERGY_STYLE, ownerSettingTarget, renderOwnerSetting, collectOwnerSetting, bindOwnerSettingForm } from './sigen-hybrid-energy.js?v=0.2.8';
-import { renderChargingEnergy, renderTodayEnergy, renderBatteryLevel, renderMobilePower, renderChargerControls } from './sigen-hybrid-overview.js?v=0.2.8';
-import { modeChoices, selectedMode, nativeModeChoices } from './sigen-hybrid-settings.js?v=0.2.8';
+import { renderDeviceDetail, solarStringSeries, DETAIL_STYLE } from './sigen-hybrid-details.js?v=0.2.9-release';
+import { presetTarget, renderPreset, PRESET_STYLE } from './sigen-hybrid-presets.js?v=0.2.9-release';
+import { bindNativeStrategies } from './sigen-hybrid-strategies.js?v=0.2.9-release';
+import { renderSettingsDetail, collectSettings, SETTINGS_STYLE, SETTINGS_ROUTES, CHART_CHOICES, DEFAULT_CHART_SELECTION, DISPLAY_MODULES, DISPLAY_PRESETS, HOMEPAGE_APPEARANCES, HOMEPAGE_BACKGROUNDS, homepageBackground, displayDefaults, encodeChargerScheduleId, decodeChargerScheduleId, bindTariffEditor, bindStrategyEditor, OPERATING_MODES, observedOperatingMode, renderOverviewModeControl, strategyExportEligibility } from './sigen-hybrid-settings.js?v=0.2.9-release';
+import { periodRange, dateAt, shiftDate, toCSV, preserveChartScroll } from './sigen-hybrid-charts.js?v=0.2.9-release';
+import { renderSummaryWidget, renderSummaryDetail, WIDGET_ROUTES, WIDGET_STYLE } from './sigen-hybrid-widgets.js?v=0.2.9-release';
+import { ENERGY_ROUTES, renderEnergyProfile, ENERGY_STYLE, ownerSettingTarget, renderOwnerSetting, collectOwnerSetting, bindOwnerSettingForm } from './sigen-hybrid-energy.js?v=0.2.9-release';
+import { renderChargingEnergy, renderTodayEnergy, renderBatteryLevel, renderMobilePower, renderChargerControls } from './sigen-hybrid-overview.js?v=0.2.9-release';
+import { modeChoices, selectedMode, nativeModeChoices } from './sigen-hybrid-settings.js?v=0.2.9-release';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
 
@@ -78,11 +78,19 @@ function engineeringUnit(key,unit){
   const group=key.endsWith('_reactive_power')?'reactive':key.endsWith('_temperature')?'temperature':key.endsWith('_voltage')?'voltage':key.endsWith('_current')?'current':key.endsWith('_frequency')?'frequency':null;
   return group?(ENGINEERING_UNITS[group][unit]??null):null;
 }
+function chartHasSource(card, kind) {
+  if (kind === 'strings') return solarStringSeries({ inventory: card._config?.devices, entities: card._entities }).length > 0;
+  if (kind === 'forecast') return historySeries(card, 'forecast').some(line => line.points.length);
+  if (kind === 'pv_metrics') return ['strings', 'pv_voltage', 'pv_current'].some(chart => chartHasSource(card, chart));
+  return CHARTS[kind]?.some(([key]) => card._entities[key] || card._config?.history_entities?.[key])
+    || Boolean(card._config?.config_entry) && ['power','solar','load','battery','grid','soc','price','ac','dc','dc_metrics'].includes(kind);
+}
 export function availableCharts(card){
   const saved=card._detailContext?.().interfaceOptions?.chart_settings;
-  let selection=Array.isArray(card._config?.chart_selection)?card._config.chart_selection:DEFAULT_CHART_SELECTION;
+  let selection=Array.isArray(card._config?.chart_selection)?card._config.chart_selection:null;
   if(saved?.route==='chart_settings'&&saved.local_only===true){try{selection=collectSettings('chart_settings',saved).selected;}catch{}}
-  return CHART_CATALOG.filter(([kind])=>selection.includes(kind)).filter(([kind])=>kind==='strings'?solarStringSeries({inventory:card._config?.devices,entities:card._entities}).length>0:kind==='forecast'?historySeries(card,'forecast').some(line=>line.points.length):kind==='pv_metrics'?CHARTS.pv_metrics.some(([key])=>card._entities[key])||solarStringSeries({inventory:card._config?.devices,entities:card._entities}).length>0:CHARTS[kind]?.some(([key])=>card._entities[key])||Boolean(card._config?.config_entry)&&['power','solar','load','battery','grid','soc','price','ac','dc','dc_metrics'].includes(kind));
+  if (selection) return CHART_CATALOG.filter(([kind]) => selection.includes(kind));
+  return CHART_CATALOG.filter(([kind]) => DEFAULT_CHART_SELECTION.includes(kind) && chartHasSource(card, kind));
 }
 export function mergeHistorySeries(local=[],cloud=[],{binMs=300000}={}){
   const result=new Map();
@@ -729,7 +737,7 @@ export function installNavigation(Card) {
     if(el.hasAttribute('data-detail-back'))return this._backDetail();
     if(el.hasAttribute('data-discard-detail')){this._detailDirty=false;return this._runPendingDetail();}
     if(el.hasAttribute('data-owner-setting'))return this._sendOwnerSetting(el.dataset.ownerSetting,el.dataset.value==='true');
-    if(el.hasAttribute('data-charger-action'))return this._sendOwnerSetting(`${el.dataset.chargerType}_charging`,el.dataset.chargerAction==='start',el.dataset.serial);
+    if(el.hasAttribute('data-charger-action'))return this._chargerAction(el.dataset.chargerType,el.dataset.chargerAction,el.dataset.serial);
     if(el.hasAttribute('data-save-settings'))return this._saveDetail();
     if(el.dataset.manual)return this._openPreview(el.dataset.manual);
     if(el.dataset.detail){this._openDetail(el.dataset.detail,el.dataset.id);if(el.hasAttribute('data-display-weather'))this._detailDialog?.querySelector('[name="immersive_weather"]')?.focus();return;}
@@ -962,6 +970,37 @@ export function installNavigation(Card) {
       const sent=await this._sendOwnerSetting(state.setting,value,state.serial,state.revision);
       if(sent)this._detailDirty=false;
     }catch(error){if(output){output.hidden=false;output.textContent=error.message??'Check the entered settings';}}
+  };
+  Card.prototype._chargerAction=async function(type,action,serial){
+    const control=this._state('control_status')?.attributes??{};
+    if(type!=='ac'||control.ac_session_api_version!==1)return this._sendOwnerSetting(`${type}_charging`,action==='start',serial);
+    const entry=control.config_entry_id;
+    if(!entry||this._config.config_entry&&this._config.config_entry!==entry){this._result='Select the connected Sigenergy TC system before controlling charging';this._render();return;}
+    if(action==='stop'){
+      if(!control.ac_session?.active||control.ac_session.serial!==serial)return this._sendOwnerSetting('ac_charging',false,serial);
+      try{await this._hass.callWS({type:'sigen_hybrid/ac_charge_session',config_entry:entry,operation:'stop',serial});this._result='Stopping AC charging; previous Surplus settings will be restored';}
+      catch(error){this._result=error.message??'Could not confirm AC stop';}this._render();return;
+    }
+    if(this._dialogOpen)return;
+    const dialog=document.createElement('dialog');dialog.className=`sigen-manual-dialog${this._uiNight()?' night':''}`;
+    dialog.setAttribute('aria-labelledby','sigen-ac-session-heading');
+    dialog.innerHTML='<form method="dialog"><div class="section-title"><h2 id="sigen-ac-session-heading">Start AC charging</h2><button type="button" class="dialog-close" aria-label="Close">×</button></div><p data-ac-explanation>Reading the charger’s current mode…</p><div class="control-buttons"><button type="button" data-ac-wait hidden>Wait for solar</button><button type="button" data-ac-start disabled>Start charging</button><button type="button" data-ac-cancel>Cancel</button></div><output aria-live="polite"></output></form>';
+    this._dialogOpen=true;this.shadowRoot.appendChild(dialog);dialog.showModal();
+    const close=()=>dialog.close('cancel');dialog.querySelector('[data-ac-cancel]').addEventListener('click',close);dialog.querySelector('.dialog-close').addEventListener('click',close);dialog.querySelector('[data-ac-wait]').addEventListener('click',close);
+    dialog.addEventListener('close',()=>{this._dialogOpen=false;dialog.remove();if(this._renderPending){this._renderPending=false;this._render();}},{once:true});
+    try{
+      const preview=await this._hass.callWS({type:'sigen_hybrid/ac_charge_session',config_entry:entry,operation:'preview',serial});
+      if(!dialog.open)return;
+      const explanation=dialog.querySelector('[data-ac-explanation]'),start=dialog.querySelector('[data-ac-start]');
+      const send=async()=>{start.disabled=true;dialog.querySelector('[data-ac-wait]').disabled=true;try{
+        await this._hass.callWS({type:'sigen_hybrid/ac_charge_session',config_entry:entry,operation:'start',token:preview.token,temporary_fast:preview.surplus===true});
+        this._result='AC start requested; waiting for the charger';dialog.close('submitted');this._render();
+      }catch(error){dialog.querySelector('output').textContent=error.message??'Could not confirm AC start. Reopen to retry.';}};
+      if(preview.surplus){
+        explanation.textContent='PV Surplus mode waits when there is not enough solar. Temporary Fast Charging can use grid electricity. TC restores your previous Surplus settings after this session ends (maximum 24 hours). Automatic restoration requires HA and Cloud to be online. Newer changes in mySigen are preserved.';
+        start.textContent='Temporary Fast Charging';start.disabled=false;dialog.querySelector('[data-ac-wait]').hidden=false;start.addEventListener('click',send);
+      }else{explanation.textContent='Starting with the charger’s current mode.';await send();}
+    }catch(error){if(dialog.open)dialog.querySelector('output').textContent=error.message??'Could not read AC charging mode';}
   };
   Card.prototype._sendOwnerSetting=async function(setting,value,serial,expected_revision){
     const control=this._state('control_status')?.attributes??{},feature=setting==='grid_connection'?'grid_switch':setting;

@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Pure device-detail views. Navigation, charts and data access belong to the host.
  */
-import { renderChargerButtons } from './sigen-hybrid-overview.js?v=0.2.8';
-import { renderDeviceGraphic } from './sigen-hybrid-devices.js?v=0.2.8';
+import { renderChargerButtons } from './sigen-hybrid-overview.js?v=0.2.9-release';
+import { renderDeviceGraphic } from './sigen-hybrid-devices.js?v=0.2.9-release';
 export const escapeDetailHTML = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 const esc = escapeDetailHTML;
 const absent = value => value === null || value === undefined || typeof value === 'string' && (!value.trim() || ['unknown', 'unavailable', 'none'].includes(value.toLowerCase()));
@@ -160,7 +160,11 @@ function inventoryTile(ctx, item) {
 function deviceLinks(ctx, types) { return types.flatMap(type => devices(ctx, type)).map(item => inventoryTile(ctx, item)).join(''); }
 export function solarStringSeries(ctx = {}) {
   const aggregate = ctx.entities?.solar_power ?? ctx.entity?.('solar_power'), seen = new Set();
-  return devices(ctx,'string').flatMap((item,index) => {
+  const mapped = devices(ctx, 'string');
+  const strings = mapped.length ? mapped : Object.entries(ctx.entities ?? {})
+    .filter(([key]) => /^pv[1-9]\d*_power$/.test(key))
+    .map(([key, power]) => ({ id: key, name: key.split('_')[0].toUpperCase(), entities: { power } }));
+  return strings.flatMap((item, index) => {
     const source = item.entities?.solar_power ?? item.entities?.power;
     if (typeof source!=='string' || !/^sensor\.[a-z0-9_]+$/.test(source) || source===aggregate || seen.has(source)) return [];
     seen.add(source);
