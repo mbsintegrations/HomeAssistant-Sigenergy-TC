@@ -1,12 +1,16 @@
 # Release validation
 
+## 0.2.10 Beta
+
+The owner reported completing the live AC/DC charger check and approved release. Automated validation covers state-aware buttons, stopping an accepted waiting session, temporary Fast sessions, restoration, and recovery. See the [release notes](release-0.2.10.md).
+
 ## 0.2.9 Beta
 
 Live checks on an embedded dashboard confirmed plant-level battery percentage in the scene and battery ring with individual battery modules present. Chart selection persisted across a reload. PV Strings plotted two Recorder series mapped to the same inverter.
 
 Live Home Assistant returned fresh Modbus and Cloud status, both configured forecast sources, Recorder and Cloud SOC history, and a tariff/forecast planning preview. Read-only checks covered the active operating mode, SOC limits, backup reserve, grid connection and export limit, AC/DC charge modes, DC charging limits, native profiles, tariffs, strategies, and both charger schedule lists. The live controller accepted dry runs for Hold, Charge, Discharge and Self-consumption. The AC session preview returned the existing charger mode.
 
-The owner confirmed charger operation, battery Hold and grid transfer on their installed system. The separate end-to-end AC Surplus restoration, command expiry/cancel and native configuration writes are outside that report. DC temporary override and state-aware charger buttons remain tracked under [issue #16](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/issues/16).
+The owner confirmed charger operation, battery Hold and grid transfer on their installed system. The separate end-to-end AC Surplus restoration, command expiry/cancel and native configuration writes are outside that report. At the time, DC temporary override and state-aware charger buttons were tracked under [issue #16](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/issues/16).
 
 ## 0.2.8 native strategy Alpha
 

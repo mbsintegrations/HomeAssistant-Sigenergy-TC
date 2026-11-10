@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from custom_components.sigen_hybrid.core.ac_session import ACChargeSession
+from custom_components.sigen_hybrid.core.ac_session import ChargerSession
 from custom_components.sigen_hybrid.core.errors import SafetyError
 from custom_components.sigen_hybrid.core.recovery import canonical
 
@@ -22,8 +22,9 @@ class Store:
 
 
 class Plant:
-    def __init__(self):
-        self.devices = {"ac_charging": "test-charger"}
+    def __init__(self, kind):
+        self.mode_key = f"{kind}_charge_mode"
+        self.devices = {f"{kind}_charging": "test-charger"}
         self.target = "test-plant"
         self.mode = {"mode": 1, "grid_charging": False, "max_grid_power_kw": 3,
                      "battery_boost": False, "cutoff_soc": 70,
@@ -33,6 +34,8 @@ class Plant:
         self.fail_start = False
         self.fail_mode = False
         self.offline = False
+        self.mode_reads = 0
+        self.change_on_read = None
 
     async def identity(self):
         return self.target
@@ -40,17 +43,20 @@ class Plant:
     async def read(self, keys):
         if self.offline:
             raise TimeoutError()
+        self.mode_reads += 1
+        if self.mode_reads == self.change_on_read:
+            self.mode["max_grid_power_kw"] = 2
         return {key: deepcopy(self.mode) for key in keys}
 
     def validate(self, key, value):
-        assert key == "ac_charge_mode" and set(value) == set(self.mode)
+        assert key == self.mode_key and set(value) == set(self.mode)
 
     def matches(self, key, requested, observed):
         return canonical(requested) == canonical(observed)
 
     async def write(self, key, value):
         self.writes.append((key, deepcopy(value)))
-        if key == "ac_charge_mode":
+        if key == self.mode_key:
             self.mode = deepcopy(value)
             if self.fail_mode:
                 self.fail_mode = False
@@ -67,15 +73,15 @@ class Plant:
         return self.status
 
 
-def setup():
-    state, mode, plant = Store(), Store(), Plant()
+def setup(kind="ac"):
+    state, mode, plant = Store(), Store(), Plant(kind)
     now = [datetime(2026, 11, 5, tzinfo=timezone.utc)]
 
     async def provider(serial, writing):
         assert serial in (None, "test-charger")
         return plant
 
-    manager = ACChargeSession(state, mode, provider, clock=lambda: now[0], operation_lock=asyncio.Lock())
+    manager = ChargerSession(state, mode, provider, clock=lambda: now[0], operation_lock=asyncio.Lock(), kind=kind)
     return manager, plant, now
 
 
@@ -158,7 +164,7 @@ async def test_restart_and_lost_reply_restore_but_never_replay(lost_mode_reply):
     plant.fail_mode = lost_mode_reply
     plant.fail_start = not lost_mode_reply
     await start(manager)
-    restarted = ACChargeSession(manager.state_store, manager.mode_store, manager.provider,
+    restarted = ChargerSession(manager.state_store, manager.mode_store, manager.provider,
         clock=manager.clock, operation_lock=asyncio.Lock())
     await restarted.load()
     now[0] += timedelta(minutes=4)
@@ -192,6 +198,12 @@ async def test_normal_start_waiting_is_not_failed_or_restored():
     assert manager.state["phase"] == "waiting"
     assert plant.writes == [("ac_charging", True)]
     assert not manager.state["active"]
+    assert manager.public()["can_stop"] is True
+    await manager.stop("test-charger")
+    assert manager.public()["can_stop"] is False
+    assert plant.writes == [("ac_charging", True), ("ac_charging", False)]
+    with pytest.raises(SafetyError, match="no cancellable"):
+        await manager.stop("test-charger")
 
 
 async def test_start_durable_state_failure_prevents_all_plant_writes():
@@ -206,3 +218,38 @@ async def test_start_durable_state_failure_prevents_all_plant_writes():
     with pytest.raises(OSError):
         await manager.start(request)
     assert plant.writes == []
+
+
+async def test_dc_fast_override_restores_after_stop_and_only_changes_mode():
+    manager, plant, _ = setup("dc")
+    baseline = deepcopy(plant.mode)
+    await start(manager)
+    assert plant.mode == {**baseline, "mode": 0}
+    assert plant.writes == [("dc_charge_mode", plant.mode), ("dc_charging", True)]
+    plant.status = 3
+    await manager.stop("test-charger")
+    assert plant.mode == baseline
+    assert plant.writes[-2:] == [("dc_charging", False), ("dc_charge_mode", baseline)]
+
+
+async def test_dc_discharge_mode_never_previews_as_charging():
+    manager, plant, _ = setup("dc")
+    plant.mode["mode"] = 2
+    with pytest.raises(SafetyError, match="V2X"):
+        await manager.preview("owner", "test-charger")
+    assert plant.writes == []
+
+
+@pytest.mark.parametrize("kind", ["ac", "dc"])
+async def test_already_charging_or_changed_journal_baseline_never_writes(kind):
+    manager, plant, _ = setup(kind)
+    plant.status = 3
+    await start(manager)
+    assert plant.writes == []
+    assert "already charging" in manager.state["message"]
+
+    manager, plant, _ = setup(kind)
+    plant.change_on_read = 3  # The recovery baseline, after preview and start recheck.
+    await start(manager)
+    assert plant.writes == []
+    assert plant.mode["max_grid_power_kw"] == 2

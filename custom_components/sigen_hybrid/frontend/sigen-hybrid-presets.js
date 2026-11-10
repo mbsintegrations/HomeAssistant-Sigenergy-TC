@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Native presets are observations, never implicitly imported HA automations.
  */
-import { STRATEGY_ROUTES, strategyActions, newStrategyButton, renderStrategyAction } from './sigen-hybrid-strategies.js?v=0.2.9-release';
+import { STRATEGY_ROUTES, strategyActions, newStrategyButton, renderStrategyAction } from './sigen-hybrid-strategies.js?v=0.2.10';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 const object=value=>value&&typeof value==='object'&&!Array.isArray(value)?value:{};
 const row=(title,route,id,detail='')=>`<button type="button" class="settings-row native-preset-row" data-detail="${esc(route)}"${id==null?'':` data-id="${esc(id)}"`}><span>${esc(title)}</span><span class="settings-row-value">${esc(detail)}</span></button>`;

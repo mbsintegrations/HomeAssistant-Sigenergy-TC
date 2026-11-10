@@ -12,7 +12,7 @@ Until the integration is included in the default catalogue, register it as a cus
 1. Check that HA is **2026.10.1 or later** and [HACS is installed](https://www.hacs.xyz/docs/use/download/download/).
 2. Open **HACS → menu (three dots) → Custom repositories**.
 3. Enter `https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC`, select **Integration**, then **Add**.
-4. Open **Sigenergy TC (Total Control)** in HACS, choose **Download**, select **0.2.9**, and confirm.
+4. Open **Sigenergy TC (Total Control)** in HACS, choose **Download**, select **0.2.10**, and confirm.
 5. **Restart Home Assistant**. A browser refresh alone does not load an integration update.
 6. Open **Settings → Devices & services → Add integration**, search for **Sigenergy TC**, and complete its wizard.
 7. Choose Modbus, Cloud, or both; enter your own connection details. Select any already configured forecast sources, then review control permissions before finishing.
@@ -22,8 +22,8 @@ A GitHub/HACS login is separate from the plant's mySigen login. There is no NBI 
 
 ## Manual installation
 
-1. Download `sigenergy-tc-0.2.9.zip` and `SHA256SUMS.txt` from the [0.2.9 Beta release](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/releases/tag/0.2.9).
-2. Check the download with `sha256sum -c SHA256SUMS.txt` from the download directory. On Windows, use `Get-FileHash -Algorithm SHA256 .\sigenergy-tc-0.2.9.zip` and compare it with the value in `SHA256SUMS.txt`.
+1. Download `sigenergy-tc-0.2.10.zip` and `SHA256SUMS.txt` from the [0.2.10 Beta release](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/releases/tag/0.2.10).
+2. Check the download with `sha256sum -c SHA256SUMS.txt` from the download directory. On Windows, use `Get-FileHash -Algorithm SHA256 .\sigenergy-tc-0.2.10.zip` and compare it with the value in `SHA256SUMS.txt`.
 3. Extract the archive. Copy its `custom_components/sigen_hybrid` directory into Home Assistant's configuration directory so that `config/custom_components/sigen_hybrid/manifest.json` exists. For an upgrade, back up the old component folder and replace it as a unit to avoid stale files.
 4. Restart HA. On a fresh install, open **Settings → Devices & services → Add integration → Sigenergy TC**. For an upgrade, keep the existing entry and reopen the dashboard.
 

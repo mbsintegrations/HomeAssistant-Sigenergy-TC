@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.10 — Public Beta
+
+- Use fresh charger status to disable Start while charging and Stop while idle. Keep Stop available for a waiting session accepted by TC.
+- Offer Temporary Fast Charging for DC chargers in PV Surplus mode. Restore previous settings when the session ends, with separate recovery records for AC and DC.
+- Recheck charger state and settings before dispatch to prevent duplicate starts and overwriting newer owner changes.
+
+See the [0.2.10 release notes](docs/release-0.2.10.md).
+
 ## 0.2.9 — Public Beta
 
 - Keep selected charts visible across reloads, including an empty state when history is unavailable. Accept explicit PV string power sensor mappings.

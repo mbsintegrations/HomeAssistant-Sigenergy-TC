@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {renderTodayEnergy, renderMobilePower, renderBatteryLevel, renderChargingEnergy, renderChargerControls, chargerEnergyModel, OVERVIEW_STYLE} from '../custom_components/sigen_hybrid/frontend/sigen-hybrid-overview.js';
+import {renderTodayEnergy, renderMobilePower, renderBatteryLevel, renderChargingEnergy, renderChargerButtons, renderChargerControls, chargerEnergyModel, OVERVIEW_STYLE} from '../custom_components/sigen_hybrid/frontend/sigen-hybrid-overview.js';
 
 const state = (value, unit, extra = {}) => ({state:String(value),attributes:{unit_of_measurement:unit,...extra}});
 
@@ -192,4 +192,32 @@ test('phone readings preserve zero, signs and unknowns while using existing deta
  assert.match(html,/Solar: 0 kW/);assert.match(html,/Home: —/);assert.match(html,/Battery: 2.4 kW, 76.2% · Discharging/);assert.match(html,/Grid: 1 kW, Exporting/);
  assert.doesNotMatch(html,/AC charger|DC charger|NaN/);assert.equal((html.match(/<button/g)??[]).length,4);
  values.battery_power=2;assert.match(renderMobilePower({entities:{battery_power:'sensor.b'},value:key=>values[key]}),/Charging/);
+});
+
+
+test('fresh charger status gates AC and DC actions while stale data and waiting stay distinct',()=>{
+  const now = Date.parse('2026-11-10T12:00:00Z');
+  for(const type of ['ac','dc']){
+    const serial = 'bound-unit';
+    const attrs = {owner_devices:{[`${type}SnList`]:[serial]}};
+    const ctx = context({control_status:{attributes:attrs}},{
+      now, inventory:[{id:'installed',type,serial}], controlPermission:true,
+      capabilities:{[`${type}_charging`]:{available:true}},
+    });
+    const existing = ctx.state;
+    const buttons = (value, age=0, readingSerial=serial)=>{
+      ctx.state = key=>key===`${type}_state` ? state(value, '', {observed_at:new Date(now-age).toISOString(), serial:readingSerial}) : existing(key);
+      const html = renderChargerButtons(ctx, type, 'installed');
+      return [...html.matchAll(/data-charger-action="(start|stop)"[^>]*>/g)].map(match=>match[0].includes(' disabled'));
+    };
+    assert.deepEqual(buttons('Charging'), [true,false]);
+    assert.deepEqual(buttons(type==='ac'?'Not Connected':'Idle'), [false,true]);
+    assert.deepEqual(buttons('Charging',121000), [false,false]);
+    assert.deepEqual(buttons('Charging',0,'another-unit'), [false,false]);
+    assert.deepEqual(buttons(type==='ac'?'Reserving':'Scheduled'), [false,false]);
+    attrs[`${type}_session`] = {serial,active:true,phase:'waiting'};
+    assert.deepEqual(buttons('Idle'), [true,false]);
+    attrs[`${type}_session`].stop_attempted = true;
+    assert.deepEqual(buttons('Idle'), [true,true]);
+  }
 });
