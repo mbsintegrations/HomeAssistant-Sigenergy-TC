@@ -1,4 +1,4 @@
-# Capability matrix and alpha boundaries
+# Capability matrix
 
 | Feature | Modbus only | Cloud only | Both |
 | --- | --- | --- | --- |
@@ -6,7 +6,7 @@
 | Cached cloud plant readings and available history | No | Yes | Additional/fallback source |
 | Operating mode/profile selection | No | Advertised modes with owner control enabled | Cloud route |
 | Timed battery controls and rule execution | Explicit local ownership; HA-managed timer and native SOC bounds | Native cloud expiry | Local where suitable; cloud discharge preserves separate PV export |
-| Gateway and charger start/stop controls | Not exposed by this alpha | Only advertised supported devices | Cloud route |
+| Gateway and charger start/stop controls | Unavailable over local Modbus in TC | Only advertised supported devices | Cloud route |
 | Owner SOC, battery/PV power and reserve settings | Closed, read-back-verified registers | Native owner handlers | Local preferred when enabled |
 | Grid power/current limits | May tighten the existing power cap; no installer-cap increase | Verified native installer ceiling required | Cloud for explicit grid-limit changes |
 | Energy priorities and peak shaving | No | Native owner handlers when this firmware returns complete settings | Cloud route |

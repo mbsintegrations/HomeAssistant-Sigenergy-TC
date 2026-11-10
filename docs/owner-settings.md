@@ -1,4 +1,4 @@
-# Owner settings in Alpha
+# Owner settings
 
 Existing mySigen presets and their read/write coverage are documented in [native settings](native-settings.md). Native Personal Strategies and TC HA schedules remain separate.
 

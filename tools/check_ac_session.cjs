@@ -20,6 +20,7 @@ async function run(){
     });
     const dialog=page.locator('sigen-hybrid-card').locator('dialog.sigen-manual-dialog');
     await dialog.getByRole('button',{name:'Temporary Fast Charging',exact:true}).waitFor();
+    if(width===1920)await page.screenshot({path:path.join(root,'docs/images/ac-temporary-fast.png')});
     const metrics=await dialog.evaluate(node=>({overflow:node.scrollWidth>node.clientWidth+1,bottom:node.getBoundingClientRect().bottom}));
     assert.equal(metrics.overflow,false,`${width}: clipped AC dialog`);assert.ok(metrics.bottom<=height,`${width}: dialog exceeds viewport`);
     await dialog.getByRole('button',{name:'Cancel',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('sigen-hybrid-card')._dialogOpen);

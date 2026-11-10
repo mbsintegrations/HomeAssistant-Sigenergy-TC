@@ -1,6 +1,6 @@
 # Controls and recovery
 
-**Invitation-only Alpha. Physical plant acceptance remains the invited owner's task.** This release contains real control handlers, not simulated success responses. Test and Demo remain separate from real connections.
+**Public Beta.** Test controls on your own plant under supervision. Read the recovery steps before changing battery, charger or grid settings.
 
 ## Commands
 

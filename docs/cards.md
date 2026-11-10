@@ -1,6 +1,6 @@
 # Cards, layouts and setup wizard
 
-The alpha bundle includes a dependency-free custom card, `custom:sigen-hybrid-card`. It does not require card-mod, Mushroom, ApexCharts, a CDN or another card library. It uses Home Assistant's card and configuration interfaces.
+The integration includes a dependency-free custom card, `custom:sigen-hybrid-card`. It does not require card-mod, Mushroom, ApexCharts, a CDN or another card library. It uses Home Assistant's card and configuration interfaces.
 
 ## Guided setup
 

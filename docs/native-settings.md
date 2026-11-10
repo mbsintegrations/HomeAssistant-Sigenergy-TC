@@ -40,7 +40,7 @@ Grouped solar priorities returned by the current profile are displayed without f
 
 The 0.2.7 candidate was checked through a saved EU owner account in isolated HA Test with every Test write locked. Native Personal Strategies, tariffs, operating-profile catalogue, energy profile, preheating, both lighting channels, inverter/AC network details, AC/DC schedules and records, AC additional settings, both OCPP/card/authorization reads, backup history/events, energy saving and aggregator settings returned through the integration client. Current DC V2X mode and disabled unset grid limits were also checked.
 
-The tested account had no custom operating profiles or native charger schedules. Those empty results were distinguished from its existing Personal Strategy; custom-profile identity rejection and list/cache behaviour are covered by software tests. Other accounts, regions, firmware and physical command acceptance require owner alpha testing. No plant commands were sent during this validation.
+The tested account had no custom operating profiles or native charger schedules. Those empty results were distinguished from its existing Personal Strategy; custom-profile identity rejection and list/cache behaviour are covered by software tests. Other accounts, regions, firmware and physical command acceptance require owner verification. No plant commands were sent during this validation.
 
 ![Native strategies alongside HA schedules](images/native-strategies.png)
 

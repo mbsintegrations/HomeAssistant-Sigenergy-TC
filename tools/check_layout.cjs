@@ -61,6 +61,18 @@ async function run() {
       assert.equal(layout.today, '29.6 kWh', name + ': forecast fixture lost its unit');
       if (name === 'tablet-overview') assert.ok(layout.pageHeight <= height, '1280px tablet overview should fit vertically');
       for (let i = 0; i < layout.rings.length - 1; i++) assert.ok(layout.rings[i].right <= layout.rings[i + 1].x + 1, name + ': rings overlap');
+      if (name === 'desktop-overview') {
+        const card = page.locator('sigen-hybrid-card');
+        await card.locator('[data-preview="charge"]').click();
+        const manual = card.locator('dialog.sigen-manual-dialog');
+        await manual.waitFor({ state: 'visible' });
+        await page.screenshot({ path: path.join(root, 'docs/images/manual-control.png') });
+        await manual.getByRole('button', { name: 'Cancel', exact: true }).click();
+        await card.locator('[data-tab="charts"]').click();
+        await card.locator('sigen-history-chart').first().waitFor({ state: 'visible' });
+        await page.screenshot({ path: path.join(root, 'docs/images/charts.png') });
+        assert.deepEqual(errors, [], 'desktop controls and charts: JavaScript errors');
+      }
       await context.close();
     }
     for (const [width, height, sidebar, tallHeader] of [[1280,1100],[1280,900],[1180,820],[1024,768],[800,1280],[600,960],[412,915],[1380,900,true],[1280,800,true],[1200,800,true],[1024,768,true],[1224,800,true,true],[1280,800,true,true]]) {
@@ -97,7 +109,7 @@ async function run() {
         assert.equal(result.blurred,false,'Photo has blurred padding');
         if(display==='photo'&&width>=1024){assert.equal(result.labelsInside,true,`${width}: photo labels clipped ${JSON.stringify(result)}`);assert.equal(result.artFitsFrame,true,'Photo artwork cropped independently of labels');assert.ok(Math.abs(result.photoRatio-1490/673)<.02,'Photo artwork/labels lost their aspect ratio');}
         assert.ok(result.hasAc&&result.hasDc,`${width} ${display}: charger details missing`);
-        if(width===1280&&height===800&&sidebar&&display==='photo'){
+        if(width===1380&&height===900&&sidebar&&display==='photo'){
           await page.evaluate(()=>{document.querySelector('sigen-hybrid-card').shadowRoot.querySelector('ha-card').scrollTop=0;});
           await page.screenshot({path:path.join(root,'docs/images/embedded-tablet.png'),fullPage:false});
         }
