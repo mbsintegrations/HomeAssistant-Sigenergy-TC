@@ -160,7 +160,11 @@ function inventoryTile(ctx, item) {
 function deviceLinks(ctx, types) { return types.flatMap(type => devices(ctx, type)).map(item => inventoryTile(ctx, item)).join(''); }
 export function solarStringSeries(ctx = {}) {
   const aggregate = ctx.entities?.solar_power ?? ctx.entity?.('solar_power'), seen = new Set();
-  return devices(ctx,'string').flatMap((item,index) => {
+  const mapped = devices(ctx, 'string');
+  const strings = mapped.length ? mapped : Object.entries(ctx.entities ?? {})
+    .filter(([key]) => /^pv[1-9]\d*_power$/.test(key))
+    .map(([key, power]) => ({ id: key, name: key.split('_')[0].toUpperCase(), entities: { power } }));
+  return strings.flatMap((item, index) => {
     const source = item.entities?.solar_power ?? item.entities?.power;
     if (typeof source!=='string' || !/^sensor\.[a-z0-9_]+$/.test(source) || source===aggregate || seen.has(source)) return [];
     seen.add(source);

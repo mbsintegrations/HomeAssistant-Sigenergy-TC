@@ -619,8 +619,8 @@ export function renderSettingsDetail(route, ctx = {}) {
   switch (route) {
     case 'chart_settings': {
       title='Customize charts';
-      const selected=Array.isArray(p.selected)?p.selected:DEFAULT_CHART_SELECTION;
-      body=form(route,'<p class="settings-note">Default combines related measurements. Select the combined or individual charts you want to see.</p>'+CHART_CHOICES.map(([key,label])=>`<label class="settings-check"><span>${esc(label)}</span><input type="checkbox" name="selected" value="${key}"${selected.includes(key)?' checked':''}></label>`).join(''));
+      const selected=Array.isArray(p.selected)?p.selected:Array.isArray(ctx.config?.chart_selection)?ctx.config.chart_selection:DEFAULT_CHART_SELECTION;
+      body=form(route,'<p class="settings-note">Select the charts you want to see. Charts without recorded data show an empty state.</p>'+CHART_CHOICES.map(([key,label])=>`<label class="settings-check"><span>${esc(label)}</span><input type="checkbox" name="selected" value="${key}"${selected.includes(key)?' checked':''}></label>`).join(''));
       break;
     }
     case 'settings':

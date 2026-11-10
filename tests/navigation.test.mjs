@@ -175,6 +175,25 @@ test('Default consolidates electrical charts while customization restores indivi
   assert.match(card._chartsPage(),/data-detail="chart_settings"/);
 });
 
+test('saved charts stay visible when their data source is absent, including after a fresh card loads',()=>{
+  const preferences = { chart_settings: { route: 'chart_settings', local_only: true, selected: ['soc', 'strings'] } };
+  for (const card of [new NavigationCard(fixture()), new NavigationCard(fixture())]) {
+    const context = card._detailContext.bind(card);
+    card._detailContext = () => ({ ...context(), interfaceOptions: structuredClone(preferences) });
+    const page = card._chartsPage();
+    assert.match(page, /data-chart="soc"/);
+    assert.match(page, /data-chart="strings"/);
+    assert.doesNotMatch(page, /data-chart="power"/);
+  }
+});
+
+test('PV string history accepts explicit power mappings alongside dynamic device discovery',()=>{
+  const card = fixture({pv1_power:state(500,'W'),pv2_power:state(.4,'kW')}, {
+    'sensor.pv1_power': [{start:NOW,mean:500}], 'sensor.pv2_power': [{start:NOW,mean:.4}],
+  }, {chart_selection:['strings']});
+  assert.deepEqual(historySeries(card,'strings').map(line=>[line.label,line.points[0].value]), [['PV1',.5],['PV2',.4]]);
+});
+
 test('engineering history retains its actual units and signed readings without treating them as kW',()=>{
   const card=fixture({battery_temperature:state(19,'°C'),battery_soh:state(99,'%'),grid_l1_reactive_power:state(-2,'kVar'),pv1_voltage:state(450000,'mV'),pv1_current:state(4100,'mA')},{'sensor.battery_temperature':[{start:NOW,mean:0}],'sensor.battery_soh':[{start:NOW,mean:98}],'sensor.grid_l1_reactive_power':[{start:NOW,mean:-2}],'sensor.pv1_voltage':[{start:NOW,mean:450000}],'sensor.pv1_current':[{start:NOW,mean:4100}]});
   for(const [kind,value,unit] of [['battery_temperature',0,'°C'],['battery_soh',98,'%'],['grid_reactive',-2,'kVar'],['pv_voltage',450,'V'],['pv_current',4.1,'A']]){const line=historySeries(card,kind)[0];assert.equal(line.unit,unit);assert.equal(line.points[0].value,value);}

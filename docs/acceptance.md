@@ -1,5 +1,13 @@
 # Release validation
 
+## Beta candidate live checks
+
+On 10 November 2026 the embedded Tab A7 dashboard showed the plant-level battery percentage in the scene and battery ring with individual battery modules present. Adding Home consumption rendered the chart and persisted across a reload. The original preferences were restored after the check. PV Strings plotted two Recorder series from power sensors mapped to the same verified inverter.
+
+Live Home Assistant returned fresh Modbus and Cloud status, both configured forecast sources, Recorder and Cloud SOC history, and a tariff/forecast planning preview. Read-only checks covered the active operating mode, SOC limits, backup reserve, grid connection and export limit, AC/DC charge modes, DC charging limits, native profiles, tariffs, strategies, and both charger schedule lists. The live controller accepted dry runs for Hold, Charge, Discharge and Self-consumption. The AC session preview returned the existing charger mode.
+
+Beta hardware acceptance still needs a supervised pass for live control, expiry/cancel and restoration, charger operation, grid transfer, and native configuration or strategy writes. Test AC override restoration with a connected vehicle in PV Surplus mode. The DC temporary override and state-aware charger buttons remain tracked under [issue #16](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/issues/16).
+
 ## 0.2.8 native strategy Alpha
 
 590 backend and 443 frontend tests pass, with Ruff. Six browser cases exercise native strategy creation, editing, rename, delete, cancellation and proposal confirmation at desktop, tablet and phone sizes. The actual Cloud account returned saved native conversations and an informational assistant response using the ordinary configured account; fresh before/after reads showed unchanged plant strategies. Inert HA Test startup served the new strategy module and rejected native writes with control disabled. Supervised acceptance of real native strategy create/change/rename/delete writes is still pending. Release 0.2.8 makes these controls available for invited owner testing; the software checks and read-only account tests do not establish physical command acceptance. See the [release notes](release-0.2.8.md).

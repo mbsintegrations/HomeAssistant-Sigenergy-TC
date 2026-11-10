@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Keep selected charts visible across reloads, including an empty state when history is unavailable. Accept explicit PV string power sensor mappings.
+- Bind the system battery percentage to the plant sensor when individual battery module sensors exist.
+
 - Offer a temporary Fast Charging confirmation when starting an AC charger configured for PV Surplus. Wait for solar and Cancel leave it untouched.
 - Restore the previous Surplus settings after the observed session ends, preserving the owner's limits and newer mySigen changes. Persist recovery across HA restarts without replaying charger commands.
 - Show waiting, charging and restoration status beside AC controls. Automatic restoration requires HA and Cloud online; the lease is managed by HA, not a hardware timer. See [next-release testing](docs/NEXT_RELEASE.md) and [issue #16](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/issues/16).

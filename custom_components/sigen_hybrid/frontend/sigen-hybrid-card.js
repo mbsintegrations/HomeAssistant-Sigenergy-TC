@@ -21,7 +21,7 @@ import { chargerStatus, overrideModel, renderOverride, STATUS_STYLE } from './si
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import { installNavigation, CARD_PRESETS, CARD_CHART_CHOICES } from './sigen-hybrid-navigation.js?v=0.2.9';
+import { installNavigation, CARD_PRESETS, CARD_CHART_CHOICES } from './sigen-hybrid-navigation.js?v=0.2.9-chartfix.2';
 import { installHostFit } from './sigen-hybrid-fit.js?v=0.2.9';
 import { WIDGET_ROUTES } from './sigen-hybrid-widgets.js?v=0.2.9';
 import { renderPhotoScene, PHOTO_STYLE } from './sigen-hybrid-photo.js?v=0.2.9';
@@ -105,10 +105,17 @@ export function flowActivity(state, kind, now = Date.now(), maxAge) {
 export const energySankey = buildEnergySankey;
 export function discoverEntities(rows, entryId) {
   if (!entryId) return {};
+  const sensors = rows.filter(row => row.platform === 'sigen_hybrid' && row.config_entry_id === entryId && !row.disabled_by);
+  const controlId = sensors.find(row => row.unique_id?.endsWith('_control_status'))?.unique_id;
+  const plantId = controlId?.slice(0, -'_control_status'.length);
   const found = {};
-  for (const row of rows) {
-    if (row.platform !== 'sigen_hybrid' || row.config_entry_id !== entryId || row.disabled_by) continue;
-    for (const [suffix, key] of Object.entries(KEYS)) if (row.unique_id?.endsWith(`_${suffix}`)) found[key] = row.entity_id;
+  for (const row of sensors) {
+    for (const [suffix, key] of Object.entries(KEYS)) {
+      const matches = plantId
+        ? row.unique_id === `${plantId}_${suffix}`
+        : row.unique_id?.endsWith(`_${suffix}`) && !/_battery_.+_soc$/.test(row.unique_id);
+      if (matches) found[key] = row.entity_id;
+    }
   }
   return found;
 }
