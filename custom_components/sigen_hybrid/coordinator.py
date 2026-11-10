@@ -53,7 +53,7 @@ class SigenCoordinator(DataUpdateCoordinator):
         self.read_cache_store = None
         self.read_cache_identity = None
         self.controls = None
-        self.ac_session = None
+        self.ac_session = self.dc_session = None
         self.strategies = None
         self.source_binding_verified = False
         self.controller = Controller(
@@ -85,8 +85,9 @@ class SigenCoordinator(DataUpdateCoordinator):
         self.controls = HybridOwnerControls(cloud_controls, local_controls,
             Store(self.hass, 1, f"{DOMAIN}_source_binding_{self.entry.entry_id}"))
         await self.controls.restore_status()
-        from .ac_charge_session import async_setup_ac_session
-        await async_setup_ac_session(self)
+        from .ac_charge_session import async_setup_charger_session
+        self.ac_session = await async_setup_charger_session(self)
+        self.dc_session = await async_setup_charger_session(self, "dc")
         if self.controls.enabled:
             self.controller.executor = self.controls
         from .strategies import StrategyRunner
@@ -313,8 +314,9 @@ class SigenCoordinator(DataUpdateCoordinator):
 
     async def async_close(self):
         self._closing = True
-        if self.ac_session is not None:
-            await self.ac_session.close()
+        for session in (self.ac_session, self.dc_session):
+            if session is not None:
+                await session.close()
         if self.strategies is not None:
             await self.strategies.close()
         if self.controls is not None:

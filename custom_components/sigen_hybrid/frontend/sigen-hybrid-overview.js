@@ -1,4 +1,4 @@
-import { chargerStatus } from './sigen-hybrid-status.js?v=0.2.9-release';
+import { chargerStatus } from './sigen-hybrid-status.js?v=0.2.10';
 /* SPDX-License-Identifier: GPL-3.0-only
  * Pure compact overview panels. The host supplies normalized readings and
  * handles detail navigation; these renderers never access a provider or HA.
@@ -74,12 +74,31 @@ export function chargerEnergyModel(ctx = {}) {
 /** Charger actions stay locked until a supported, owner-approved control path
  * exists. Inventory links never pick an arbitrary device of the same type. */
 export function renderChargerButtons(ctx = {}, type, id = '') {
-  const control=ctx.state?.('control_status')?.attributes??{},raw=control.owner_devices?.[`${type}SnList`],serials=Array.isArray(raw)?raw:[];
-  const device=(ctx.inventory??[]).find(device=>itemIdentity(device)===id),own=[device?.serial,device?.serial_number,device?.serialNumber].find(serial=>serials.includes(serial));
-  const serial=own??(serials.length===1?serials[0]:null),enabled=ctx.controlPermission===true&&ctx.capabilities?.[`${type}_charging`]?.available===true&&typeof serial==='string';
-  const label=type==='ac'?'AC charger':'DC charger';
-  const session=type==='ac'&&control.ac_session?.serial===serial?control.ac_session:null;
-  return `<div class="control-buttons">${[['start','Start charging'],['stop','Stop charging']].map(([action,title])=>`<button type="button" data-charger-action="${action}" data-charger-type="${type}"${serial?` data-serial="${esc(serial)}"`:''}${enabled&&!(action==='start'&&session?.active)?'':' disabled aria-disabled="true"'} aria-label="${action==='start'?'Start':'Stop'} ${label} charging">${title}</button>`).join('')}</div>${session?.message?`<p class="settings-note" role="status">${esc(session.message)}</p>`:''}`;
+  const control = ctx.state?.('control_status')?.attributes ?? {};
+  const raw = control.owner_devices?.[`${type}SnList`];
+  const serials = Array.isArray(raw) ? raw : [];
+  const devices = (ctx.inventory ?? []).filter(device => chargerType(device) === type && device.installed !== false);
+  const device = devices.find(device => itemIdentity(device) === id);
+  const namedSerial = device?.serial ?? device?.serial_number ?? device?.serialNumber;
+  const own = namedSerial ?? (serials.includes(device?.id) ? device.id : null);
+  const serial = own ? serials.includes(own) ? own : null
+    : serials.length === 1 && devices.length <= 1 && (!id || device) ? serials[0] : null;
+  const enabled = ctx.controlPermission === true && ctx.capabilities?.[`${type}_charging`]?.available === true && typeof serial === 'string';
+  const session = control[`${type}_session`]?.serial === serial ? control[`${type}_session`] : null;
+  const mappedState = device?.entities?.state;
+  const observed = mappedState ? ctx.state?.(mappedState) : serials.length === 1 && devices.length <= 1 ? ctx.state?.(`${type}_state`) : null;
+  const observedSerial = observed?.attributes?.serial_number ?? observed?.attributes?.serial;
+  const stamp = Date.parse(observed?.attributes?.observed_at ?? observed?.last_reported ?? observed?.last_updated ?? '');
+  const age = Number(ctx.now ?? Date.now()) - stamp;
+  const fresh = observed?.attributes?.available !== false && (!observedSerial || observedSerial === serial) && age >= -5000 && age <= 120000;
+  const status = fresh ? chargerStatus({ state: () => observed }, type) : 'Unknown';
+  const idle = ['Idle', 'Not connected', 'Connected · finished'].includes(status);
+  const blocked = ['Discharging', 'Fault', 'Unavailable', 'Initializing'].includes(status);
+  const canStart = enabled && !session?.active && status !== 'Charging' && !blocked;
+  const canStop = enabled && (session?.active || session?.can_stop
+    ? !session.stop_attempted && session.phase !== 'stopping' && session.phase !== 'restoring' : !idle && !blocked);
+  const label = type === 'ac' ? 'AC charger' : 'DC charger';
+  return `<div class="control-buttons">${[['start','Start charging',canStart],['stop','Stop charging',canStop]].map(([action,title,allowed])=>`<button type="button" data-charger-action="${action}" data-charger-type="${type}"${serial?` data-serial="${esc(serial)}"`:''}${allowed?'':' disabled aria-disabled="true"'} aria-label="${action==='start'?'Start':'Stop'} ${label} charging">${title}</button>`).join('')}</div>${session?.message?`<p class="settings-note" role="status">${esc(session.message)}</p>`:''}`;
 }
 export function renderChargerControls(ctx = {}, onlyType) {
   const items=chargerEnergyModel(ctx).items.filter(item=>!onlyType||item.type===onlyType);

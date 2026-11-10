@@ -364,8 +364,10 @@ class SigenSensor(CoordinatorEntity, SensorEntity):
                 "native_modes": mode_options,
                 "strategy_status": getattr(getattr(self.coordinator, "strategies", None), "state", {"state": "disabled"}),
                 "owner_devices": self.coordinator.cloud_data.get("owner_controls", {}),
-                "ac_session_api_version": 1,
-                "ac_session": self.coordinator.ac_session.public() if getattr(self.coordinator, "ac_session", None) else {},
+                **{f"{kind}_session_api_version": 1 for kind in ("ac", "dc")},
+                **{f"{kind}_session": manager.public()
+                   for kind in ("ac", "dc")
+                   if (manager := getattr(self.coordinator, f"{kind}_session", None)) is not None},
                 "config_entry_id": self.coordinator.entry.entry_id,
                 "live_writes_locked": self.coordinator.controller.diagnostics()["live_writes_locked"],
                 "export_permitted": self.coordinator.controller.limits.export_permitted,

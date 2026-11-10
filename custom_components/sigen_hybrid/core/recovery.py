@@ -135,7 +135,7 @@ class RecoveryJournal:
             await self._uncertain(record)
             raise
 
-    async def apply(self, request_id, changes, *, expires_at: datetime | None = None, context=None):
+    async def apply(self, request_id, changes, *, expires_at: datetime | None = None, context=None, expected_baseline=None):
         """Apply ordered settings once; journal original and observed values."""
         if not isinstance(request_id, str) or not 1 <= len(request_id) <= 128:
             raise SafetyError("A valid command request ID is required")
@@ -172,6 +172,8 @@ class RecoveryJournal:
                 if expires_at.tzinfo is None or not 0 < (expires_at - now).total_seconds() <= 86400:
                     raise SafetyError("Command expiry must be within the next 24 hours")
             baseline = await self._read([key for key, _ in changes])
+            if expected_baseline is not None and canonical(baseline) != canonical(expected_baseline):
+                raise SafetyError("Plant settings changed since the charging preview")
             restore_validator = getattr(self.provider, "validate_restore", self.provider.validate)
             for key, _ in changes:
                 restore_validator(key, baseline[key])
