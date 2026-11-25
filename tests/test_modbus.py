@@ -114,6 +114,57 @@ async def test_shared_reader_rejects_writes_before_any_device_request():
     assert transport.trace["write_requests"] == 0
 
 
+async def test_read_recovers_when_the_initial_connection_failed():
+    class ReconnectingClient(FakeClient):
+        connected = False
+        connect_calls = 0
+
+        async def connect(self):
+            self.connect_calls += 1
+            self.connected = True
+            return True
+
+        async def read_input_registers(self, **kwargs):
+            assert self.connected
+            return FakeResponse()
+
+    client = ReconnectingClient()
+    transport = ModbusTransport(client)
+    assert (await transport._call(client.read_input_registers, address=30014, count=1)).registers == [9]
+    assert client.connect_calls == 1
+    assert transport.trace["write_requests"] == 0
+    client.connected = False
+    transport._connect_retry_at = float("-inf")
+    await transport._call(client.read_input_registers, address=30014, count=1)
+    assert client.connect_calls == 2
+
+
+async def test_failed_reconnect_is_bounded_and_does_not_send_or_replay_a_write():
+    class OfflineClient(FakeClient):
+        connected = False
+        connect_calls = 0
+
+        async def connect(self):
+            self.connect_calls += 1
+            return False
+
+    client = OfflineClient(fail=True)
+    transport = ModbusTransport(client)
+
+    async def no_wait(_):
+        pass
+
+    transport.sleep = no_wait
+    transport.clock = lambda: 100
+    for _ in range(2):
+        with pytest.raises(TransportError):
+            await transport._call(client.read_holding_registers, address=40029, count=1)
+    assert client.connect_calls == 1
+    with pytest.raises(TransportError):
+        await transport._call(client.write_registers, address=40031, values=[2])
+    assert client.connect_calls == 1 and len(client.writes) == 1
+
+
 async def test_snapshot_groups_only_adjacent_allowlisted_registers_and_records_read_trace(monkeypatch):
     values = {key: 0 for key in READ_REGISTERS}
     values.update(soc=50, max_active_kw=5, max_charge_kw=5, max_discharge_kw=5, capacity_kwh=36, running_state=1)

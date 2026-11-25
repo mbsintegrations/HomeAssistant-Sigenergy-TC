@@ -247,6 +247,105 @@ async def test_private_cloud_requires_explicit_opt_in_and_station_identity():
     assert client.closed == 1
 
 
+async def test_existing_cloud_session_discovers_added_and_removed_modules_and_capacity(monkeypatch):
+    from custom_components.sigen_hybrid.core import cloud as cloud_module
+
+    clock = [0]
+    monkeypatch.setattr(cloud_module, "time", SimpleNamespace(monotonic=lambda: clock[0]))
+
+    class ExpandingClient(PrivateClient):
+        serials = ["BAT1", "BAT2"]
+        capacity = 20
+        station_calls = topology_calls = 0
+
+        def __init__(self):
+            super().__init__()
+            self.static_reads = []
+
+        async def refresh_station(self):
+            self.station_calls += 1
+            return {"batteryCapacity": self.capacity, "hasPv": True}
+
+        async def device_topology(self):
+            self.topology_calls += 1
+            return {"nodeList": [{"deviceType": 2, "snCode": "AIO1", "nodeList": [
+                {"deviceType": 4, "snCode": serial} for serial in self.serials
+            ]}]}
+
+        async def device_tree_live_values(self, aio):
+            return []
+
+        async def battery_module_static(self, serial):
+            self.static_reads.append(serial)
+            return {}
+
+        async def battery_module_dynamic(self, serial):
+            return {}
+
+        async def battery_module_pack(self, serial):
+            return {}
+
+    client = ExpandingClient()
+    cloud = CloudAdapter(client, "synthetic-station", unofficial_opt_in=True)
+    first = await cloud.refresh()
+    assert len(first["battery_modules"]) == 2 and first["telemetry"]["capacity_kwh"] == 20
+    client.serials = ["BAT1", "BAT2", "BAT3"]
+    client.capacity = 30
+    clock[0] = 899
+    await cloud.refresh()
+    assert client.station_calls == client.topology_calls == 1
+    clock[0] = 901
+    essential = await cloud.refresh_essential()
+    assert essential["telemetry"]["capacity_kwh"] == 30
+    expanded = await cloud.refresh()
+    assert [module["serial"] for module in expanded["battery_modules"]] == client.serials
+    assert sum(row["type"] == "battery_module" for row in expanded["device_inventory"]) == 3
+    assert client.connected == 1 and client.station_calls == client.topology_calls == 2
+    assert client.static_reads == ["BAT1", "BAT2", "BAT3"]
+    assert first["telemetry"]["capacity_kwh"] == 20
+    client.serials = ["BAT1", "BAT3"]
+    client.capacity = 20
+    clock[0] = 1802
+    reduced = await cloud.refresh()
+    assert [module["serial"] for module in reduced["battery_modules"]] == client.serials
+    assert reduced["telemetry"]["capacity_kwh"] == 20
+    assert client.static_reads == ["BAT1", "BAT2", "BAT3"]
+
+
+@pytest.mark.parametrize("capacity", [None, False, "", "nan", -1, 0])
+async def test_invalid_refreshed_capacity_preserves_the_previous_observation(capacity):
+    client = PrivateClient()
+    cloud = CloudAdapter(client, "synthetic-station", unofficial_opt_in=True)
+    assert (await cloud.refresh())["telemetry"]["capacity_kwh"] == 20
+
+    async def station():
+        return {"batteryCapacity": capacity}
+
+    client.refresh_station = station
+    cloud._fetched = cloud._station_fetched = float("-inf")
+    assert (await cloud.refresh_essential())["telemetry"]["capacity_kwh"] == 20
+    assert client.connected == 1
+
+
+async def test_failed_station_refresh_preserves_live_telemetry_and_is_not_retried_each_minute():
+    client = PrivateClient()
+    cloud = CloudAdapter(client, "synthetic-station", unofficial_opt_in=True, live_refresh_seconds=60)
+    await cloud.refresh()
+    attempts = []
+
+    async def unavailable():
+        attempts.append(True)
+        raise ValueError("PRIVATE PROVIDER RESPONSE")
+
+    client.refresh_station = unavailable
+    cloud._fetched = cloud._station_fetched = float("-inf")
+    result = await cloud.refresh_essential()
+    assert result["telemetry"]["capacity_kwh"] == 20 and result["telemetry"]["soc"] == 50
+    cloud._fetched = float("-inf")
+    await cloud.refresh_essential()
+    assert attempts == [True] and "PRIVATE" not in str(result)
+
+
 async def test_cloud_refresh_is_cached_and_empty_prediction_remains_unknown():
     client = PrivateClient()
     cloud = CloudAdapter(client, "synthetic-station", unofficial_opt_in=True)

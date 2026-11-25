@@ -142,6 +142,31 @@ class Cloud:
         return {"updated_at": NOW.isoformat(), "telemetry": {"pv_kw": 2}, "telemetry_available": True}
 
 
+async def test_cloud_fallback_uses_minute_telemetry_then_returns_to_local_polling():
+    class FallbackCloud(Cloud):
+        live_refresh_seconds = refresh_seconds = 900
+
+        async def refresh(self):
+            result = await super().refresh()
+            result["telemetry"]["soc"] = 58
+            return result
+
+    local, cloud = Local(), FallbackCloud()
+    runtime = coordinator(local, cloud)
+    await runtime.async_cloud_update()
+    assert cloud.live_refresh_seconds == 60
+    assert runtime.reading("soc").value == 58
+    runtime.data = await runtime._async_update_data()
+    await runtime.async_cloud_update()
+    assert cloud.live_refresh_seconds == 900
+    assert runtime.reading("soc").value == 60
+    local.fail = True
+    runtime.data = await runtime._async_update_data()
+    await runtime.async_cloud_update()
+    assert cloud.live_refresh_seconds == 60 and cloud.refresh_seconds == 900
+    assert runtime.reading("soc").value == 58
+
+
 
 async def test_internet_outage_never_erases_local_readings_or_forecast():
     local, cloud = Local(), Cloud()
