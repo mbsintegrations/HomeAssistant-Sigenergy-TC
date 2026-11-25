@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.11 — Public Beta
+
+- Recover Modbus monitoring after an initial connection failure or a dropped TCP connection. Reconnect attempts are paced and uncertain writes are never replayed.
+- Refresh Cloud battery capacity and device topology every 15 minutes through the existing account session. Newly discovered modules are added automatically with their own identities.
+- Use one-minute Cloud telemetry while local Modbus is unavailable, returning to the normal Cloud interval when local readings recover. Detailed reads and provider cooldowns retain their existing limits.
+- Rename the artwork inventory so HACS catalogue validation finds exactly one integration manifest. Add a packaging regression check.
+
+See the [0.2.11 release notes](docs/release-0.2.11.md).
+
 ## 0.2.10 — Public Beta
 
 - Use fresh charger status to disable Start while charging and Stop while idle. Keep Stop available for a waiting session accepted by TC.

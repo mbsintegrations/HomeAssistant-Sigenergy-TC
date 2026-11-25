@@ -23,7 +23,7 @@ from .owner_devices import (
     system_inventory,
 )
 from .power import app_power_limits
-from .telemetry import cloud_measurements, flow_schema
+from .telemetry import cloud_measurements, flow_schema, number
 
 _LOGGER = logging.getLogger(__name__)
 _AUTH_HTTP_PREFIX = re.compile(r"^Sigenergy Cloud authentication failed: HTTP ([1-5][0-9]{2})(?:;|$)")
@@ -133,6 +133,7 @@ class CloudAdapter:
         self._retry_after = float("-inf")
         self._cache: dict = {}
         self._capacity = None
+        self._station_fetched = float("-inf")
         self._owner_controls = {}
         self._module_static: dict = {}
         self._module_inventory: list = []
@@ -142,18 +143,21 @@ class CloudAdapter:
         self._module_read_diagnostics = {}
 
     async def _battery_modules(self):
-        """Discover identities daily; reuse this session and the 15-minute cache."""
+        """Refresh identities with detailed telemetry using the shared request gate."""
         if not hasattr(self.client, "battery_module_dynamic"):
             return []
         self._module_read_diagnostics = {}
         try:
-            if time.monotonic() - self._module_inventory_fetched >= 86400:
+            if time.monotonic() - self._module_inventory_fetched >= self.refresh_seconds:
                 topology = await self.client.device_topology()
                 self._module_inventory = battery_inventory(topology)
                 self._device_inventory = system_inventory(topology, self._owner_controls)
                 self._module_topology_schema = device_topology_schema(topology)
                 self._module_inventory_fetched = time.monotonic()
-                self._module_static = {}
+                self._module_static = {
+                    row["serial"]: self._module_static[row["serial"]]
+                    for row in self._module_inventory if row["serial"] in self._module_static
+                }
             self._module_read_diagnostics["topology"] = self._module_topology_schema
             self._module_read_diagnostics["inventory_count"] = len(self._module_inventory)
             live = {}
@@ -222,6 +226,25 @@ class CloudAdapter:
         ):
             raise TransportError("Optional device reads are unavailable; wait for the next cloud cycle") from None
 
+    async def _refresh_station(self):
+        """Refresh capacity and advertised devices without opening another session."""
+        self._station_fetched = time.monotonic()
+        station = await self.client.refresh_station()
+        if str(self.client.station_id) != self.station_id:
+            raise AuthenticationError("Cloud station changed during discovery")
+        if not isinstance(station, dict):
+            raise TransportError("Cloud station metadata is temporarily unavailable")
+        capacity = number(station.get("batteryCapacity"))
+        if capacity is not None and capacity > 0:
+            self._capacity = capacity
+        self._owner_controls.update({
+            key: station[key] for key in ("hasGateway", "hasAcCharger", "hasEv", "hasPv", "pvCapacity", "hasInstantSetting", "acSnList", "dcSnList")
+            if key in station
+        })
+        # Preserve topology-discovered identities while updating station devices.
+        identities = [row for row in self._device_inventory if row.get("type") in ("inverter", "battery_module")]
+        self._device_inventory = identities + system_inventory({}, self._owner_controls)
+
     async def connect(self):
         try:
             await self.client.connect()
@@ -229,20 +252,11 @@ class CloudAdapter:
                 await self.client.close()
                 raise AuthenticationError("Cloud station does not match the explicitly configured station")
             try:
-                station = await self.client.refresh_station()
-                if str(self.client.station_id) != self.station_id:
-                    raise AuthenticationError("Cloud station changed during discovery")
-                self._capacity = station.get("batteryCapacity") if isinstance(station, dict) else None
-                if isinstance(station, dict):
-                    self._owner_controls = {
-                        key: station[key] for key in ("hasGateway", "hasAcCharger", "hasEv", "hasPv", "pvCapacity", "hasInstantSetting", "acSnList", "dcSnList")
-                        if key in station
-                    }
-                    self._device_inventory = system_inventory({}, self._owner_controls)
+                await self._refresh_station()
             except AuthenticationError:
                 raise
             except Exception:
-                self._capacity = None
+                pass
             self._connected = True
         except AuthenticationError:
             raise
@@ -273,6 +287,13 @@ class CloudAdapter:
                     await self.connect()
                 if str(self.client.station_id) != self.station_id:
                     raise AuthenticationError("Cloud station no longer matches the selected plant")
+                if now - self._station_fetched >= self.refresh_seconds:
+                    try:
+                        await self._refresh_station()
+                    except AuthenticationError:
+                        raise
+                    except Exception as error:
+                        self._stop_module_burst(error)
                 details_due = not essential_only and not details_fresh
                 details = dict(self._cache)
                 if live_fresh:

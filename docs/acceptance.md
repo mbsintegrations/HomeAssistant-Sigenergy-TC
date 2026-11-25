@@ -1,5 +1,11 @@
 # Release validation
 
+## 0.2.11 Beta
+
+Live read-only diagnostics confirmed that the inverter answered Modbus requests and reported expanded battery capacity. Reloading the existing TC entry restored its local readings, matched the existing integration's SOC and capacity, and discovered the additional Cloud battery module. This established the recovery and stale-inventory symptoms on the installed 0.2.10 runtime.
+
+The 0.2.11 fixes have regression coverage for disconnected-client recovery, reconnect pacing, preserving write behavior, added/removed Cloud modules, capacity refresh, invalid metadata, and faster Cloud fallback with local recovery. Full backend and frontend suites and official HACS/Hassfest validation run before publication. Isolated HA Test on Core 2026.10.1 loaded the 0.2.11 synthetic entry, served its versioned frontend resource with HTTP 200, and reported live writes locked. Its real plant entry remained disabled; the synthetic entry was returned to its prior disabled state after validation. These checks add no plant control commands. See the [release notes](release-0.2.11.md).
+
 ## 0.2.10 Beta
 
 The owner reported completing the live AC/DC charger check and approved release. Automated validation covers state-aware buttons, stopping an accepted waiting session, temporary Fast sessions, restoration, and recovery. See the [release notes](release-0.2.10.md).

@@ -47,3 +47,15 @@ Version 0.2.7 reads an existing native DC mode 2 as V2X and keeps it selected in
 ## Native strategies are visible but controls are missing
 
 Use 0.2.8 or later, restart HA after updating, and fully reload the client. Native rule management requires an HA administrator, a connected mySigen Cloud account and enabled Cloud plant control. Modbus alone cannot manage native rules. Keep the existing entry; no developer API key or browser session is required. A rule change is confirmed only by fresh native readback. If confirmation is uncertain, inspect mySigen before trying again; writes are never replayed automatically. See [native strategy controls](native-strategies.md).
+
+## Battery capacity or module count remains unchanged after an expansion
+
+Use version 0.2.11 or later. Cloud capacity and topology refresh with the detailed telemetry cycle, normally every 15 minutes, using the existing login and request gate. New module entities are added automatically. Provider cooldowns can delay a refresh. Local Modbus reads aggregate battery capacity on each successful snapshot; individual module identities and measurements use Cloud.
+
+## TC battery percentage differs from another local integration
+
+Compare the `data_source` and `observed_at` attributes of TC's battery SOC sensor. Healthy local readings take priority. During a Modbus outage, TC falls back to Cloud telemetry at one-minute intervals while detailed reads stay on their normal interval. Two different observation times can show different SOC values during charging or discharging.
+
+## Modbus stopped after a startup or network failure
+
+Version 0.2.11 reconnects a disconnected client before the next read, with at least 15 seconds between explicit attempts. Check TC's Modbus connection status and request trace. A transport exception exposes its class as `last_error_type` without including the host, credentials or response text. Restoring a connection never replays an uncertain write.

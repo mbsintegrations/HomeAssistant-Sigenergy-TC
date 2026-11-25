@@ -34,6 +34,7 @@ class ModbusTransport:
         self._condition = asyncio.Condition()
         self._busy = False
         self.clock, self.sleep = time.monotonic, asyncio.sleep
+        self._connect_retry_at = float("-inf")
 
     @asynccontextmanager
     async def command(self):
@@ -81,6 +82,12 @@ class ModbusTransport:
             self.trace["last_request_at"] = datetime.now(timezone.utc).isoformat()
             # Pin a pymodbus version and use its documented device_id argument.
             try:
+                if not writing and getattr(self.client, "connected", True) is False:
+                    if self.clock() < self._connect_retry_at:
+                        raise TransportError("Modbus reconnect is waiting for the next polling cycle")
+                    self._connect_retry_at = self.clock() + 15
+                    if not await self.client.connect():
+                        raise TransportError("Modbus connection could not be established")
                 result = await method(device_id=device_id, **kwargs)
                 if result.isError():
                     raise TransportError("Device rejected the Modbus request")
@@ -89,8 +96,9 @@ class ModbusTransport:
             except TransportError:
                 self.trace["errors"] += 1
                 raise
-            except Exception:
+            except Exception as error:
                 self.trace["errors"] += 1
+                self.trace["last_error_type"] = type(error).__name__
                 # Never include response bodies, hosts or client repr in diagnostics.
                 raise TransportError("Modbus request failed; inspect current state before retrying") from None
 

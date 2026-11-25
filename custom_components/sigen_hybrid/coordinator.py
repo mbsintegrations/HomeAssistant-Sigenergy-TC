@@ -251,6 +251,9 @@ class SigenCoordinator(DataUpdateCoordinator):
                         unofficial_opt_in=cloud_options["unofficial_opt_in"],
                         live_refresh_seconds=60 if self.local is None else 900,
                     )
+                if hasattr(self.cloud, "live_refresh_seconds"):
+                    local_online = self.connections["modbus"]["status"] == "connected"
+                    self.cloud.live_refresh_seconds = self.cloud.refresh_seconds if local_online else 60
                 essential = getattr(self.cloud, "refresh_essential", None)
                 self.cloud_data = await (essential() if callable(essential) else self.cloud.refresh())
                 gate = getattr(getattr(self.cloud, "client", None), "request_gate", None)
