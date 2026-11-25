@@ -13,6 +13,6 @@ Download **0.2.11** in HACS, restart Home Assistant, and refresh the dashboard. 
 
 ## Validation
 
-Backend regressions cover recovery from an initially disconnected Modbus client, bounded reconnect attempts, unchanged write dispatch, changing battery inventory and capacity, invalid metadata, and Cloud fallback when local monitoring fails and recovers. The complete backend/frontend suites, Ruff, and official HACS/Hassfest checks run for this release.
+Backend regressions cover recovery from an initially disconnected Modbus client, bounded reconnect attempts, unchanged write dispatch, changing battery inventory and capacity, invalid metadata, and Cloud fallback when local monitoring fails and recovers. 616 backend tests and 447 frontend tests passed, along with Ruff and official HACS/Hassfest checks. Isolated HA Test loaded the synthetic entry and served the 0.2.11 module successfully with plant writes locked and its real connection disabled.
 
 Live diagnostics used read-only requests. The existing installation recovered after a TC reload and returned the expanded battery inventory, aggregate capacity and matching local SOC. Automated tests validate the new recovery paths with synthetic failures. See [release validation](acceptance.md).
