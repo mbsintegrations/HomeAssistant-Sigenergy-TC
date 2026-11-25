@@ -78,3 +78,10 @@ def test_frontend_resource_version_matches_package():
     manifest = json.loads(Path("custom_components/sigen_hybrid/manifest.json").read_text())
     from custom_components.sigen_hybrid.const import VERSION
     assert VERSION == manifest["version"]
+
+
+def test_hacs_submission_discovers_only_the_integration_manifest():
+    """HACS recursively matches *manifest.json when reviewing new integrations."""
+    matches = sorted(Path("custom_components").rglob("*manifest.json"))
+    assert matches == [Path("custom_components/sigen_hybrid/manifest.json")]
+    assert json.loads(matches[0].read_text())["domain"] == "sigen_hybrid"
