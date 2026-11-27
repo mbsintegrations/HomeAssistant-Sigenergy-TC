@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.12 — Public Beta
+
+- Resolve the planning preview timezone with Home Assistant's async timezone helper before constructing a tariff plan. Reuse the resolved timezone for every price lookup, avoiding timezone-file reads on the event loop.
+- Reject unknown timezone names through the existing plan-validation response. Add cold-zone, daylight-saving and invalid-input regression coverage.
+
+See the [0.2.12 release notes](docs/release-0.2.12.md).
+
 ## 0.2.11 — Public Beta
 
 - Recover Modbus monitoring after an initial connection failure or a dropped TCP connection. Reconnect attempts are paced and uncertain writes are never replayed.

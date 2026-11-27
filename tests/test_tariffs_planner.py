@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -15,6 +16,7 @@ def tariff():
         Decimal("0.30"),
         Decimal("0.18"),
         (TariffWindow(minute("02:00"), minute("05:00"), Decimal("0.09")),),
+        zone=ZoneInfo("Europe/Dublin"),
     )
 
 
@@ -23,7 +25,7 @@ def test_import_export_prices_independent_and_major_units_required():
     assert tariff().rate_at(when) == Decimal("0.09")
     assert tariff().rate_at(when, "export") == Decimal("0.18")
     with pytest.raises(ValueError, match="major_currency"):
-        TariffPlan.from_dict({"unit": "cent", "default_import": 9})
+        TariffPlan.from_dict({"unit": "cent", "default_import": 9}, zone=timezone.utc)
 
 
 def test_overnight_weekday_and_month_use_window_start_date():
@@ -33,7 +35,10 @@ def test_overnight_weekday_and_month_use_window_start_date():
 
 
 def test_dst_repeated_hour_uses_local_tariff_for_both_utc_instants():
-    plan = TariffPlan("Europe/Dublin", "EUR", Decimal("0.3"), Decimal("0"), (TariffWindow(60, 120, Decimal("-0.05")),))
+    plan = TariffPlan(
+        "Europe/Dublin", "EUR", Decimal("0.3"), Decimal("0"),
+        (TariffWindow(60, 120, Decimal("-0.05")),), zone=ZoneInfo("Europe/Dublin"),
+    )
     assert plan.rate_at(datetime(2026, 10, 25, 0, 30, tzinfo=timezone.utc)) == Decimal("-0.05")
     assert plan.rate_at(datetime(2026, 10, 25, 1, 30, tzinfo=timezone.utc)) == Decimal("-0.05")
 
@@ -45,6 +50,7 @@ def test_overlapping_windows_rejected():
         Decimal("0.3"),
         Decimal("0"),
         (TariffWindow(0, 120, Decimal("0.1")), TariffWindow(60, 180, Decimal("0.2"))),
+        zone=timezone.utc,
     )
     with pytest.raises(ValueError, match="Overlapping"):
         plan.rate_at(datetime(2026, 10, 26, 1, tzinfo=timezone.utc))
