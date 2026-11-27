@@ -1,11 +1,11 @@
 # Sigenergy TC — Total Control for Home Assistant
 
-> **Public Beta · 0.2.12**
+> **Public Beta · 0.2.13**
 >
 > Sigenergy TC can change battery operation, EV charging and grid connection. Review the [control and recovery guide](docs/controls-and-recovery.md) before enabling writes.
 
 <p>
-  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=mbsintegrations&amp;repository=HomeAssistant-Sigenergy-TC&amp;category=integration"><img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open Sigenergy TC in HACS" height="28"></a>
+  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=mbsintegrations&amp;repository=HomeAssistant-Sigenergy-TC&amp;category=integration"><img src="https://my.home-assistant.io/badges/marketplace_repository.svg" alt="Open Sigenergy TC in Marketplace (HACS on older HA)" height="28"></a>
   <a href="https://my.home-assistant.io/redirect/config_flow_start/?domain=sigen_hybrid"><img src="https://my.home-assistant.io/badges/config_flow_start.svg" alt="Add Sigenergy TC to Home Assistant" height="28"></a>
 </p>
 
@@ -19,7 +19,7 @@ A local-first Home Assistant integration and responsive energy dashboard for Sig
 
 ![Full Sigenergy TC dashboard overview showing the house, live power, forecasts, daily energy, battery SOC and controls](docs/images/desktop-overview.png)
 
-[0.2.12 Beta release notes](docs/release-0.2.12.md) · [Installation and setup](docs/installation.md) · [Manual ZIP installation](docs/installation.md#manual-installation) · [User guide](docs/user-guide.md) · [Validation and acceptance scope](docs/acceptance.md)
+[0.2.13 Beta release notes](docs/release-0.2.13.md) · [Installation and setup](docs/installation.md) · [Manual ZIP installation](docs/installation.md#manual-installation) · [User guide](docs/user-guide.md) · [Validation and acceptance scope](docs/acceptance.md)
 
 ## Features
 
@@ -39,15 +39,15 @@ A local-first Home Assistant integration and responsive energy dashboard for Sig
 
 Use **Settings → Devices & services → Sigenergy TC → Configure → Add to dashboard** to place the full interface on an existing editable page or supported custom-shell menu. Embedded layouts measure their available space below dashboard headers. See [dashboard placement and sizing](docs/dashboard-embedding.md).
 
-## Install with HACS as a custom repository
+## Install from the Marketplace
 
 1. Back up Home Assistant and record the plant's existing mySigen settings. Keep the existing integration and automations intact until conflicts have been reviewed.
-2. In **HACS → menu → Custom repositories**, add `https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC` with category **Integration**.
-3. Download **Sigenergy TC (Total Control)** version **0.2.12**, restart Home Assistant, then use **Settings → Devices & services → Add integration → Sigenergy TC**.
+2. Open **Settings → Marketplace**, search for **Sigenergy TC** and open **Sigenergy TC (Total Control)**. It is included in the default catalogue; no custom repository is needed.
+3. Select **Install**, review version **0.2.13** and confirm. Restart Home Assistant, then use **Settings → Devices & services → Add integration → Sigenergy TC**.
 4. Choose Modbus, Cloud, or both. Cloud login discovers the plant; no station ID is entered. Configure safety limits and deliberately choose whether to enable control.
 5. Open **Settings → Devices & services → Sigenergy TC → Configure → Add to dashboard**. Choose your existing dashboard and page, or a supported custom-menu destination. For a separate dashboard, new page or individual cards, follow the [illustrated dashboard guide](docs/dashboard-embedding.md#choose-where-to-put-it). No YAML or third-party cards are required for a normal editable HA dashboard.
 
-Requires **Home Assistant 2026.10.1 or later**. Use the custom repository steps while the project is outside the default HACS catalogue. **Open HACS** opens the repository in your Home Assistant instance. **Add Integration** opens the setup wizard after installation and restart.
+Requires **Home Assistant 2026.10.1 or later**. Marketplace is built into HA 2026.11 and later. On HA 2026.10, search in **HACS** and select **Download** instead. The Marketplace badge uses the compatible My Home Assistant redirect so it also opens HACS on older systems. **Add Integration** opens setup after installation and restart. [Custom repository fallback and manual ZIP installation](docs/installation.md) remain available.
 
 [Installation and upgrades](docs/installation.md) · [Controls and recovery](docs/controls-and-recovery.md) · [Strategies and tariffs](docs/strategies.md) · [Existing mySigen settings](docs/native-settings.md) · [Cards](docs/cards.md) · [Embedding](docs/dashboard-embedding.md) · [Charts](docs/chart-catalogue.md) · [Troubleshooting](docs/troubleshooting.md) · [Screenshots](docs/screenshots.md) · [Changes](CHANGELOG.md)
 

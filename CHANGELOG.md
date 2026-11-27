@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.13 — Public Beta
+
+- Require explicit confirmation before the in-card dashboard installer replaces an occupied custom menu. Changing destination clears confirmation; existing dashboard concurrency checks and backups remain.
+- Restrict native network details to administrators before any Cloud or cache access. Filter short `pwd` credential aliases recursively.
+- Lead installation with Marketplace catalogue search after acceptance. Update the native badge, older-HACS compatibility, updates, forecast setup and custom-repository fallback instructions.
+
+See the [0.2.13 release notes](docs/release-0.2.13.md).
+
 ## 0.2.12 — Public Beta
 
 - Resolve the planning preview timezone with Home Assistant's async timezone helper before constructing a tariff plan. Reuse the resolved timezone for every price lookup, avoiding timezone-file reads on the event loop.

@@ -47,3 +47,7 @@ The tested account had no custom operating profiles or native charger schedules.
 ![Native tariff periods](images/native-tariffs.png)
 
 Documentation screenshots use synthetic, non-private account data.
+
+## Network privacy
+
+Network details require an HA administrator account, including reads served from cache. Firmware may return undocumented fields, so the entire native network section is restricted. Known credential fields, including `pwd` aliases, are removed recursively before caching or display. Other native read-only presets retain their existing access rules.

@@ -26,7 +26,7 @@ STATION_READS = {
 }
 CHARGER_READS = frozenset({"charger_schedules", "charger_records", "charger_ocpp", "charger_cards", "charger_auth", "charger_mode"})
 SECTIONS = frozenset({"strategies", "profiles", "profile", "tariffs", "network", "preheating", "indicators", "energy_profile", "solar_priority", "backup_history", "backup_events"}) | CHARGER_READS | AC_READS.keys() | STATION_READS.keys()
-PRIVATE_FIELD = re.compile(r"password|passwd|secret|token|credential|authorization|privatekey|certificate|rfidCardNumber|cardNumber|cardUid", re.I)
+PRIVATE_FIELD = re.compile(r"password|passwd|pwd|secret|token|credential|authorization|privatekey|certificate|rfidCardNumber|cardNumber|cardUid", re.I)
 
 
 def safe_document(value, *, depth=0, budget=None):

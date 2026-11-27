@@ -1,5 +1,11 @@
 # Release validation
 
+## 0.2.13 Beta
+
+632 backend tests and 449 frontend tests pass, with Ruff. New regressions verify that network details are denied to non-administrators before a request and after an administrator populated the cache, while other read-only presets remain available. Credential filtering covers nested lists/dictionaries and short `pwd` aliases. Frontend tests exercise the installer warning, initially disabled replacement, explicit consent, destination-change reset and refusal to save without consent, as well as ordinary page preservation. See the [release notes](release-0.2.13.md).
+
+Isolated HA Test on Core 2026.10.1 loaded the candidate with only its synthetic entry enabled and live writes locked. Chrome confirmed the occupied Tab A7 menu warning, disabled Add button before consent, enabled button after ticking, and consent reset after changing destination. The dialog was checked at desktop and 412 × 915 CSS-pixel phone widths without saving a dashboard change. No Sigenergy error was recorded in the current Test log. The real plant entry stayed disabled; the synthetic entry was disabled again and HA Test was stopped afterward.
+
 ## 0.2.12 Beta
 
 The planning service resolves the user-selected timezone through Home Assistant's async timezone helper, then passes the resolved object to a tariff plan that performs no timezone lookup. New registered-service regressions cover cold timezone resolution off the event-loop thread, reuse for all 48 planning slots, the spring and autumn daylight-saving transitions, and invalid timezone rejection before forecast reads. Existing tariff, planner and control tests remain in the full suite. See the [release notes](release-0.2.12.md).

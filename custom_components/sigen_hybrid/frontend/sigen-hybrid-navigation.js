@@ -1,13 +1,13 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-import { renderDeviceDetail, solarStringSeries, DETAIL_STYLE } from './sigen-hybrid-details.js?v=0.2.12';
-import { presetTarget, renderPreset, PRESET_STYLE } from './sigen-hybrid-presets.js?v=0.2.12';
-import { bindNativeStrategies } from './sigen-hybrid-strategies.js?v=0.2.12';
-import { renderSettingsDetail, collectSettings, SETTINGS_STYLE, SETTINGS_ROUTES, CHART_CHOICES, DEFAULT_CHART_SELECTION, DISPLAY_MODULES, DISPLAY_PRESETS, HOMEPAGE_APPEARANCES, HOMEPAGE_BACKGROUNDS, homepageBackground, displayDefaults, encodeChargerScheduleId, decodeChargerScheduleId, bindTariffEditor, bindStrategyEditor, OPERATING_MODES, observedOperatingMode, renderOverviewModeControl, strategyExportEligibility } from './sigen-hybrid-settings.js?v=0.2.12';
-import { periodRange, dateAt, shiftDate, toCSV, preserveChartScroll } from './sigen-hybrid-charts.js?v=0.2.12';
-import { renderSummaryWidget, renderSummaryDetail, WIDGET_ROUTES, WIDGET_STYLE } from './sigen-hybrid-widgets.js?v=0.2.12';
-import { ENERGY_ROUTES, renderEnergyProfile, ENERGY_STYLE, ownerSettingTarget, renderOwnerSetting, collectOwnerSetting, bindOwnerSettingForm } from './sigen-hybrid-energy.js?v=0.2.12';
-import { renderChargingEnergy, renderTodayEnergy, renderBatteryLevel, renderMobilePower, renderChargerControls } from './sigen-hybrid-overview.js?v=0.2.12';
-import { modeChoices, selectedMode, nativeModeChoices } from './sigen-hybrid-settings.js?v=0.2.12';
+import { renderDeviceDetail, solarStringSeries, DETAIL_STYLE } from './sigen-hybrid-details.js?v=0.2.13';
+import { presetTarget, renderPreset, PRESET_STYLE } from './sigen-hybrid-presets.js?v=0.2.13';
+import { bindNativeStrategies } from './sigen-hybrid-strategies.js?v=0.2.13';
+import { renderSettingsDetail, collectSettings, SETTINGS_STYLE, SETTINGS_ROUTES, CHART_CHOICES, DEFAULT_CHART_SELECTION, DISPLAY_MODULES, DISPLAY_PRESETS, HOMEPAGE_APPEARANCES, HOMEPAGE_BACKGROUNDS, homepageBackground, displayDefaults, encodeChargerScheduleId, decodeChargerScheduleId, bindTariffEditor, bindStrategyEditor, OPERATING_MODES, observedOperatingMode, renderOverviewModeControl, strategyExportEligibility } from './sigen-hybrid-settings.js?v=0.2.13';
+import { periodRange, dateAt, shiftDate, toCSV, preserveChartScroll } from './sigen-hybrid-charts.js?v=0.2.13';
+import { renderSummaryWidget, renderSummaryDetail, WIDGET_ROUTES, WIDGET_STYLE } from './sigen-hybrid-widgets.js?v=0.2.13';
+import { ENERGY_ROUTES, renderEnergyProfile, ENERGY_STYLE, ownerSettingTarget, renderOwnerSetting, collectOwnerSetting, bindOwnerSettingForm } from './sigen-hybrid-energy.js?v=0.2.13';
+import { renderChargingEnergy, renderTodayEnergy, renderBatteryLevel, renderMobilePower, renderChargerControls } from './sigen-hybrid-overview.js?v=0.2.13';
+import { modeChoices, selectedMode, nativeModeChoices } from './sigen-hybrid-settings.js?v=0.2.13';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
 
@@ -376,7 +376,7 @@ export function dashboardEmbedTargets(config={}) {
   (config.views??[]).forEach((view,index)=>{result.push({key:`view:${index}`,kind:'view',index,label:view.title??view.path??`Page ${index+1}`});visit(view.cards,['views',index,'cards'],view.title??view.path??'Page');(view.sections??[]).forEach((section,s)=>visit(section.cards,['views',index,'sections',s,'cards'],view.title??view.path??'Page'));});
   return result;
 }
-export function embedDashboardCard(original,targetKey,card,name='Solar') {
+export function embedDashboardCard(original,targetKey,card,name='Solar',{replaceExisting=false}={}) {
   if(!original||typeof original!=='object'||!Array.isArray(original.views)||original.strategy)throw new Error('Choose an editable dashboard.');
   const config=JSON.parse(JSON.stringify(original)),copy=JSON.parse(JSON.stringify(card));
   if(copy.type!=='custom:sigen-hybrid-card')throw new Error('Invalid Sigenergy TC card.');
@@ -389,6 +389,7 @@ export function embedDashboardCard(original,targetKey,card,name='Solar') {
   const target=dashboardEmbedTargets(config).find(t=>t.key===targetKey);if(!target)throw new Error('The destination changed. Choose it again.');
   copy.embedded=true;
   if(target.kind==='shell'){
+    if(target.replaces&&replaceExisting!==true)throw new Error('Confirm replacement of the existing card in this menu.');
     let shell=config;for(const key of target.path)shell=shell[key];copy.embed_mode='shell';shell.pages[target.page].card=copy;return {config,path:config.views[target.path[1]].path,shell:true};
   }
   const view=config.views[target.index];copy.embed_mode='card';
@@ -478,19 +479,23 @@ export function installNavigation(Card) {
           const targets=dashboardEmbedTargets(before).filter(t=>t.kind!=='shell'||customElements.get('taba7-dashboard-shell')?.supportsEmbeddedCards===true);
           output.textContent='';destinations.innerHTML=`<label class="settings-field"><span>Destination</span><select data-embed-target><option value="new">New Home Assistant page</option>${targets.map(t=>`<option value="${escape(t.key)}">${escape(t.kind==='shell'?'Custom menu · '+t.label:'Existing page · '+t.label)}</option>`).join('')}</select></label><label class="settings-field" data-embed-name><span>Page name</span><input value="Solar" maxlength="60"></label><p class="settings-note" data-embed-summary>A new page will contain the selected Sigenergy TC card or dashboard.</p><button type="button" class="settings-save" data-embed-apply>Add Sigenergy TC</button>`;
           const target=destinations.querySelector('[data-embed-target]'),name=destinations.querySelector('[data-embed-name]'),summary=destinations.querySelector('[data-embed-summary]'),apply=destinations.querySelector('[data-embed-apply]');
-          target.addEventListener('change',()=>{name.hidden=target.value!=='new';const selected=targets.find(t=>t.key===target.value);summary.textContent=selected?.kind==='shell'?`Sigenergy TC will open inside ${selected.label}. A backup of this dashboard will be saved first.`:target.value==='new'?'A new page will contain the selected Sigenergy TC card or dashboard.':'The card will be added alongside the existing content. A backup will be saved first.';});
+          const confirmation=document.createElement('label');confirmation.className='settings-check';confirmation.hidden=true;
+          confirmation.innerHTML='<input type="checkbox" data-embed-replace> Replace the existing card in this menu';summary.after(confirmation);
+          const replace=confirmation.querySelector('input');
+          target.addEventListener('change',()=>{name.hidden=target.value!=='new';const selected=targets.find(t=>t.key===target.value);replace.checked=false;confirmation.hidden=!selected?.replaces;apply.disabled=Boolean(selected?.replaces);summary.textContent=selected?.replaces?`The existing card in ${selected.label} will be replaced. Confirm below to continue. A backup will be saved first.`:selected?.kind==='shell'?`Sigenergy TC will open inside ${selected.label}. A backup of this dashboard will be saved first.`:target.value==='new'?'A new page will contain the selected Sigenergy TC card or dashboard.':'The card will be added alongside the existing content. A backup will be saved first.';});
+          replace.addEventListener('change',()=>{apply.disabled=Boolean(targets.find(t=>t.key===target.value)?.replaces)&&!replace.checked;});
           apply.addEventListener('click',async()=>{
             apply.disabled=true;output.textContent='Adding dashboard…';
             try{
               const current=await this._hass.callWS({type:'lovelace/config',url_path:path});if(JSON.stringify(current)!==JSON.stringify(before))throw new Error('The dashboard changed. Choose the destination again.');
               const card=presetCardConfiguration(this._config,host.querySelector('[data-embed-content]').value);
-              const prepared=embedDashboardCard(before,target.value,card,name.querySelector('input').value);
+              const prepared=embedDashboardCard(before,target.value,card,name.querySelector('input').value,{replaceExisting:replace.checked});
               const stored=await this._hass.callWS({type:'frontend/get_user_data',key:'sigen_hybrid_dashboard_backups'}),backups=Array.isArray(stored?.value)?stored.value:[];
               await this._hass.callWS({type:'frontend/set_user_data',key:'sigen_hybrid_dashboard_backups',value:[{at:new Date().toISOString(),dashboard:path,before,after:prepared.config},...backups].slice(0,5)});
               await this._hass.callWS({type:'lovelace/config/save',url_path:path,config:prepared.config});
               const after=await this._hass.callWS({type:'lovelace/config',url_path:path});if(JSON.stringify(after)!==JSON.stringify(prepared.config))throw new Error('Dashboard verification failed. A backup is retained.');
               output.innerHTML=`Added. <a href="/${escape(path)}/${escape(prepared.path??'0')}">Open dashboard</a>`;
-            }catch(error){output.textContent=error.message??'Could not add the dashboard.';apply.disabled=false;}
+            }catch(error){output.textContent=error.message??'Could not add the dashboard.';apply.disabled=Boolean(targets.find(t=>t.key===target.value)?.replaces)&&!replace.checked;}
           });
         }catch(error){output.textContent=error.message??'Could not load this dashboard.';}
       });

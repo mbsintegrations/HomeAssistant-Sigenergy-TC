@@ -2,7 +2,7 @@
 
 ## Install and place the dashboard
 
-1. Follow the [installation guide](installation.md) to add the custom HACS repository or use the manual ZIP. Restart Home Assistant before adding the integration.
+1. Follow the [installation guide](installation.md) to install from the Marketplace catalogue (HACS on older HA) or use the manual ZIP. Restart Home Assistant before adding the integration.
 2. Choose Modbus, mySigen Cloud or both. Check the connection indicators and verify the detected plant and devices against mySigen.
 3. Select your weather entity and optionally configure [solar forecasts](installation.md#forecasts). When averaging two forecasts, use providers configured for the same array.
 4. Use **Configure → Add to dashboard** to place TC on an existing page, in a compatible custom Solar menu, or on a separate dashboard you create in HA. To build your own layout, choose individual cards and charts. [Placement and layout](dashboard-embedding.md) · [Card catalogue](cards.md)
