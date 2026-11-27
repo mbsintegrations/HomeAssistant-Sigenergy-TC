@@ -1,5 +1,11 @@
 # Release validation
 
+## 0.2.12 Beta
+
+The planning service resolves the user-selected timezone through Home Assistant's async timezone helper, then passes the resolved object to a tariff plan that performs no timezone lookup. New registered-service regressions cover cold timezone resolution off the event-loop thread, reuse for all 48 planning slots, the spring and autumn daylight-saving transitions, and invalid timezone rejection before forecast reads. Existing tariff, planner and control tests remain in the full suite. See the [release notes](release-0.2.12.md).
+
+625 backend tests and 447 frontend tests pass, with Ruff. Isolated HA Test on the minimum supported Core 2026.10.1 loaded the candidate and served its versioned frontend module. The actual preview service returned advisory plans using `America/St_Johns` and `Asia/Kathmandu`, with a cached Open-Meteo forecast, and rejected an unknown timezone through its validation response. No Sigenergy blocking-call warning was recorded. Plant writes remained locked and the real plant entry remained disabled; temporary forecast preferences and the synthetic entry's disabled state were restored after validation.
+
 ## 0.2.11 Beta
 
 Live read-only diagnostics confirmed that the inverter answered Modbus requests and reported expanded battery capacity. Reloading the existing TC entry restored its local readings, matched the existing integration's SOC and capacity, and discovered the additional Cloud battery module. This established the recovery and stale-inventory symptoms on the installed 0.2.10 runtime.

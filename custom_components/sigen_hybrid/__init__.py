@@ -13,6 +13,7 @@ from homeassistant.core import SupportsResponse
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.event import async_track_time_interval
+from homeassistant.util import dt as dt_util
 from pymodbus.client import AsyncModbusTcpClient
 
 from .cloud_client import async_create_cloud_client
@@ -121,7 +122,11 @@ async def async_setup(hass, config):
             raise HomeAssistantError("Fresh local telemetry is required")
         now = utcnow()
         try:
-            tariff = TariffPlan.from_dict(json.loads(call.data["tariff_json"]))
+            tariff_data = json.loads(call.data["tariff_json"])
+            zone = await dt_util.async_get_time_zone(tariff_data["timezone"])
+            if zone is None:
+                raise ValueError("Invalid tariff timezone")
+            tariff = TariffPlan.from_dict(tariff_data, zone=zone)
             forecast_options = runtime.entry.options.get("forecast", {})
             forecast_data = await async_forecast(hass, forecast_options, now)
             if not forecast_data.get("available"):

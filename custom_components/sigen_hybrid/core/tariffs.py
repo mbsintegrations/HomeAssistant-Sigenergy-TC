@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, timedelta
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, tzinfo
 from decimal import Decimal, InvalidOperation
-from zoneinfo import ZoneInfo
 
 
 def minute(value: str) -> int:
@@ -68,9 +67,11 @@ class TariffPlan:
     default_import: Decimal
     default_export: Decimal
     windows: tuple[TariffWindow, ...] = ()
+    zone: tzinfo = field(kw_only=True, repr=False, compare=False)
 
     def __post_init__(self):
-        ZoneInfo(self.timezone)
+        if not isinstance(self.zone, tzinfo):
+            raise ValueError("A resolved tariff timezone is required")
         if len(self.currency) != 3 or not self.currency.isalpha():
             raise ValueError("Use a three-letter currency code")
         if not self.default_import.is_finite() or not self.default_export.is_finite():
@@ -79,14 +80,14 @@ class TariffPlan:
     def rate_at(self, when: datetime, direction: str = "import") -> Decimal:
         if when.tzinfo is None or direction not in ("import", "export"):
             raise ValueError("Use timezone-aware timestamps and a valid direction")
-        local = when.astimezone(ZoneInfo(self.timezone))
+        local = when.astimezone(self.zone)
         matches = [w.rate for w in self.windows if w.direction == direction and w.contains(local)]
         if len(matches) > 1:
             raise ValueError("Overlapping tariff windows are ambiguous")
         return matches[0] if matches else self.default_import if direction == "import" else self.default_export
 
     @classmethod
-    def from_dict(cls, value: dict):
+    def from_dict(cls, value: dict, *, zone: tzinfo):
         if value.get("unit") != "major_currency_per_kwh":
             raise ValueError("Declare major_currency_per_kwh; convert cents explicitly")
         windows = tuple(
@@ -106,4 +107,5 @@ class TariffPlan:
             price(value["default_import"]),
             price(value.get("default_export", 0)),
             windows,
+            zone=zone,
         )
