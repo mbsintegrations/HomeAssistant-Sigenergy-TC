@@ -44,6 +44,11 @@ def async_register_owner_configuration(hass):
 @websocket_api.async_response
 async def websocket_plant_configuration(hass, connection, message):
     """Read presets through the existing Cloud session, independently of writes."""
+    # Network payloads vary by firmware and can contain credentials under
+    # undocumented keys. Restrict the entire section before any cache or read.
+    if message["section"] == "network" and not connection.user.is_admin:
+        connection.send_error(message["id"], "unauthorized", "Network details require an administrator")
+        return
     entry = hass.config_entries.async_get_entry(message["config_entry"])
     if entry is None or entry.domain != DOMAIN or entry.state is not ConfigEntryState.LOADED:
         connection.send_error(message["id"], "invalid_entry", "Select a loaded Sigenergy TC system")

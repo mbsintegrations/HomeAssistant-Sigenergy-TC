@@ -1,6 +1,6 @@
 # Beta testing
 
-The public Beta supports supervised testing on owner hardware. Install through HACS yourself; preserve the existing integration, automation configuration and a full backup. Read [controls and recovery](controls-and-recovery.md). Use the real hardware inventory; screenshot fixtures and demonstration devices are not a live plant.
+The public Beta supports supervised testing on owner hardware. Install through Marketplace (HACS on older HA) yourself; preserve the existing integration, automation configuration and a full backup. Read [controls and recovery](controls-and-recovery.md). Use the real hardware inventory; screenshot fixtures and demonstration devices are not a live plant.
 
 Record HA/integration version, plant firmware/region, connection choices and starting native settings. Establish one intended writer. Compare local and cloud telemetry with matching units/time/date. Test a bounded command and observe actual battery/grid behavior as well as job readback; software confirmation cannot replace physical acceptance. Verify cancellation, native expiry, restoration, owner override, cloud outage, HA restart recovery and rule-window end. Do not induce a grid outage, alter protection settings or enable unapproved export to test availability.
 

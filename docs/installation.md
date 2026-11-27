@@ -6,24 +6,33 @@
 
 Create a restorable HA backup. Record current mySigen mode, SOC charge/discharge/backup thresholds, export restrictions and gateway state. Retain access to mySigen on another device. Review competing controllers and schedules before enabling writes; a second integration must not fight this one. Monitoring can coexist where the plant firmware supports the additional Modbus client, but this needs observation on the actual system.
 
-## HACS
+## Marketplace (recommended)
 
-Until the integration is included in the default catalogue, register it as a custom repository once per HA instance. HACS handles subsequent downloads and updates.
-1. Check that HA is **2026.10.1 or later** and [HACS is installed](https://www.hacs.xyz/docs/use/download/download/).
-2. Open **HACS → menu (three dots) → Custom repositories**.
-3. Enter `https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC`, select **Integration**, then **Add**.
-4. Open **Sigenergy TC (Total Control)** in HACS, choose **Download**, select **0.2.12**, and confirm.
-5. **Restart Home Assistant**. A browser refresh alone does not load an integration update.
-6. Open **Settings → Devices & services → Add integration**, search for **Sigenergy TC**, and complete its wizard.
-7. Choose Modbus, Cloud, or both; enter your own connection details. Select any already configured forecast sources, then review control permissions before finishing.
-8. Add the interface using the [dashboard/drop-in steps](dashboard-embedding.md#choose-where-to-put-it). Installing the integration does not replace your existing dashboards.
+Sigenergy TC is now included in the default catalogue. On **Home Assistant 2026.11 or later**, Marketplace is built in; you do not need to install HACS or register a custom repository.
 
-A GitHub/HACS login is separate from the plant's mySigen login. There is no NBI application, shared developer key or external AI subscription step. Existing users should follow **Updates** below rather than creating a second integration entry.
+1. Open **Settings → Marketplace**. On first use, review and accept its community-content notice.
+2. Search for **Sigenergy TC**, then open **Sigenergy TC (Total Control)**. Use the **Integrations** filter if needed.
+3. Select **Install**, review the offered version (**0.2.13**), and confirm.
+4. **Restart Home Assistant** before continuing. For subsequent updates this loads the new integration code; refreshing a browser alone does not.
+5. Open **Settings → Devices & services → Add integration**, search for **Sigenergy TC**, and complete its wizard if setup did not open automatically.
+6. Choose Modbus, Cloud, or both; enter your own connection details. Select any already configured forecast sources, then review control permissions before finishing.
+7. Add the interface using the [dashboard/drop-in steps](dashboard-embedding.md#choose-where-to-put-it). Installation does not replace your existing dashboards.
+
+**HA 2026.10.1–2026.10.x:** use your existing [HACS installation](https://www.hacs.xyz/docs/use/download/download/), search for **Sigenergy TC**, select **Download**, then continue from step 4. Upgrading HA to 2026.11 migrates HACS content automatically to Marketplace. The README's Marketplace badge retains the compatible `hacs_repository` redirect to support both versions. See the [official Marketplace guide](https://www.home-assistant.io/integrations/marketplace/).
+
+### Custom repository fallback
+
+If the newly added catalogue entry has not appeared yet, first refresh/reopen Marketplace or HACS and search again. Existing custom-repository installations can stay in place; do not create a second TC integration entry.
+
+- **Marketplace:** open **Settings → Marketplace → Add from link**, enter `https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC`, select **Add**, then open the repository and install it. Select type **Integration** if asked.
+- **Older HACS:** open **HACS → menu (three dots) → Custom repositories**, enter the same URL, select **Integration**, then **Add**. Open TC and select **Download**.
+
+Your Marketplace/HACS account is separate from the plant's mySigen login. There is no NBI application, shared developer key or external AI subscription step. Existing users should follow **Updates** below rather than creating another integration entry.
 
 ## Manual installation
 
-1. Download `sigenergy-tc-0.2.12.zip` and `SHA256SUMS.txt` from the [0.2.12 Beta release](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/releases/tag/0.2.12).
-2. Check the download with `sha256sum -c SHA256SUMS.txt` from the download directory. On Windows, use `Get-FileHash -Algorithm SHA256 .\sigenergy-tc-0.2.12.zip` and compare it with the value in `SHA256SUMS.txt`.
+1. Download `sigenergy-tc-0.2.13.zip` and `SHA256SUMS.txt` from the [0.2.13 Beta release](https://github.com/mbsintegrations/HomeAssistant-Sigenergy-TC/releases/tag/0.2.13).
+2. Check the download with `sha256sum -c SHA256SUMS.txt` from the download directory. On Windows, use `Get-FileHash -Algorithm SHA256 .\sigenergy-tc-0.2.13.zip` and compare it with the value in `SHA256SUMS.txt`.
 3. Extract the archive. Copy its `custom_components/sigen_hybrid` directory into Home Assistant's configuration directory so that `config/custom_components/sigen_hybrid/manifest.json` exists. For an upgrade, back up the old component folder and replace it as a unit to avoid stale files.
 4. Restart HA. On a fresh install, open **Settings → Devices & services → Add integration → Sigenergy TC**. For an upgrade, keep the existing entry and reopen the dashboard.
 
@@ -44,8 +53,8 @@ Install/configure a provider integration first: built-in [Forecast.Solar](https:
 To use Forecast.Solar and Open-Meteo together:
 
 1. Add **Forecast.Solar** through **Settings → Devices & services → Add integration**. Enter your own location, panel capacity, tilt and orientation using that provider's field conventions. HA's Forecast.Solar setup asks for **Watt peak (Wp)**: 1 kWp = 1,000 Wp. Use the unit displayed by each provider, rather than copying the same number into differently labelled fields.
-2. Search HACS for **Open-Meteo Solar Forecast** with the **Integrations** filter enabled, download it, restart HA, then add **Open-Meteo Solar Forecast** in Devices & services. If it is not listed, follow the linked provider repository's installation instructions. Configure the same installation; neither provider should describe only half the panels when averaging whole-system predictions.
-3. Verify that both providers have loaded forecast entities in HA. A downloaded HACS repository alone is not a configured forecast source.
+2. Search Marketplace (HACS on older HA) for **Open-Meteo Solar Forecast** with the **Integrations** filter enabled, install it, restart HA, then add **Open-Meteo Solar Forecast** in Devices & services. If it is not listed, follow the linked provider repository's installation instructions. Configure the same installation; neither provider should describe only half the panels when averaging whole-system predictions.
+3. Verify that both providers have loaded forecast entities in HA. An installed Marketplace/HACS repository alone is not a configured forecast source.
 4. During Sigenergy TC setup, select both sources and tick **Average selected forecasts**. If TC is already installed, use **Sigenergy TC → Configure → Forecast** or the forecast tile's preferences.
 
 Forecast providers are optional and are not installed automatically by TC. Follow each provider's current installation instructions, plan eligibility and orientation conventions; do not reuse another site's location or panel values.
@@ -62,13 +71,13 @@ To add it to an existing dashboard without YAML, open **Configure → Add to das
 
 ## Updates
 
-Read the release notes and take a backup. Finish or release any active TC command and let any temporary charging session restore its original mode. In HACS, open the installed repository and use **Update** or **Redownload** to select the desired version. Restart HA, then reload each browser or Companion App. Confirm the existing entry, Modbus/Cloud status, battery SOC and your saved chart selection.
+Read the release notes and take a backup. Finish or release any active TC command and let any temporary charging session restore its original mode. On current HA, open **Settings → Updates**, read the TC release notes and install the update. Marketplace also exposes **Install another version** in the repository menu. On older HACS, open TC and use **Update** or **Redownload**. Restart HA, then reload each browser or Companion App. Confirm the existing entry, Modbus/Cloud status, battery SOC and your saved chart selection.
 
-To roll back, resolve active commands first, redownload the previous version or restore the backed-up component and configuration, then restart HA. Check plant settings in mySigen after rollback. The domain remains `sigen_hybrid` to preserve entity and dashboard references.
+To roll back, resolve active commands first, restore your backup (or the backed-up component and configuration), then restart HA. Check plant settings in mySigen after rollback. The domain remains `sigen_hybrid` to preserve entity and dashboard references.
 
 ## Removal
 
-Disable scheduled strategies and release any active TC command while Cloud is available. Verify the native plant settings in mySigen. Disable/remove the integration entry, remove its dashboard cards/resource if unused, then remove the package in HACS and restart. Do not remove the original integration or OCPP configuration as part of this process. If a command cannot be released, use the [recovery procedure](controls-and-recovery.md) first. Saved HA history follows HA Recorder retention; uninstalling software is not a history migration.
+Disable scheduled strategies and release any active TC command while Cloud is available. Verify the native plant settings in mySigen. Disable/remove the integration entry, remove its dashboard cards/resource if unused, then uninstall the package in Marketplace (or HACS on older HA) and restart. Do not remove the original integration or OCPP configuration as part of this process. If a command cannot be released, use the [recovery procedure](controls-and-recovery.md) first. Saved HA history follows HA Recorder retention; uninstalling software is not a history migration.
 
 ## Charger telemetry
 

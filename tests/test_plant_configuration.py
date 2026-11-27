@@ -121,6 +121,24 @@ async def test_native_configuration_uses_the_existing_client_without_a_refresh_b
     await command(hass, connection, {"id": 2, "config_entry": "foreign", "section": "strategies"})
     assert errors == ["invalid_entry"] and len(client.calls) == 2
 
+    # A non-admin cannot trigger a network query or read a previous admin's cache.
+    runtime.cloud_data["device_inventory"] = [{"id": "EC-TEST", "type": "inverter"}]
+    connection.user = SimpleNamespace(is_admin=False)
+    await command(hass, connection, {"id": 3, "config_entry": "own", "section": "network", "serial": "EC-TEST"})
+    assert errors[-1] == "unauthorized" and len(client.calls) == 2
+    connection.user.is_admin = True
+    await command(hass, connection, {"id": 4, "config_entry": "own", "section": "network", "serial": "EC-TEST"})
+    assert results[-1]["value"] == {"networkType": "Ethernet"} and len(client.calls) == 3
+    connection.user.is_admin = False
+    await command(hass, connection, {"id": 5, "config_entry": "own", "section": "network", "serial": "EC-TEST"})
+    assert errors[-1] == "unauthorized" and len(client.calls) == 3
+
+
+@pytest.mark.parametrize("key", ["pwd", "PWD", "wifiPwd", "wlan_pwd", "password", "accessToken", "clientSecret"])
+def test_credentials_are_removed_at_every_document_depth(key):
+    assert safe_document({key: "private", "nested": [{key: "private", "zero": 0, "enabled": False}]}) == {
+        "nested": [{"zero": 0, "enabled": False}]}
+
 
 async def test_indicator_channels_and_station_settings_are_fixed_read_operations():
     client = Client()

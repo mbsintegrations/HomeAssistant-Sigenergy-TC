@@ -1249,6 +1249,39 @@ test('dashboard installation preserves normal views and custom-shell siblings wi
  assert.throws(()=>embedDashboardCard(original,'view:99',card));assert.throws(()=>embedDashboardCard({...original,strategy:{}},'new',card));assert.throws(()=>embedDashboardCard(original,'new',{type:'button'}));
 });
 
+test('occupied custom menus require explicit replacement consent',()=>{
+ const existing={type:'entities',entities:['sensor.keep']},original={views:[{cards:[{type:'custom:taba7-dashboard-shell',pages:[{name:'Solar',card:existing},{name:'Other'}]}]}]},card={type:'custom:sigen-hybrid-card'};
+ const [occupied,empty]=dashboardEmbedTargets(original).filter(t=>t.kind==='shell');
+ assert.equal(occupied.replaces,true);assert.equal(empty.replaces,false);
+ for(const options of [undefined,{replaceExisting:false},{replaceExisting:'true'}])assert.throws(()=>embedDashboardCard(original,occupied.key,card,'Solar',options),/Confirm replacement/);
+ const result=embedDashboardCard(original,occupied.key,card,'Solar',{replaceExisting:true});
+ assert.equal(result.config.views[0].cards[0].pages[0].card.type,card.type);
+ assert.deepEqual(original.views[0].cards[0].pages[0].card,existing);
+ assert.equal(embedDashboardCard(original,empty.key,card).shell,true);
+});
+
+test('installer warns about occupied menus and resets consent when changing destination',async t=>{
+ const previousDocument=globalThis.document,previousElements=globalThis.customElements;
+ t.after(()=>{if(previousDocument===undefined)delete globalThis.document;else globalThis.document=previousDocument;if(previousElements===undefined)delete globalThis.customElements;else globalThis.customElements=previousElements;});
+ const element=()=>({value:'',hidden:false,checked:false,dataset:{},listeners:{},addEventListener(event,fn){this.listeners[event]=fn;}});
+ const dashboard=element(),target=element(),replace=element(),name=element(),summary=element(),apply=element(),output=element(),content=element();content.value='overview';target.value='new';
+ name.querySelector=()=>({value:'Solar'});const confirmation=element();confirmation.querySelector=()=>replace;summary.after=node=>assert.equal(node,confirmation);
+ globalThis.document={createElement:()=>confirmation};globalThis.customElements={get:()=>({supportsEmbeddedCards:true})};
+ const destinations=element();destinations.querySelector=selector=>({'[data-embed-target]':target,'[data-embed-name]':name,'[data-embed-summary]':summary,'[data-embed-apply]':apply})[selector];
+ const host=element();host.isConnected=true;host.querySelector=selector=>({'[data-embed-dashboard]':dashboard,'[data-embed-destinations]':destinations,'[data-embed-result]':output,'[data-embed-content]':content})[selector];
+ const original={views:[{path:'home',cards:[{type:'custom:taba7-dashboard-shell',pages:[{name:'Solar',card:{type:'entities'}},{name:'Empty'}]}]}]};
+ const card=new NavigationCard(),calls=[];card._detailDialog={querySelector:()=>host};card._detailStack=[{route:'dashboard_install'}];
+ card._hass.callWS=async request=>{calls.push(request);if(request.type==='lovelace/dashboards/list')return [{mode:'storage',url_path:'tablet',title:'Tablet'}];if(request.type==='lovelace/config')return structuredClone(original);throw new Error('Unexpected write');};
+ await card._bindDashboardInstaller();dashboard.value='tablet';await dashboard.listeners.change();
+ target.value=dashboardEmbedTargets(original).find(t=>t.replaces).key;target.listeners.change();
+ assert.match(summary.textContent,/existing card.*will be replaced/);assert.equal(confirmation.hidden,false);assert.equal(apply.disabled,true);
+ // Even a dispatched click cannot bypass consent or write a backup/configuration.
+ await apply.listeners.click();assert.match(output.textContent,/Confirm replacement/);assert.ok(!calls.some(r=>/save|set_user_data/.test(r.type)));
+ replace.checked=true;replace.listeners.change();assert.equal(apply.disabled,false);
+ target.value='view:0';target.listeners.change();assert.equal(replace.checked,false);assert.equal(confirmation.hidden,true);assert.equal(apply.disabled,false);
+ assert.match(summary.textContent,/alongside/);
+});
+
 test('shared plans synchronize across clients, preserve sibling edits and reject stale target saves',async()=>{
  const {card}=settingsHarness('strategy');card._sharedTestStore.value={version:1,settings:{strategy:{other:{name:'Keep'}}}};
  await card._saveSharedSetting('strategy','one',{name:'First'});

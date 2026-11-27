@@ -49,7 +49,7 @@ The overview's **Photo house** choice uses a scene renderer adapted
 from [Jean-Yves Avenard's Sigenergy Flow Card](https://github.com/jyavenard/sigenergy-flow-card),
 v54 at commit `86f82a214c7a46998db7e5a880f7799e8d54cde5`, under
 [Apache-2.0](../licenses/jyavenard-Apache-2.0.txt). It is bundled with this card and
-needs no separate HACS card or resource. It uses the same mapped readings,
+needs no separate Marketplace/HACS card or resource. It uses the same mapped readings,
 device-detail windows and charts as the other displays. Its newly generated
 day/night house images and countryside background replace the upstream
 photographs; [artwork source records and prompts](../custom_components/sigen_hybrid/frontend/assets/README.md)

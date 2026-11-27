@@ -36,6 +36,8 @@ HA's own [dashboard guide](https://www.home-assistant.io/dashboards/dashboards/)
 4. Tick **My custom menu supports embedded Home Assistant cards** only if verified. If the Solar slot already contains a card and you want to replace it, also tick **Replace the existing card in this menu**. Submit.
 5. Open the shell's **Solar** menu. Its own sidebar/header remain; TC runs inside the selected slot. Placement does not disable kiosk mode or replace other menus.
 
+The in-card **TC Settings → Add to dashboard** flow also warns when a custom-menu slot already contains a card. Tick **Replace the existing card in this menu** to enable replacement. Changing the destination clears this consent. Cancel or close the dialog to keep the existing content. Both placement routes retain a backup.
+
 If your shell is unsupported, use **A** or **B**. Do not confirm compatibility simply because a custom-menu destination is listed. Technical requirements are below.
 
 ### D. Individual cards and charts
@@ -48,7 +50,7 @@ Alternatively, from an existing TC card use **TC Settings → Add to dashboard �
 
 ### If it does not appear or looks outdated
 
-- If TC is missing from the card picker, restart HA after the HACS installation, verify that the integration entry is loaded, then fully reload the client.
+- If TC is missing from the card picker, restart HA after the Marketplace/HACS installation, verify that the integration entry is loaded, then fully reload the client.
 - If **Add to dashboard** has no destinations, use an administrator account and an editable user dashboard. YAML/automatic dashboards require their normal editing method.
 - After an update, keep the existing entry and dashboard. Restart HA and fully reload each browser/tablet/Companion App; do not add duplicate resources or another TC card just to refresh it.
 - No `card-mod`, separate chart library or third-party house card is required. Short/narrow containers keep controls readable and may scroll; the parent shell must not clip its child.
@@ -138,6 +140,6 @@ Large enough containers retain the complete two-column overview. Short or narrow
 
 ## Frontend updates and installed chargers
 
-From 0.2.4, startup registers the frontend at a versioned URL and upgrades an existing unversioned or older TC resource in place. After updating in HACS, restart HA and reload the tablet or browser web view once so it observes the changed resource configuration. A backend update alone cannot replace modules already running in an open web view. Other Lovelace resources are not changed.
+From 0.2.4, startup registers the frontend at a versioned URL and upgrades an existing unversioned or older TC resource in place. After updating in Marketplace or HACS, restart HA and reload the tablet or browser web view once so it observes the changed resource configuration. A backend update alone cannot replace modules already running in an open web view. Other Lovelace resources are not changed.
 
 Photo/house/flow and narrow-screen power tiles use the discovered installed-device inventory as well as explicitly mapped sensors. An installed AC/DC charger remains visible when instantaneous power is unavailable; its label opens the same device details and the cable remains drawn without a false flow animation. A missing power reading is shown as a dash, never invented as zero. Explicitly disabled entity mappings remain excluded.
